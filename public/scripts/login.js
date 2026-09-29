@@ -1,10 +1,13 @@
 import { initAccessibility } from './a11y.js';
+import { clearUserSpaceBrowserState } from './leslie-user-space-browser.js';
 
 /**
  * CRSF token for requests.
  */
 let csrfToken = '';
 let discreetLogin = false;
+let encryptedSpaces = false;
+let loginPending = false;
 
 /**
  * Gets a CSRF token from the server.
@@ -40,7 +43,6 @@ async function getUserList() {
     }
 
     const userListObj = await response.json();
-    console.log(userListObj);
     return userListObj;
 }
 
@@ -106,11 +108,18 @@ async function sendRecoveryPart2(handle, code, newPassword) {
  * @returns {Promise<void>}
  */
 async function performLogin(handle, password) {
+    if (loginPending) return;
+    loginPending = true;
+    const button = $('#loginButton');
+    const originalLabel = button.text();
+    button.prop('disabled', true).text('正在进入空间…');
+    displayError('');
     const userInfo = {
         handle: handle,
         password: password,
     };
 
+    let redirecting = false;
     try {
         const response = await fetch('/api/users/login', {
             method: 'POST',
@@ -122,19 +131,28 @@ async function performLogin(handle, password) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            return displayError(errorData.error || 'An error occurred');
+            const errorData = await response.json().catch(() => null);
+            return displayError(errorData?.error || '登录失败，请稍后重试。');
         }
 
         const data = await response.json();
 
         if (data.handle) {
             console.log(`Successfully logged in as ${handle}!`);
+            if (encryptedSpaces) {
+                clearUserSpaceBrowserState();
+            }
+            redirecting = true;
             redirectToHome();
         }
     } catch (error) {
         console.error('Error logging in:', error);
         displayError(String(error));
+    } finally {
+        if (!redirecting) {
+            loginPending = false;
+            button.prop('disabled', false).text(originalLabel);
+        }
     }
 }
 
@@ -151,12 +169,13 @@ async function onUserSelected(user) {
 
     $('#passwordRecoveryBlock').hide();
     $('#passwordEntryBlock').show();
+    $('#userPassword').val('').trigger('focus');
     $('#loginButton').off('click').on('click', async () => {
         const password = String($('#userPassword').val());
         await performLogin(user.handle, password);
     });
 
-    $('#recoverPassword').off('click').on('click', async () => {
+    $('#recoverPassword').toggle(!encryptedSpaces).off('click').on('click', async () => {
         await sendRecoveryPart1(user.handle);
     });
 
@@ -219,19 +238,21 @@ function onCancelRecoveryClick() {
  * @param {import('../../src/users').UserViewModel[]} userList List of users
  */
 function configureNormalLogin(userList) {
-    console.log('Discreet login is disabled');
     $('#handleEntryBlock').hide();
     $('#normalLoginPrompt').show();
     $('#discreetLoginPrompt').hide();
-    console.log(userList);
     for (const user of userList) {
-        const userBlock = $('<div></div>').addClass('userSelect');
+        const userBlock = $('<button type="button"></button>').addClass('userSelect');
         const avatarBlock = $('<div></div>').addClass('avatar');
         avatarBlock.append($('<img>').attr('src', user.avatar));
         userBlock.append(avatarBlock);
         userBlock.append($('<span></span>').addClass('userName').text(user.name));
         userBlock.append($('<small></small>').addClass('userHandle').text(user.handle));
-        userBlock.on('click', () => onUserSelected(user));
+        userBlock.on('click', () => {
+            $('#userList .userSelect').removeClass('is-selected');
+            userBlock.addClass('is-selected');
+            onUserSelected(user);
+        });
         $('#userList').append(userBlock);
     }
 }
@@ -270,6 +291,8 @@ function configureDiscreetLogin() {
     initAccessibility();
 
     csrfToken = await getCsrfToken();
+    encryptedSpaces = await fetch('/api/users/mode').then(response => response.json()).then(mode => mode.encryptedSpaces === true).catch(() => true);
+    $('#recoverPassword').toggle(!encryptedSpaces);
     const userList = await getUserList();
 
     if (discreetLogin) {

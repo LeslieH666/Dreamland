@@ -41,7 +41,9 @@ class CompanionSession {
             throw new LeslieBridgeRequestError('HOST_ID_REQUIRED', 'The Leslie companion host ID is required.');
         }
 
-        if (this.#host && this.#host.id !== cleanHostId) {
+        const userSpaceId = String(snapshot?.userSpaceId ?? '').trim();
+        if (this.#host && (this.#host.id !== cleanHostId
+            || (this.#host.userSpaceId && userSpaceId && this.#host.userSpaceId !== userSpaceId))) {
             this.#replaceHost();
         }
 
@@ -49,6 +51,7 @@ class CompanionSession {
             id: cleanHostId,
             lastSeen: this.#now(),
             snapshot,
+            userSpaceId,
         };
     }
 
@@ -67,9 +70,11 @@ class CompanionSession {
             };
         }
 
+        const snapshot = { ...this.#host.snapshot };
+        delete snapshot.userSpaceId;
         return {
             connected: true,
-            ...this.#host.snapshot,
+            ...snapshot,
         };
     }
 
@@ -120,6 +125,7 @@ class CompanionSession {
             type: 'turn',
             input: text,
             binding,
+            userSpaceId: this.#host.userSpaceId,
         });
 
         return {

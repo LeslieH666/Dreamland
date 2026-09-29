@@ -1,0 +1,636 @@
+.leslie-plot-compass-dialog {
+    width: min(1040px, calc(100vw - 32px));
+    max-width: none;
+    max-height: min(860px, calc(100dvh - 32px));
+    margin: auto;
+    padding: 0;
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    background: var(--tg-layer-1, var(--leslie-shell-surface, #fff));
+    border: 1px solid var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9));
+    border-radius: 18px;
+    box-shadow: 0 24px 70px rgb(10 24 42 / 28%);
+}
+
+.leslie-plot-compass-dialog::backdrop {
+    background: rgb(7 17 29 / 48%);
+    backdrop-filter: blur(4px);
+}
+
+.leslie-plot-compass-shell {
+    display: grid;
+    max-height: inherit;
+    padding: 22px;
+    gap: 16px;
+    overflow: auto;
+}
+
+.leslie-plot-compass-shell > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.leslie-plot-compass-shell h2 {
+    margin: 4px 0 6px;
+    color: inherit;
+    font-size: 24px;
+    line-height: 1.25;
+}
+
+.leslie-plot-compass-shell header p {
+    max-width: 720px;
+    margin: 0;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.leslie-plot-compass-kicker {
+    color: var(--tg-accent-strong, var(--leslie-shell-accent, #2f7df4));
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.leslie-plot-icon-button {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    place-items: center;
+    margin: 0;
+    padding: 0;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.leslie-plot-icon-button:hover {
+    color: inherit;
+    background: var(--tg-layer-hover, var(--leslie-shell-hover, rgb(47 125 244 / 8%)));
+}
+
+.leslie-plot-compass-controls {
+    display: flex;
+    min-height: 48px;
+    padding: 8px 10px;
+    align-items: center;
+    gap: 12px;
+    background: var(--tg-layer-2, var(--leslie-shell-surface-soft, #f6f8fa));
+    border: 1px solid var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9));
+    border-radius: 12px;
+}
+
+.leslie-plot-compass-controls label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 12px;
+}
+
+.leslie-plot-compass-controls select,
+.leslie-plot-compass-controls button {
+    min-height: 32px;
+    margin: 0;
+    padding: 5px 10px;
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    background: var(--tg-layer-1, var(--leslie-shell-surface, #fff));
+    border: 1px solid var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9));
+    border-radius: 9px;
+    box-shadow: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+.leslie-plot-compass-controls button {
+    display: inline-flex;
+    margin-left: auto;
+    align-items: center;
+    gap: 6px;
+}
+
+.leslie-plot-compass-controls button:disabled {
+    cursor: default;
+    opacity: 0.48;
+}
+
+.leslie-plot-duration-toggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--tg-accent, var(--leslie-shell-accent, #2f7df4));
+}
+
+.leslie-plot-compass-status {
+    min-height: 18px;
+    margin: 0;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 12px;
+}
+
+.leslie-plot-compass-dialog.is-loading .leslie-plot-compass-status::before {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 7px;
+    vertical-align: -2px;
+    border: 2px solid color-mix(in srgb, var(--tg-accent, #2f7df4) 24%, transparent);
+    border-top-color: var(--tg-accent, var(--leslie-shell-accent, #2f7df4));
+    border-radius: 50%;
+    content: '';
+    animation: leslie-plot-spin 750ms linear infinite;
+}
+
+.leslie-plot-suggestion-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.leslie-plot-suggestion {
+    display: flex;
+    min-width: 0;
+    min-height: 390px;
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--tg-layer-2, var(--leslie-shell-surface-soft, #f8fafc));
+    border: 1px solid var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9));
+    border-top: 3px solid var(--tg-accent, var(--leslie-shell-accent, #2f7df4));
+    border-radius: 14px;
+}
+
+.leslie-plot-suggestion.kind-relationship {
+    border-top-color: #d35f9c;
+}
+
+.leslie-plot-suggestion.kind-disruption {
+    border-top-color: #d98a2b;
+}
+
+.leslie-plot-suggestion-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+}
+
+.leslie-plot-suggestion-heading h3 {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.leslie-plot-kind,
+.leslie-plot-duration {
+    padding: 2px 6px;
+    color: var(--tg-accent-strong, var(--leslie-shell-accent, #2f7df4));
+    background: var(--tg-accent-soft, rgb(47 125 244 / 11%));
+    border-radius: 6px;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.leslie-plot-duration {
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    background: transparent;
+    font-weight: 600;
+}
+
+.leslie-plot-suggestion p {
+    margin: 0;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.leslie-plot-suggestion p strong {
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+}
+
+.leslie-plot-suggestion .leslie-plot-hook {
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    font-size: 13px;
+}
+
+.leslie-plot-scope,
+.leslie-plot-pin-facts {
+    display: grid;
+    margin: 0;
+    gap: 7px;
+}
+
+.leslie-plot-scope > div,
+.leslie-plot-pin-facts > div {
+    display: grid;
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+}
+
+.leslie-plot-scope dt,
+.leslie-plot-pin-facts dt {
+    color: var(--tg-accent-strong, var(--leslie-shell-accent, #2f7df4));
+    font-size: 10px;
+    font-weight: 750;
+}
+
+.leslie-plot-scope dd,
+.leslie-plot-pin-facts dd {
+    margin: 0;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.leslie-plot-beats {
+    display: grid;
+    margin: 0;
+    padding-left: 22px;
+    gap: 6px;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.leslie-plot-suggestion blockquote {
+    display: grid;
+    margin: 0;
+    padding: 10px 11px;
+    gap: 4px;
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    background: var(--tg-layer-1, var(--leslie-shell-surface, #fff));
+    border: 0;
+    border-left: 3px solid var(--tg-accent, var(--leslie-shell-accent, #2f7df4));
+    border-radius: 7px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.leslie-plot-suggestion blockquote small {
+    color: var(--tg-text-tertiary, var(--leslie-shell-muted, #75869a));
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.leslie-plot-suggestion-actions {
+    display: flex;
+    margin-top: auto;
+    justify-content: flex-end;
+    gap: 7px;
+}
+
+.leslie-plot-suggestion-actions button,
+.leslie-plot-pin-actions button {
+    min-height: 34px;
+    margin: 0;
+    padding: 6px 10px;
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    background: transparent;
+    border: 1px solid var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9));
+    border-radius: 9px;
+    box-shadow: none;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.leslie-plot-suggestion-actions button.primary {
+    color: #fff;
+    background: var(--tg-accent, var(--leslie-shell-accent, #2f7df4));
+    border-color: transparent;
+}
+
+.leslie-plot-pin {
+    position: relative;
+    min-width: 0;
+    max-width: min(300px, 30vw);
+    flex: 0 1 300px;
+}
+
+.leslie-plot-pin[hidden],
+.leslie-plot-pin [hidden] {
+    display: none !important;
+}
+
+.leslie-plot-pin-summary {
+    display: grid;
+    width: 100%;
+    min-height: 42px;
+    margin: 0;
+    padding: 5px 9px;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    text-align: left;
+    background: color-mix(in srgb, var(--tg-accent, var(--leslie-shell-accent, #2f7df4)) 8%, var(--tg-layer-1, var(--leslie-shell-surface, #fff)));
+    border: 1px solid color-mix(in srgb, var(--tg-accent, var(--leslie-shell-accent, #2f7df4)) 24%, var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9)));
+    border-radius: 11px;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.leslie-plot-pin-summary > i {
+    color: var(--tg-accent-strong, var(--leslie-shell-accent, #2f7df4));
+}
+
+.leslie-plot-pin-summary > span {
+    display: grid;
+    min-width: 0;
+    gap: 1px;
+}
+
+.leslie-plot-pin-summary small,
+.leslie-plot-pin-summary em {
+    color: var(--tg-text-tertiary, var(--leslie-shell-muted, #75869a));
+    font-size: 9px;
+    font-style: normal;
+    white-space: nowrap;
+}
+
+.leslie-plot-pin-summary strong {
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.leslie-plot-pin.is-paused .leslie-plot-pin-summary {
+    filter: saturate(0.45);
+    opacity: 0.76;
+}
+
+.leslie-plot-pin-detail {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 8px);
+    right: 0;
+    display: grid;
+    width: min(410px, calc(100vw - 24px));
+    padding: 14px;
+    gap: 10px;
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    background: var(--tg-layer-1, var(--leslie-shell-surface, #fff));
+    border: 1px solid var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9));
+    border-radius: 13px;
+    box-shadow: 0 15px 42px rgb(10 24 42 / 22%);
+}
+
+.leslie-plot-pin-detail p {
+    margin: 0;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.leslie-plot-pin-detail ol {
+    display: grid;
+    margin: 0;
+    padding-left: 22px;
+    gap: 5px;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 11px;
+}
+
+.leslie-plot-pin-detail .leslie-plot-pin-warning {
+    padding: 7px 8px;
+    color: #9a5a00;
+    background: rgb(217 138 43 / 12%);
+    border-radius: 8px;
+}
+
+.leslie-plot-pin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.leslie-plot-pin-dialog {
+    width: min(560px, 100vw);
+    max-width: none;
+    max-height: min(78dvh, 720px);
+    margin: auto 0 0 auto;
+    padding: 0;
+    color: var(--tg-text-primary, var(--leslie-shell-text, #1f2d3d));
+    background: var(--tg-layer-1, var(--leslie-shell-surface, #fff));
+    border: 1px solid var(--tg-border-soft, var(--leslie-shell-border, #d6e0e9));
+    border-radius: 20px 0 0 0;
+    box-shadow: 0 -16px 52px rgb(10 24 42 / 24%);
+    overflow: hidden;
+}
+
+.leslie-plot-pin-dialog:not([open]) {
+    display: none;
+}
+
+.leslie-plot-pin-dialog::backdrop {
+    background: rgb(7 16 28 / 48%);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+.leslie-plot-pin-sheet {
+    display: grid;
+    max-height: min(78dvh, 720px);
+    padding: 18px;
+    padding-bottom: max(18px, calc(12px + env(safe-area-inset-bottom)));
+    gap: 13px;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.leslie-plot-pin-sheet > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.leslie-plot-pin-sheet > header > div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.leslie-plot-pin-sheet header small,
+.leslie-plot-pin-sheet header em {
+    color: var(--tg-text-tertiary, var(--leslie-shell-muted, #75869a));
+    font-size: 11px;
+    font-style: normal;
+}
+
+.leslie-plot-pin-sheet h2 {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.25;
+}
+
+.leslie-plot-pin-sheet > p {
+    margin: 0;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.leslie-plot-pin-sheet > ol {
+    display: grid;
+    margin: 0;
+    padding-left: 24px;
+    gap: 7px;
+    color: var(--tg-text-secondary, var(--leslie-shell-muted, #607086));
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.leslie-plot-pin-dialog.is-paused .leslie-plot-pin-sheet {
+    filter: saturate(0.55);
+}
+
+body.leslie-privacy-mode[data-leslie-privacy-header="masked"] #leslie-plot-pin {
+    filter: blur(var(--leslie-privacy-blur)) saturate(0.35);
+    opacity: 0.52;
+    pointer-events: none;
+    user-select: none;
+}
+
+@keyframes leslie-plot-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 1050px) {
+    .leslie-plot-pin {
+        max-width: 46px;
+        flex-basis: 46px;
+    }
+
+    .leslie-plot-pin-summary {
+        width: 42px;
+        padding: 0;
+        grid-template-columns: 1fr;
+        place-items: center;
+    }
+
+    .leslie-plot-pin-summary > span,
+    .leslie-plot-pin-summary > em {
+        display: none;
+    }
+}
+
+@media (max-width: 820px) {
+    .leslie-plot-suggestion-list {
+        grid-template-columns: 1fr;
+    }
+
+    .leslie-plot-suggestion {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 700px) {
+    .leslie-plot-compass-dialog {
+        width: 100vw;
+        height: 100dvh;
+        max-height: none;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .leslie-plot-compass-shell {
+        padding: calc(15px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    }
+
+    .leslie-plot-compass-shell h2 {
+        font-size: 21px;
+    }
+
+    .leslie-plot-compass-controls {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .leslie-plot-compass-controls label,
+    .leslie-plot-compass-controls button {
+        min-height: 42px;
+        margin-left: 0;
+        justify-content: space-between;
+    }
+
+    .leslie-plot-pin {
+        width: auto;
+        max-width: none;
+        margin: 7px max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+        flex: 0 0 auto;
+    }
+
+    .leslie-plot-pin-summary {
+        width: 100%;
+        min-height: 46px;
+        padding: 5px 10px;
+        grid-template-columns: 22px minmax(0, 1fr) auto;
+        place-items: initial;
+        align-items: center;
+        border-radius: 12px;
+    }
+
+    .leslie-plot-pin-summary > span {
+        display: grid;
+    }
+
+    .leslie-plot-pin-summary > em {
+        display: block;
+    }
+
+    .leslie-plot-pin-summary small {
+        display: none;
+    }
+
+    .leslie-plot-pin-summary strong {
+        font-size: 12px;
+    }
+
+    .leslie-plot-pin-detail {
+        display: none !important;
+    }
+
+    .leslie-plot-pin-dialog {
+        width: 100vw;
+        max-height: min(82dvh, 720px);
+        margin: auto 0 0;
+        border-right: 0;
+        border-bottom: 0;
+        border-left: 0;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .leslie-plot-pin-sheet {
+        max-height: min(82dvh, 720px);
+        padding: 16px max(14px, env(safe-area-inset-right)) max(18px, calc(12px + env(safe-area-inset-bottom))) max(14px, env(safe-area-inset-left));
+    }
+
+    .leslie-plot-pin-sheet .leslie-plot-pin-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .leslie-plot-pin-sheet .leslie-plot-pin-actions button {
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .leslie-plot-compass-dialog.is-loading .leslie-plot-compass-status::before {
+        animation-duration: 1.5s;
+    }
+}

@@ -4,11 +4,13 @@ import {
     beginRealitySession,
     buildRealityMessageSystemPrompt,
     buildRealityTimePrompt,
+    createRealityChatBinding,
     formatElapsedTime,
     getWorldLineKind,
     hasUsableRealityProfile,
     LESLIE_WORLD_LINE_METADATA_KEY,
     LESLIE_WORLD_LINE_SCHEMA_VERSION,
+    matchesRealityChatBinding,
     normalizeRealityProfile,
     selectWorldLineChat,
     shouldGenerateRealitySessionOpening,
@@ -85,6 +87,39 @@ describe('Leslie reality world line context', () => {
         expect(getWorldLineKind(history[0].chat_metadata)).toBe('story');
         expect(selectWorldLineChat(history, 'story')?.file_name).toBe('story-new');
         expect(selectWorldLineChat(history, 'reality', '哥哥.png')?.file_name).toBe('reality-right-persona');
+    });
+
+    test('binds asynchronous reality work to one chat file and session', () => {
+        const metadata = {
+            integrity: 'reality-integrity',
+            [LESLIE_WORLD_LINE_METADATA_KEY]: {
+                kind: 'reality',
+                sessionStartedAt: '2026-09-26T15:19:15.000Z',
+            },
+        };
+        const binding = createRealityChatBinding({ characterId: 3, chatId: 'reality-chat', metadata });
+
+        expect(matchesRealityChatBinding(binding, { characterId: 3, chatId: 'reality-chat', metadata })).toBe(true);
+        expect(matchesRealityChatBinding(binding, { characterId: 3, chatId: 'story-chat', metadata })).toBe(false);
+        expect(matchesRealityChatBinding(binding, {
+            characterId: 3,
+            chatId: 'reality-chat',
+            metadata: {
+                ...metadata,
+                [LESLIE_WORLD_LINE_METADATA_KEY]: { kind: 'story' },
+            },
+        })).toBe(false);
+        expect(matchesRealityChatBinding(binding, {
+            characterId: 3,
+            chatId: 'reality-chat',
+            metadata: {
+                ...metadata,
+                [LESLIE_WORLD_LINE_METADATA_KEY]: {
+                    kind: 'reality',
+                    sessionStartedAt: '2026-09-26T15:20:00.000Z',
+                },
+            },
+        })).toBe(false);
     });
 
     test('normalizes the de-fictionalized profile and preserves it between sessions', () => {

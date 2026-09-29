@@ -152,7 +152,7 @@ export function normalizeStoryChoices(value, identity = {}) {
  * @param {object} [options] Prompt options.
  * @returns {string} Quiet-generation instruction.
  */
-export function buildStoryChoicePrompt(identity = {}, { correction = false } = {}) {
+export function buildStoryChoicePrompt(identity = {}, { correction = false, activePlan = null } = {}) {
     const normalizedIdentity = normalizeIdentity(identity);
     const userName = normalizedIdentity.userName || '当前用户 Persona';
     const aiNames = normalizedIdentity.aiNames.length ? normalizedIdentity.aiNames : ['当前 AI 角色'];
@@ -165,6 +165,9 @@ export function buildStoryChoicePrompt(identity = {}, { correction = false } = {
     });
     const correctionInstruction = correction
         ? '上一轮候选没有通过用户视角校验。必须彻底重写，不得复用任何由 AI 角色说出或做出的内容。'
+        : '';
+    const activePlanInstruction = activePlan?.status === 'active' && activePlan?.title && activePlan?.goal
+        ? `用户已经明确固定当前主线（长线篇章）：${JSON.stringify({ title: activePlan.title, goal: activePlan.goal, timeHorizon: activePlan.timeHorizon, impact: activePlan.impact, beats: activePlan.beats ?? [] })}。三个回复中，一个应推进当前阶段而不是试图一轮完成整条主线，一个可以铺垫关系或信息，一个允许合理绕行但不能替用户放弃主线。不要把规划文字当作已经发生的剧情事实。`
         : '';
     const outputExample = JSON.stringify({
         choices: [1, 2, 3].map(() => ({
@@ -183,6 +186,7 @@ export function buildStoryChoicePrompt(identity = {}, { correction = false } = {
         `错误示例（AI 角色视角，禁止）：${primaryAiName}低下头：“我会照做。”`,
         `正确示例（用户 Persona 视角）：我看向${primaryAiName}：“先告诉我发生了什么。”`,
         '根据当前角色卡、用户 Persona、聊天历史、World Info、提示词与长期记忆，设计三个彼此明显不同且符合既有剧情的用户回复。至少包含较谨慎、较主动、较出人意料但合理的取向。',
+        activePlanInstruction,
         '沿用最近 role=user 消息的人称、语言和角色扮演格式。台词必须由用户 Persona 说出；动作和心理必须属于用户 Persona。不得添加未知事实、剧透、斜杠命令、HTML、Markdown 列表、解释或额外字段。',
         correctionInstruction,
         `只输出 JSON：${outputExample}。`,

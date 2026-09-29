@@ -5,7 +5,12 @@ import express from 'express';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import { getIpAddress, retryAfter } from '../express-common.js';
 import { color, Cache, getConfigValue } from '../util.js';
-import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt, getAccountVersion } from '../users.js';
+import { KEY_PREFIX, areLeslieUserSpacesEnabled, getUserAvatar, getUserDirectories, migrateSystemPrompts, toKey, getPasswordHash, getPasswordSalt, getAccountVersion, stampLeslieLoginSession } from '../users.js';
+import { getUnlockedUserSpace, sealActiveUserSpace, unlockUserSpace } from '../leslie-user-spaces/vault.js';
+import { flushUserStats, loadUserStats } from './stats.js';
+import { migrateGroupChatsMetadataFormat } from './groups.js';
+import { checkForNewContent } from './content-manager.js';
+import { migrateFlatSecrets } from './secrets.js';
 
 const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false, 'boolean');
 const PREFER_REAL_IP_HEADER = getConfigValue('rateLimiting.preferRealIpHeader', false, 'boolean');
@@ -16,6 +21,7 @@ const MFA_CACHE = new Cache(5 * 60 * 1000);
 const generateRecoveryCode = () => Array.from({ length: 6 }, () => crypto.randomInt(0, 10)).join('');
 
 export const router = express.Router();
+router.get('/mode', (_request, response) => response.json({ encryptedSpaces: areLeslieUserSpacesEnabled() }));
 const loginLimiter = new RateLimiterMemory({
     points: LOGIN_POINTS > 0 ? LOGIN_POINTS : Number.MAX_SAFE_INTEGER,
     duration: 60,
@@ -38,7 +44,7 @@ router.post('/list', async (_request, response) => {
         const viewModelPromises = users
             .filter(x => x.enabled)
             .map(user => new Promise(async (resolve) => {
-                getUserAvatar(user.handle).then(avatar =>
+                getUserAvatar(user.handle, true).then(avatar =>
                     resolve({
                         handle: user.handle,
                         name: user.name,
@@ -59,6 +65,7 @@ router.post('/list', async (_request, response) => {
 });
 
 router.post('/login', async (request, response) => {
+    let openedSpace = false;
     try {
         if (!request.body.handle) {
             console.warn('Login failed: Missing required fields');
@@ -81,7 +88,11 @@ router.post('/login', async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
+        if (areLeslieUserSpacesEnabled() && !user.password) {
+            return response.status(403).json({ error: 'This user needs a password before login.' });
+        }
+
+        if (user.password && (typeof request.body.password !== 'string' || user.password !== getPasswordHash(request.body.password, user.salt))) {
             console.warn('Login failed: Incorrect password for', user.handle);
             return response.status(403).json({ error: 'Incorrect credentials' });
         }
@@ -91,9 +102,28 @@ router.post('/login', async (request, response) => {
             return response.sendStatus(500);
         }
 
+        const sessionVersion = getAccountVersion(user);
+        if (areLeslieUserSpacesEnabled()) {
+            await flushUserStats();
+            const alreadyOpen = getUnlockedUserSpace() === user.handle;
+            unlockUserSpace(globalThis.DATA_ROOT, user.handle, request.body.password);
+            openedSpace = !alreadyOpen;
+            const directories = getUserDirectories(user.handle);
+            try {
+                await migrateSystemPrompts();
+                await migrateGroupChatsMetadataFormat([directories]);
+                await checkForNewContent([directories]);
+                migrateFlatSecrets([directories]);
+                await loadUserStats(user.handle);
+            } catch (maintenanceError) {
+                console.warn('User space opened; optional startup maintenance failed:', maintenanceError);
+            }
+        }
+
         await loginLimiter.delete(ip);
         request.session.handle = user.handle;
-        request.session.version = getAccountVersion(user);
+        request.session.version = sessionVersion;
+        stampLeslieLoginSession(request.session);
         console.info('Login successful:', user.handle, 'from', ip, 'at', new Date().toLocaleString());
         return response.json({ handle: user.handle });
     } catch (error) {
@@ -102,12 +132,23 @@ router.post('/login', async (request, response) => {
             return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
         }
 
+        if (openedSpace) {
+            try {
+                await flushUserStats();
+                sealActiveUserSpace(globalThis.DATA_ROOT);
+            } catch (sealError) {
+                console.error('Could not reseal the user space after login failed:', sealError);
+            }
+        }
         console.error('Login failed:', error);
-        return response.sendStatus(500);
+        return response.status(500).json({ error: 'Could not open the user space. Please check the server log and retry.' });
     }
 });
 
 router.post('/recover-step1', async (request, response) => {
+    if (areLeslieUserSpacesEnabled()) {
+        return response.status(403).json({ error: 'Encrypted spaces require the existing password. Use the encrypted backup to recover data.' });
+    }
     try {
         if (!request.body.handle) {
             console.warn('Recover step 1 failed: Missing required fields');
@@ -148,6 +189,9 @@ router.post('/recover-step1', async (request, response) => {
 });
 
 router.post('/recover-step2', async (request, response) => {
+    if (areLeslieUserSpacesEnabled()) {
+        return response.status(403).json({ error: 'Encrypted spaces cannot reset a password without the existing password.' });
+    }
     try {
         if (!request.body.handle || !request.body.code) {
             console.warn('Recover step 2 failed: Missing required fields');

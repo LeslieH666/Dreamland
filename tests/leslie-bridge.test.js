@@ -138,6 +138,7 @@ describe('Leslie Bridge protocol foundation', () => {
 
 describe('Leslie Bridge authoritative companion session', () => {
     const snapshot = {
+        userSpaceId: 'synthetic-space-a',
         binding: {
             characterId: '4',
             characterName: 'Feixiao',
@@ -186,6 +187,7 @@ describe('Leslie Bridge authoritative companion session', () => {
             type: 'turn',
             input: 'Hello, Feixiao.',
             binding: snapshot.binding,
+            userSpaceId: 'synthetic-space-a',
         });
 
         const events = [];
@@ -217,6 +219,37 @@ describe('Leslie Bridge authoritative companion session', () => {
 
         session.updateHost('host-1', { ...snapshot, binding: null });
         expect(() => session.createTurn('Hello.')).toThrow('Select a character in LeslieTavern');
+    });
+
+    test('replaces stale bindings when the browser changes user space', async () => {
+        const session = createCompanionSession({ createId: () => 'turn-space' });
+        session.updateHost('host-1', snapshot);
+        const turn = session.createTurn('Message for space A.');
+        const events = [];
+        turn.subscribe(event => events.push(event));
+
+        session.updateHost('host-1', {
+            ...snapshot,
+            userSpaceId: 'synthetic-space-b',
+            binding: { ...snapshot.binding, characterName: 'Space B character' },
+            characters: [{ id: '4', name: 'Space B character', avatar: 'space-b.png' }],
+        });
+
+        expect(events).toEqual([expect.objectContaining({
+            type: 'error',
+            code: 'COMPANION_HOST_REPLACED',
+        })]);
+        expect(session.getState()).toMatchObject({
+            connected: true,
+            binding: { characterName: 'Space B character' },
+            characters: [{ name: 'Space B character' }],
+        });
+        expect(session.getState()).not.toHaveProperty('userSpaceId');
+        await expect(session.pollHost({
+            hostId: 'host-1',
+            snapshot: { ...snapshot, userSpaceId: 'synthetic-space-b' },
+            timeoutMs: 1,
+        })).resolves.toBeNull();
     });
 
     test('uses only the latest AIRI user input and the bound Leslie voice', () => {

@@ -310,14 +310,13 @@ function createThemeButton() {
     return button;
 }
 
-/** Add theme controls when the Leslie headers become available. */
+/** Add the appearance control to the conversation sidebar only. */
 function ensureThemeControls() {
-    const hosts = [
-        document.querySelector('.leslie-sidebar-actions'),
-        document.getElementById('leslie-chat-actions'),
-    ];
+    const host = document.querySelector('.leslie-sidebar-actions');
 
-    for (const host of hosts.filter(host => host instanceof HTMLElement)) {
+    document.querySelectorAll('#leslie-chat-actions > .leslie-theme-toggle').forEach(button => button.remove());
+
+    if (host instanceof HTMLElement) {
         if (!host.querySelector(':scope > .leslie-theme-toggle')) {
             host.prepend(createThemeButton());
         }
@@ -326,7 +325,7 @@ function ensureThemeControls() {
     ensureThemeMenu();
     syncThemeControls();
 
-    if (hosts.every(host => host?.querySelector(':scope > .leslie-theme-toggle'))) {
+    if (host?.querySelector(':scope > .leslie-theme-toggle')) {
         controlObserver.disconnect();
     }
 }

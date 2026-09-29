@@ -24,8 +24,9 @@ if ($process.Path -and [IO.Path]::GetFullPath($process.Path) -ne $ExpectedExecut
     throw "PID $processId does not belong to this portable package. Stop refused."
 }
 
-[void]$process.CloseMainWindow()
-for ($attempt = 0; $attempt -lt 20; $attempt++) {
+$StopRequestPath = Join-Path $PackageRoot "Run\LeslieTavern.stop-$processId"
+[IO.File]::WriteAllText($StopRequestPath, 'quit', [Text.UTF8Encoding]::new($false))
+for ($attempt = 0; $attempt -lt 120; $attempt++) {
     Start-Sleep -Milliseconds 500
     if (-not (Get-Process -Id $processId -ErrorAction SilentlyContinue)) {
         break
@@ -33,7 +34,7 @@ for ($attempt = 0; $attempt -lt 20; $attempt++) {
 }
 
 if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
-    Stop-Process -Id $processId -Force
+    throw 'LeslieTavern did not complete a safe exit. The process was left running so its user space remains protected.'
 }
 Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
 Write-Host 'LeslieTavern stopped.' -ForegroundColor Green

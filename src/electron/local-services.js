@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { getLeslieBridgeTokenConfiguration } from '../leslie-bridge/auth.js';
+import { LESLIE_BRIDGE_API_ROOT, LESLIE_BRIDGE_PROTOCOL_VERSION } from '../leslie-bridge/protocol.js';
 import { listLocalModels, resolveLocalModel } from './local-model-catalog.js';
 
 const SERVICE_NAMES = new Set(['airi', 'localModel']);
@@ -72,7 +74,7 @@ export function getLocalServiceStatus(projectRoot, { kill = process.kill, busySe
     };
 }
 
-function getCommand(projectRoot, service, action, modelId) {
+function getCommand(projectRoot, service, action, modelId, bridgeReady = false) {
     if (!SERVICE_NAMES.has(service) || !ACTION_NAMES.has(action)) {
         throw new TypeError('Unsupported Leslie desktop service action.');
     }
@@ -80,7 +82,10 @@ function getCommand(projectRoot, service, action, modelId) {
     if (service === 'airi') {
         return {
             script: path.join(scriptsRoot, 'Leslie-AIRI-Launcher.ps1'),
-            arguments: ['-Mode', action === 'start' ? 'Airi' : 'AiriStop'],
+            arguments: [
+                '-Mode', action === 'start' ? 'Airi' : 'AiriStop',
+                ...(action === 'start' && bridgeReady ? ['-BridgeReady'] : []),
+            ],
         };
     }
     return {
@@ -91,12 +96,59 @@ function getCommand(projectRoot, service, action, modelId) {
     };
 }
 
-export function runLocalServiceAction(projectRoot, service, action, { spawnProcess = spawn, modelId } = {}) {
-    const root = path.resolve(projectRoot);
-    const command = getCommand(root, service, action, modelId);
-    if (!fs.existsSync(command.script)) {
-        throw new Error(`Desktop service script is missing: ${path.basename(command.script)}`);
+function getBridgeHealthUrl(environment = process.env) {
+    const configured = String(environment.LESLIE_BRIDGE_BASE_URL ?? '').trim();
+    if (!configured) {
+        throw new Error('This LeslieTavern session has no companion URL. Restart it with the Leslie Heaven launcher.');
     }
+    const baseUrl = new URL(configured);
+    const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+    const expectedPath = `${LESLIE_BRIDGE_API_ROOT}/`;
+    if (baseUrl.protocol !== 'http:' || !loopbackHosts.has(baseUrl.hostname) || baseUrl.pathname !== expectedPath
+        || baseUrl.username || baseUrl.password || baseUrl.search || baseUrl.hash) {
+        throw new Error('The Leslie Bridge URL is not a valid process-local endpoint.');
+    }
+    return new URL('health', baseUrl);
+}
+
+export async function waitForLeslieBridge({
+    environment = process.env,
+    fetchImpl = fetch,
+    attempts = 20,
+    retryDelayMs = 250,
+    delayImpl = ms => new Promise(resolve => setTimeout(resolve, ms)),
+} = {}) {
+    const tokenConfiguration = getLeslieBridgeTokenConfiguration(environment);
+    if (!tokenConfiguration.enabled) {
+        throw new Error('This LeslieTavern session has no valid companion token. Restart it with the Leslie Heaven launcher.');
+    }
+    const healthUrl = getBridgeHealthUrl(environment);
+    let lastFailure = 'no response';
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        try {
+            const response = await fetchImpl(healthUrl, {
+                headers: { Authorization: `Bearer ${tokenConfiguration.token}` },
+                signal: AbortSignal.timeout(3000),
+            });
+            const body = await response.json().catch(() => null);
+            if (response.ok && body?.status === 'ok' && body?.protocol?.version === LESLIE_BRIDGE_PROTOCOL_VERSION) {
+                return healthUrl;
+            }
+            lastFailure = `HTTP ${response.status}${body?.error?.code ? ` (${body.error.code})` : ''}`;
+            if (response.status === 401 || response.status === 403) {
+                break;
+            }
+        } catch (error) {
+            lastFailure = String(error?.message || error).slice(0, 200);
+        }
+        if (attempt + 1 < attempts) {
+            await delayImpl(retryDelayMs);
+        }
+    }
+    throw new Error(`Leslie Bridge did not become ready (${lastFailure}). Restart LeslieTavern and try again.`);
+}
+
+function spawnLocalServiceCommand(root, command, spawnProcess) {
     return new Promise((resolve, reject) => {
         const child = spawnProcess('powershell.exe', [
             '-NoProfile',
@@ -133,6 +185,22 @@ export function runLocalServiceAction(projectRoot, service, action, { spawnProce
             }, 50);
         });
     });
+}
+
+export function runLocalServiceAction(projectRoot, service, action, {
+    spawnProcess = spawn,
+    modelId,
+    waitForBridge = waitForLeslieBridge,
+} = {}) {
+    const root = path.resolve(projectRoot);
+    const command = getCommand(root, service, action, modelId, service === 'airi' && action === 'start');
+    if (!fs.existsSync(command.script)) {
+        throw new Error(`Desktop service script is missing: ${path.basename(command.script)}`);
+    }
+    const spawnCommand = () => spawnLocalServiceCommand(root, command, spawnProcess);
+    return service === 'airi' && action === 'start'
+        ? Promise.resolve(waitForBridge()).then(spawnCommand)
+        : spawnCommand();
 }
 
 /** Switch only the project-tracked process after validating the selected file. */

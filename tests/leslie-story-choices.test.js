@@ -69,6 +69,24 @@ describe('Leslie story choices', () => {
         expect(buildStoryChoicePrompt(identity, { correction: true })).toContain('上一轮候选没有通过用户视角校验');
     });
 
+    test('uses an active pinned plot as guidance without treating it as completed fact', () => {
+        const prompt = buildStoryChoicePrompt(identity, {
+            activePlan: {
+                status: 'active',
+                title: '追查匿名来信',
+                goal: '找出寄信者。',
+                beats: ['检查信封', '寻找目击者'],
+            },
+        });
+        expect(prompt).toContain('用户已经明确固定当前主线');
+        expect(prompt).toContain('追查匿名来信');
+        expect(prompt).toContain('不能替用户放弃主线');
+        expect(prompt).toContain('不要把规划文字当作已经发生的剧情事实');
+        expect(buildStoryChoicePrompt(identity, {
+            activePlan: { status: 'paused', title: '暂停主线', goal: '暂不推进。' },
+        })).not.toContain('暂停主线');
+    });
+
     test('rejects AI-side speakers and narration before choices become clickable', () => {
         const choices = normalizeStoryChoices({
             choices: [

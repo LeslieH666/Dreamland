@@ -33,7 +33,7 @@ Optional companion boundary
 
 Local Windows workflow
 ├─ One Leslie Heaven launcher
-├─ Electron-only settings controls for AIRI and the local model
+├─ Electron controls for AIRI and local-model stop; same-subnet mobile model selection and startup
 ├─ Ephemeral inherited Bridge token
 └─ Internal build, diagnostics, logs, and safe tracked-process shutdown scripts
 
@@ -53,7 +53,7 @@ Integrated source workspace
 - User data is local state and is not part of the source repository.
 - Direct LAN web access may be enabled explicitly with an allowlist that follows the private subnet used for each connection and a trusted-network firewall boundary. Same-subnet devices do not need per-IP entries, while public and unrelated routed networks remain blocked. Device discovery, data synchronization, cloud synchronization, and automatic memory writes still require separate security and approval designs before implementation.
 - The AIRI companion bridge is disabled by default and uses a process-scoped bearer token.
-- Desktop service actions are exposed only through Electron IPC from the main LeslieTavern window, not through the HTTP server or LAN browser clients.
+- AIRI and local-model stop actions are exposed only through Electron IPC from the main LeslieTavern window. The authenticated HTTP API permits same-subnet clients to list project GGUF models, start a selected managed KoboldCpp model, and probe fixed host-loopback ports. It does not accept arbitrary paths, URLs, commands, or routed/public clients.
 - AIRI sends only the newest user input. LeslieTavern remains authoritative for prompt assembly, generation, persistence, character selection, and voice selection. The boundary is documented in [airi-bridge.md](airi-bridge.md).
 
 ## Current maturity

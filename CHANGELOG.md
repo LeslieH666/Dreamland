@@ -6,6 +6,15 @@ All notable LeslieTavern-specific changes are documented in this file. The forma
 
 ### Added
 
+- Added a default-off experimental group-chat smart-speaker mode for existing permanent members. It combines explicit mentions, bounded character-card relevance, turn balance, recent-speaker penalties, existing talkativeness, and configurable reply caps while preserving forced replies, Swipe, native generation, and a fail-open natural-order fallback.
+- Added manually created current-chat temporary group roles backed only by versioned JSONL metadata. Active roles join normal prompt and speaker selection through hidden runtime adapters; dormant and archived roles retain Swipe, branch, and shared-memory attribution while remaining absent from the character library and permanent group data.
+- Added default-off model-assisted temporary-role review. One isolated bounded structured call can propose an editable new-role draft, an optionally immediate confirmed reply, and evidence-based retirement candidates, while schema validation, cooldowns, current-chat identity checks, and explicit confirmation prevent direct model creation or archival.
+- A plot compass for solo story chats that generates three memory-aware, multi-stage arcs with an explicit in-world horizon, lasting impact, and optional 12–80-turn estimate. Accepted v1 plans migrate in place; desktop keeps a compact header pin while mobile uses a separate dock and bottom sheet. The chat-header appearance toggle has been removed, with appearance controls remaining in the sidebar and settings.
+- An opt-in experimental interaction-relationship layer for solo character chats. A/B/C memories now support auditable six-dimension attitude impacts from 0–100, C-class recency decay, automatic A-class approval, deterministic score rebuilding, prompt-time attitude guidance, and API-assisted conversion of older memory summaries without changing character cards or chat JSONL.
+- Password-selected Leslie user spaces with a blurred login screen, settings-based account creation and switching, encrypted account and legacy-backup migration, a retained encrypted rollback snapshot, and graceful sealing on logout and desktop exit.
+- User-space password forms now fit narrow settings panels, and account activation, creation, and password changes accept any nonempty password length.
+
+- Same-subnet mobile model selection and quick setup can now request managed KoboldCpp startup on the LeslieTavern computer, wait for readiness, and configure the existing chat API without first starting the model on desktop. The fixed HTTP actions require the normal login and CSRF checks and accept only cataloged GGUF models.
 - Four Leslie color palettes (Jade, Iris, Clay, and Slate), each with coordinated light and dark surfaces, accessible chat-bubble contrast, a shared appearance-menu picker, and a settings-page selector saved in the current browser.
 - A dedicated new-chat action for the current character and world line, including multiple reality chats with generated instant-message openings and a line-labelled history picker with confirmed chat deletion.
 - An online-only Moments model picker sourced from configured DeepSeek, OpenAI, OpenRouter, Claude, or Google AI Studio connections, using the account's saved model and credentials without duplicate API fields.
@@ -43,10 +52,11 @@ All notable LeslieTavern-specific changes are documented in this file. The forma
 - Reworked reality-line generation around a one-time de-fictionalized personality profile. New reality chats now receive model-generated openings, all foreground replies bypass story-only card fields and World Info, and a strict plain-message validator retries decorated role-play output before anything is stored.
 - Reworked reality-line generation around a one-time de-fictionalized personality profile. New reality chats now receive model-generated openings, all foreground replies bypass story-only card fields and World Info, and a strict plain-message validator retries decorated role-play output before anything is stored.
 - Added a desktop-first two-pane Moments layout with role and world-line navigation, plus a compact single-column mobile fallback.
-- Added Electron-only settings controls for starting and stopping AIRI and the tracked Peach local-model process without exposing process launch over HTTP or LAN access.
+- Added Electron settings controls for starting and stopping AIRI and the tracked Peach local-model process.
 
 ### Changed
 
+- Encrypted user-space entry now restores small files with fewer disk operations. Login and switch controls show progress during vault work; encrypted rollback snapshots and full verification before resealing remain in place.
 - Refined Moments with Cupertino grouped controls, matched like/comment counters, correctly bounded liker avatars, adapted reply/thread UI, selected-first choice lists, complete bound and legacy memory-source discovery, A–B–C or newest-first memory-topic sorting, fixed-layer dialogs that do not shift the desktop timeline, independently editable story visibility, and one read count per character on each post revision.
 - Moments timeline, activity, and queue stores now migrate legacy data through preserved pre-migration copies. Legacy unread posts are scheduled for genuine background reads, while posts with existing reads or comments retain their activity and gain reply support without being replayed.
 - Every authenticated local user has the same reversible delete/restore permission for Persona-authored and AI-authored Moments; only the originating Persona may edit a user post, and AI text cannot be edited.
@@ -73,6 +83,16 @@ All notable LeslieTavern-specific changes are documented in this file. The forma
 - Made the Windows launcher accept only a complete, successfully stamped AIRI build so a failed partial rebuild cannot mix new main-process code with a stale renderer.
 - Consolidated the root Windows launch surface into `启动 Leslie Heaven.cmd`; AIRI and local-model lifecycle controls now live in LeslieTavern settings.
 - Reality-line entry now reopens the latest matching JSONL and upgrades older metadata in place instead of creating a successor chat. Each deliberate entry produces one non-duplicated proactive greeting before the conversation continues, and reality memory snapshots no longer retain scenario, example-dialogue, or creator-note fields.
+
+### Fixed
+
+- Reality-line background openings and replies are now bound to the originating character, JSONL file, integrity ID, and session. Switching chats cancels and settles pending reality work before the transition, preventing a completed reality request from appending to or reclassifying a story chat.
+- Moments background interactions now use DeepSeek's beta chat endpoint with thinking explicitly disabled, preventing successful reasoning-only responses from being misreported as empty API output.
+- AIRI startup from Leslie settings now verifies the authenticated loopback Bridge before launching, remains available while an encrypted space is locked, and binds live character state to the active user space without moving AIRI display-model files into per-user storage.
+- Encrypted user-space login now falls back to a widely supported session digest when Electron omits SHAKE-256, and login failures display a readable server error.
+- Deleting the open history chat now clears its messages and sidebar preview immediately before loading the next chat.
+- Desktop chat shows one privacy shortcut in the conversation sidebar; mobile retains a shortcut on each of its separate pages.
+- Mobile local API quick setup now detects supported models through the LeslieTavern host instead of probing the phone's loopback address.
 
 ### Security
 

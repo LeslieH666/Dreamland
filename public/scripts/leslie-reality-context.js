@@ -40,6 +40,48 @@ export function getWorldLineKind(metadata) {
     return metadata?.[LESLIE_WORLD_LINE_METADATA_KEY]?.kind === 'reality' ? 'reality' : 'story';
 }
 
+/**
+ * Captures the stable identity of the reality chat that owns an asynchronous task.
+ * Reality generation must never commit into whichever chat happens to be open when
+ * a model request finishes.
+ * @param {object} options Binding source.
+ * @param {string|number} options.characterId Current character index.
+ * @param {string} options.chatId Current chat file name.
+ * @param {object} options.metadata Current chat metadata.
+ * @returns {object|null} A stable binding, or null for a non-reality/invalid chat.
+ */
+export function createRealityChatBinding({ characterId, chatId, metadata } = {}) {
+    const normalizedChatId = String(chatId ?? '').trim();
+    const lineMetadata = metadata?.[LESLIE_WORLD_LINE_METADATA_KEY];
+    if (!normalizedChatId || getWorldLineKind(metadata) !== 'reality') {
+        return null;
+    }
+    return {
+        characterId: String(characterId ?? ''),
+        chatId: normalizedChatId,
+        integrity: String(metadata?.integrity ?? '').trim(),
+        sessionStartedAt: String(lineMetadata?.sessionStartedAt ?? '').trim(),
+    };
+}
+
+/**
+ * Checks that an asynchronous reality task still owns the chat that is open now.
+ * @param {object|null} binding Previously captured binding.
+ * @param {object} current Current chat identity source.
+ * @returns {boolean} Whether it is safe for the task to mutate/save the live chat.
+ */
+export function matchesRealityChatBinding(binding, current = {}) {
+    if (!binding) {
+        return false;
+    }
+    const currentBinding = createRealityChatBinding(current);
+    return Boolean(currentBinding
+        && binding.characterId === currentBinding.characterId
+        && binding.chatId === currentBinding.chatId
+        && binding.integrity === currentBinding.integrity
+        && binding.sessionStartedAt === currentBinding.sessionStartedAt);
+}
+
 function toIso(value, fallback) {
     const date = new Date(value ?? fallback);
     return Number.isFinite(date.getTime()) ? date.toISOString() : new Date(fallback).toISOString();

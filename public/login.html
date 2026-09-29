@@ -31,47 +31,51 @@
     <link href="css/fontawesome.min.css" rel="stylesheet">
     <link href="css/solid.min.css" rel="stylesheet">
     <link href="css/user.css" rel="stylesheet">
-    <title>SillyTavern</title>
+    <title>选择 Leslie Heaven 用户</title>
 </head>
 
 <body class="login">
+    <div class="leslie-login-backdrop" aria-hidden="true">
+        <div class="leslie-login-ghost-sidebar"></div>
+        <div class="leslie-login-ghost-chat"></div>
+    </div>
     <div id="shadow_popup" style="opacity: 0;">
         <div id="dialogue_popup">
             <div id="dialogue_popup_holder">
                 <div id="dialogue_popup_text">
                     <div id="userSelectBlock" class="flex-container flexFlowColumn alignItemsCenter">
                         <h2 id="logoBlock" class="flex-container">
-                            <img src="img/logo.png" alt="SillyTavern" class="logo">
-                            <span>Welcome to SillyTavern</span>
+                            <img src="img/logo.png" alt="" class="logo">
+                            <span>Leslie Heaven</span>
                         </h2>
                         <h3 id="normalLoginPrompt">
-                            Select an Account
+                            选择用户空间
                         </h3>
                         <h3 id="discreetLoginPrompt">
-                            Enter Login Details
+                            输入用户信息
                         </h3>
                         <div id="userListBlock" class="wide100p">
                             <div id="userList" class="flex-container justifySpaceEvenly"></div>
                             <div id="handleEntryBlock" style="display:none;" class="flex-container flexFlowColumn alignItemsCenter">
-                                <input id="userHandle" class="text_pole" type="text" placeholder="User handle" autocomplete="username">
+                                <input id="userHandle" class="text_pole" type="text" placeholder="用户账号" autocomplete="username">
                             </div>
                             <div id="passwordEntryBlock" style="display:none;"
                                 class="flex-container flexFlowColumn alignItemsCenter">
-                                <input id="userPassword" class="text_pole" type="password" placeholder="Password" autocomplete="current-password">
-                                <a id="recoverPassword" href="#" onclick="return false;">Forgot password?</a>
+                                <input id="userPassword" class="text_pole" type="password" placeholder="输入密码" autocomplete="current-password">
+                                <a id="recoverPassword" href="#" onclick="return false;">忘记密码？</a>
                                 <div class="flex-container">
-                                    <div id="loginButton" class="menu_button">Login</div>
+                                    <button id="loginButton" type="button" class="menu_button">进入空间</button>
                                 </div>
                             </div>
                             <div id="passwordRecoveryBlock" style="display:none;" class="flex-container flexFlowColumn alignItemsCenter">
                                 <div id="recoverMessage">
-                                    Recovery code has been posted to the server console.
+                                    恢复代码已显示在电脑端服务控制台。
                                 </div>
-                                <input id="recoveryCode" class="text_pole" type="text" placeholder="Recovery code">
-                                <input id="newPassword" class="text_pole" type="password" placeholder="New password" autocomplete="new-password">
+                                <input id="recoveryCode" class="text_pole" type="text" placeholder="恢复代码">
+                                <input id="newPassword" class="text_pole" type="password" placeholder="新密码" autocomplete="new-password">
                                 <div class="flex-container flexGap10">
-                                    <div id="sendRecovery" class="menu_button">Send</div>
-                                    <div id="cancelRecovery" class="menu_button">Cancel</div>
+                                    <button id="sendRecovery" type="button" class="menu_button">提交</button>
+                                    <button id="cancelRecovery" type="button" class="menu_button">返回</button>
                                 </div>
                             </div>
                         </div>

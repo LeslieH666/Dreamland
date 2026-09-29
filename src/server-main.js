@@ -13,6 +13,7 @@ import { csrfSync } from 'csrf-sync';
 import express from 'express';
 import compression from 'compression';
 import cookieSession from 'cookie-session';
+import { sealActiveUserSpace } from './leslie-user-spaces/vault.js';
 import multer from 'multer';
 import responseTime from 'response-time';
 import helmet from 'helmet';
@@ -166,8 +167,8 @@ app.use(cookieSession({
     secret: getCookieSecret(globalThis.DATA_ROOT),
 }));
 
-app.use(setUserDataMiddleware);
 app.use(LESLIE_BRIDGE_API_ROOT, leslieBridgeAuthenticationMiddleware);
+app.use(setUserDataMiddleware);
 
 // CSRF Protection //
 if (!cliArgs.disableCsrf) {
@@ -324,7 +325,14 @@ async function preSetupTasks() {
     const exitProcess = async () => {
         if (isExiting) return;
         isExiting = true;
-        await statsOnExit();
+        try {
+            await statsOnExit();
+            sealActiveUserSpace(globalThis.DATA_ROOT);
+        } catch (error) {
+            console.error('Could not encrypt the active user space before exit:', error);
+            isExiting = false;
+            return;
+        }
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }

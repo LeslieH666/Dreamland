@@ -9,6 +9,7 @@
 import {
     chat_metadata,
     characters,
+    clearChat,
     default_avatar,
     eventSource,
     event_types,
@@ -60,6 +61,12 @@ let chatTransitionSequence = 0;
 let chatCreationTask = null;
 let realitySessionChatId = '';
 let realitySessionTask = null;
+
+async function cancelPendingRealityTasks() {
+    if (typeof globalThis.LeslieRealityCancelPending === 'function') {
+        await globalThis.LeslieRealityCancelPending();
+    }
+}
 
 function getLayoutEnabled() {
     return true;
@@ -326,6 +333,7 @@ async function populateCharacterChatHistory(active, dialog) {
         button.addEventListener('click', async () => {
             button.disabled = true;
             try {
+                await cancelPendingRealityTasks();
                 await touchCurrentRealitySession({ immediate: true });
                 realitySessionChatId = '';
                 await openCharacterChat(fileName);
@@ -364,6 +372,7 @@ async function populateCharacterChatHistory(active, dialog) {
             confirm.addEventListener('click', async () => {
                 confirm.disabled = true;
                 try {
+                    await cancelPendingRealityTasks();
                     const response = await fetch('/api/chats/delete', {
                         method: 'POST',
                         headers: getRequestHeaders(),
@@ -372,7 +381,20 @@ async function populateCharacterChatHistory(active, dialog) {
                     const result = await response.json().catch(() => null);
                     if (!response.ok || result?.ok !== true) throw new Error('删除会话失败。');
                     confirmation.remove();
-                    if (Number(active.id) === this_chid && characters[this_chid]?.chat === fileName) {
+                    const preview = layoutState.latestPreviews.get(active.key);
+                    if (preview?.chatId === fileName) {
+                        layoutState.latestPreviews.delete(active.key);
+                    }
+                    if (String(active.id) === String(this_chid) && characters[this_chid]?.chat === fileName) {
+                        // The deleted file must never remain visible while the next
+                        // history lookup or chat load is still in progress.
+                        clearTimeout(layoutState.previewTimer);
+                        try {
+                            await clearChat({ clearData: true });
+                        } catch (error) {
+                            console.warn('[Leslie chat layout] Could not finish clearing deleted chat state.', error);
+                        }
+                        scheduleConversationRender();
                         realitySessionChatId = '';
                         try {
                             const remaining = getVisibleCharacterChatHistory(await getCharacterChatHistory(Number(active.id), { metadata: true }));
@@ -381,7 +403,12 @@ async function populateCharacterChatHistory(active, dialog) {
                             else await createStoryChat(active);
                         } catch (error) {
                             console.error('[Leslie chat layout] Deleted the chat but could not open another.', error);
-                            globalThis.toastr?.warning('会话已删除，但切换到其他会话失败，请重新选择角色。');
+                            try {
+                                await createStoryChat(active);
+                            } catch (fallbackError) {
+                                console.error('[Leslie chat layout] Could not create a replacement chat.', fallbackError);
+                                globalThis.toastr?.warning('会话已删除，但切换到其他会话失败，请重新选择角色。');
+                            }
                         }
                     }
                     try {
@@ -505,7 +532,8 @@ function getConversationEntities() {
         name: character.name || '未命名角色',
         avatar: getCharacterAvatar(character),
         timestamp: getTimestamp(character.date_last_chat),
-        preview: layoutState.latestPreviews.get(`character:${id}`)
+        preview: (layoutState.latestPreviews.get(`character:${id}`)?.chatId === character.chat
+            ? layoutState.latestPreviews.get(`character:${id}`)?.text : '')
             || (character.chat ? '继续最近的角色对话' : '开始一段新的角色对话'),
     }));
     const groupItems = groups.map(group => ({
@@ -515,7 +543,7 @@ function getConversationEntities() {
         name: group.name || '未命名群聊',
         avatar: getGroupAvatar(group),
         timestamp: getTimestamp(group.date_last_chat || group.chat_metadata?.last_mes),
-        preview: layoutState.latestPreviews.get(`group:${group.id}`)
+        preview: layoutState.latestPreviews.get(`group:${group.id}`)?.text
             || `${group.members?.length ?? 0} 位角色参与`,
     }));
 
@@ -568,14 +596,15 @@ async function createRealityChat(active) {
         throw new Error('现实世界线模块尚未加载，请刷新页面后重试。');
     }
     const characterId = this_chid;
+    const sourceChatId = String(characters[characterId]?.chat || '');
     const history = await getCharacterChatHistory(Number(active.id), { metadata: true });
     const previous = selectWorldLineChat(history, 'reality', user_avatar);
     const prepared = await globalThis.LeslieRealityPrepareOpening({
         personaSourceKey: user_avatar,
         previousMetadata: previous?.chat_metadata?.[LESLIE_WORLD_LINE_METADATA_KEY] ?? null,
     });
-    if (this_chid !== characterId) {
-        throw new Error('生成开场期间当前角色已经改变，请重新进入现实世界线。');
+    if (this_chid !== characterId || String(characters[characterId]?.chat || '') !== sourceChatId) {
+        throw new Error('生成开场期间当前会话已经改变，请重新进入现实世界线。');
     }
     const chatName = `${active.name} - 现实世界线 - ${Date.now()}`;
     // The seeded first message is already this entry's greeting. Mark the chat
@@ -623,6 +652,7 @@ async function createCurrentLineChat() {
     chatCreationTask = (async () => {
         document.body.classList.add('leslie-chat-transitioning');
         try {
+            await cancelPendingRealityTasks();
             await touchCurrentRealitySession({ immediate: true });
             if (getWorldLineKind(chat_metadata) === 'reality') {
                 await createRealityChat(active);
@@ -714,9 +744,14 @@ async function switchWorldLine(kind) {
         globalThis.toastr?.info('现实世界线目前先支持单角色聊天；群聊会继续使用故事线。');
         return;
     }
+    if (is_send_press) {
+        globalThis.toastr?.info('请等待当前回复结束后再切换世界线。');
+        return;
+    }
     if (getWorldLineKind(chat_metadata) === requested) {
         return;
     }
+    await cancelPendingRealityTasks();
     await touchCurrentRealitySession({ immediate: true });
     document.body.classList.add('leslie-chat-transitioning');
     try {
@@ -827,8 +862,15 @@ function readLatestMessagePreview() {
     layoutState.previewTimer = window.setTimeout(() => {
         const active = getActiveEntity();
         const text = document.querySelector('#chat .mes:last-of-type .mes_text')?.textContent?.replace(/\s+/g, ' ').trim();
-        if (active && text) {
-            layoutState.latestPreviews.set(active.key, text.slice(0, 96));
+        if (active) {
+            if (text) {
+                layoutState.latestPreviews.set(active.key, {
+                    chatId: active.type === 'character' ? active.item.chat : '',
+                    text: text.slice(0, 96),
+                });
+            } else {
+                layoutState.latestPreviews.delete(active.key);
+            }
         }
         scheduleConversationRender();
     }, 160);
@@ -997,6 +1039,7 @@ async function selectConversation(button) {
     document.body.classList.add('leslie-chat-transitioning');
     try {
         if (type === 'group') {
+            await cancelPendingRealityTasks();
             await openGroupById(id);
         } else {
             const characterId = Number(id);
@@ -1007,6 +1050,7 @@ async function selectConversation(button) {
                 // again) continues the in-memory chat without reloading its file.
                 await beginCurrentRealitySession();
             } else {
+                await cancelPendingRealityTasks();
                 const latestChat = await getLatestCharacterChat(characterId);
                 await selectCharacterById(characterId, { switchMenu: false, chatFile: latestChat?.fileName ?? null });
                 await beginCurrentRealitySession();

@@ -148,6 +148,16 @@ router.post('/:memoryId/cross-line-context', (request, response) => {
     }
 });
 
+router.post('/:memoryId/relationship', (request, response) => {
+    try {
+        const store = getStore(request);
+        store.assertStoryScope(request.params.memoryId, request.body?.storyScopeId);
+        return response.send({ relationship: store.getRelationship(request.params.memoryId, request.body) });
+    } catch (error) {
+        return sendError(response, error);
+    }
+});
+
 router.post('/:memoryId/identity', (request, response) => {
     try {
         const manifest = getStore(request).bindIdentity(request.params.memoryId, request.body?.identityBinding, { confirmed: request.body?.confirmed });

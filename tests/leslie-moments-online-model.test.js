@@ -50,8 +50,11 @@ describe('Leslie Moments online model', () => {
             readSecretImpl,
         });
         expect(content).toBe('{"action":"read"}');
-        expect(fetchImpl.mock.calls[0][0]).toBe('https://api.deepseek.com/chat/completions');
-        expect(JSON.parse(fetchImpl.mock.calls[0][1].body).model).toBe('example-model');
+        expect(fetchImpl.mock.calls[0][0]).toBe('https://api.deepseek.com/beta/chat/completions');
+        expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toMatchObject({
+            model: 'example-model',
+            thinking: { type: 'disabled' },
+        });
         expect(readSecretImpl).toHaveBeenCalledTimes(1);
     });
 

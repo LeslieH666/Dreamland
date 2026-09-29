@@ -13,6 +13,7 @@ import {
 } from '../script.js';
 import { getLeslieCompanionVoiceSettings } from './leslie-voice-settings.js';
 import { extension_settings } from './extensions.js';
+import { getCurrentUserHandle } from './user.js';
 
 const host = window.leslieCompanionHost;
 let activeRequestId = '';
@@ -22,6 +23,7 @@ let pollStarted = false;
 function getSnapshot() {
     const character = this_chid !== undefined ? characters[this_chid] : null;
     return {
+        userSpaceId: getCurrentUserHandle(),
         binding: character ? {
             characterId: String(this_chid),
             characterName: String(character.name || ''),
@@ -46,7 +48,8 @@ async function publish(requestId, event) {
 }
 
 async function runTurn(command) {
-    const bindingMatches = String(this_chid ?? '') === String(command.binding?.characterId ?? '')
+    const bindingMatches = getCurrentUserHandle() === String(command.userSpaceId ?? '')
+        && String(this_chid ?? '') === String(command.binding?.characterId ?? '')
         && String(getCurrentChatId() ?? '') === String(command.binding?.chatId ?? '');
     if (!bindingMatches) {
         await publish(command.id, {

@@ -40,6 +40,13 @@ declare global {
         hideMutedSprites?: boolean;
         fav?: boolean;
         date_last_chat?: MessageTimestamp;
+        leslie_group_orchestrator?: {
+            schema_version: 1;
+            enabled: boolean;
+            preset: 'balanced' | 'focused' | 'lively';
+            max_speakers: number;
+            max_auto_replies: number;
+        };
     }
 
     interface ChatFile extends Array<ChatMessage> {
@@ -60,7 +67,44 @@ declare global {
         integrity?: string;
         scenario?: string;
         persona?: string;
+        leslie_group_v1?: LeslieGroupChatMetadata;
         [key: string]: any;
+    }
+
+    interface LeslieGroupChatMetadata {
+        schema_version: 2;
+        temporary_roles: LeslieTemporaryRole[];
+        automation: {
+            proposal_enabled: boolean;
+            archive_suggestions_enabled: boolean;
+            review_interval_messages: number;
+        };
+        automation_state: {
+            last_review_message: number | null;
+        };
+    }
+
+    interface LeslieTemporaryRole {
+        id: string;
+        revision: number;
+        name: string;
+        description: string;
+        personality: string;
+        scene_role: string;
+        speech_style: string;
+        knowledge_boundary: string;
+        goals: string[];
+        constraints: string[];
+        talkativeness: number;
+        state: 'active' | 'dormant' | 'archived';
+        state_history: Array<{
+            state: 'active' | 'dormant' | 'archived';
+            message_id: number;
+            changed_at: string;
+        }>;
+        created_at_message: number;
+        created_at: string;
+        last_active_message: number | null;
     }
 
     interface ChatMessage {
@@ -101,6 +145,10 @@ declare global {
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
+        leslie_temporary_role?: {
+            id: string;
+            revision: number;
+        };
         /** When false, the message cannot be swiped. */
         swipeable?: boolean;
         overswipe_behavior?: OVERSWIPE_BEHAVIOR;

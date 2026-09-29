@@ -15,6 +15,7 @@ import {
     normalizeMemoryState,
 } from './schema.js';
 import { selectMemoryEvents } from './scoring.js';
+import { calculateRelationship } from './relationship.js';
 
 export class LeslieMemoryStoreError extends Error {
     constructor(code, message) {
@@ -285,6 +286,7 @@ export class LeslieMemoryStore {
         const needsMigration = rawVersion < MEMORY_SCHEMA_VERSION
             || manifestVersion < MEMORY_SCHEMA_VERSION
             || !rawState?.settings?.memoryModel
+            || !rawState?.relationship
             || identityNeedsMigration;
         if (!needsMigration) {
             return {
@@ -299,6 +301,23 @@ export class LeslieMemoryStore {
         fs.mkdirSync(paths.history, { recursive: true });
         writeJson(path.join(paths.history, `state-migration-v${migrationVersion}-${migrationStamp}.json`), rawState);
         writeJson(path.join(paths.history, `manifest-migration-v${migrationVersion}-${migrationStamp}.json`), manifest);
+
+        if (migrationVersion < 5 && fs.existsSync(paths.events)) {
+            const previousJournal = fs.readFileSync(paths.events, 'utf8');
+            writeFileAtomicSync(path.join(paths.history, `events-migration-v${migrationVersion}-${migrationStamp}.jsonl`), previousJournal, 'utf8');
+            const automaticallyApproved = this.readEvents(memoryId)
+                .filter(event => event.level === 'A' && (event.status === 'pending' || event.approved !== true))
+                .map(event => ({
+                    ...event,
+                    status: event.status === 'archived' ? 'archived' : 'active',
+                    approved: true,
+                    autoApprovedAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                }));
+            if (automaticallyApproved.length) {
+                this.appendEventRecords(memoryId, automaticallyApproved);
+            }
+        }
 
         const state = normalizeMemoryState(rawState);
         const nextManifest = {
@@ -437,6 +456,7 @@ export class LeslieMemoryStore {
             growth: restored.growth,
             analysis: restored.analysis,
             settings: restored.settings,
+            relationship: restored.relationship,
         });
     }
 
@@ -483,11 +503,13 @@ export class LeslieMemoryStore {
                 growth: source.state.growth,
                 analysis: source.state.analysis,
                 settings: source.state.settings,
+                relationship: source.state.relationship,
             }
             : {
                 enabled: source.state.enabled,
                 analysis: { ...source.state.analysis, lastAnalyzedMessageId: -1, lastRunAt: null, lastError: null },
                 settings: source.state.settings,
+                relationship: source.state.relationship,
             };
         this.updateState(newId, statePatch);
         return this.getMemory(newId);
@@ -510,6 +532,11 @@ export class LeslieMemoryStore {
             memories: selected.map(item => ({ ...item.event, score: item.score })),
             settings: memory.state.settings,
         };
+    }
+
+    getRelationship(memoryId, { currentMessageId = 0 } = {}) {
+        const memory = this.getMemory(memoryId);
+        return calculateRelationship(memory.events, memory.state, { currentMessageId });
     }
 
     selectCrossLineContext(memoryId, { query = '', maximum } = {}) {

@@ -79,7 +79,7 @@ test('Leslie settings keeps essentials clear and advanced tools guarded', async 
     await page.locator('[data-leslie-api-kind="local"]').click();
     await expect(page.locator('[data-leslie-api-kind="local"]')).toHaveClass(/is-active/);
     await expect(page.locator('[data-leslie-local-model-directory]')).toContainText('models/');
-    await expect(page.locator('[data-leslie-local-model-catalog]')).toContainText('Leslie Heaven desktop');
+    await expect(page.locator('[data-leslie-local-model-catalog]')).toBeVisible();
     await expect(page.locator('.leslie-local-advanced')).not.toHaveAttribute('open');
     await page.locator('.leslie-local-advanced > summary').click();
     await expect(page.locator('.leslie-service-card')).toHaveCount(5);
@@ -141,6 +141,105 @@ test('Leslie settings keeps essentials clear and advanced tools guarded', async 
     await expect(page.locator('#AdvancedFormatting')).toHaveClass(/openDrawer/);
 
     expect(consoleErrors).toEqual([]);
+});
+
+test('mobile local API quick setup asks the LeslieTavern host to detect a running model', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    let detectRequests = 0;
+    await page.route('**/api/leslie/local-model/detect', route => {
+        detectRequests++;
+        return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                detected: {
+                    runtime: 'koboldcpp',
+                    apiType: 'koboldcpp',
+                    endpoint: 'http://127.0.0.1:5001',
+                    model: 'Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf',
+                },
+            }),
+        });
+    });
+    await preparePage(page);
+    await page.locator('.leslie-sidebar-actions [data-action="settings"]').click();
+    await page.locator('.leslie-settings-navigation [data-leslie-detail="model"]').click();
+    await page.locator('[data-leslie-api-kind="local"]').click();
+
+    const quickSetup = page.locator('[data-leslie-local-model-detect]');
+    await expect(quickSetup).toBeVisible();
+    await expect(quickSetup).toBeEnabled();
+    await expect(page.locator('.leslie-local-advanced')).not.toHaveAttribute('open');
+    await quickSetup.click();
+    await expect.poll(() => detectRequests).toBe(1);
+    await expect(page.locator('#main_api')).toHaveValue('textgenerationwebui');
+    await expect(page.locator('#textgen_type')).toHaveValue('koboldcpp');
+    await expect(page.locator('#koboldcpp_api_url_text')).toHaveValue('http://127.0.0.1:5001/');
+});
+
+test('authenticated browser can read the host model catalog without exposing process paths', async ({ page }) => {
+    await preparePage(page);
+    const result = await page.evaluate(async () => {
+        const { getRequestHeaders } = await import('/script.js');
+        const response = await fetch('/api/leslie/local-model/status', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+        const rejectedModel = await fetch('/api/leslie/local-model/start', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ modelId: '../outside.gguf' }),
+        });
+        const rejectedCsrf = await fetch('/api/leslie/local-model/status', { method: 'POST' });
+        return { code: response.status, body: await response.json(), invalidCode: rejectedModel.status, csrfCode: rejectedCsrf.status };
+    });
+    expect(result.code).toBe(200);
+    expect(result.body).toMatchObject({ available: true, remoteManaged: true, localModels: { directory: 'models/' } });
+    expect(result.body.localModels.models).toEqual(expect.any(Array));
+    expect(result.body.services.localModel).not.toHaveProperty('pid');
+    expect(result.body.services.localModel).not.toHaveProperty('path');
+    expect(result.invalidCode).toBe(400);
+    expect(result.csrfCode).toBe(403);
+});
+
+test('mobile quick setup starts the selected computer model when none is running', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    let startedModelId = '';
+    const modelId = 'synthetic-roleplay.gguf';
+    const status = () => ({
+        available: true,
+        remoteManaged: true,
+        localModels: { directory: 'models/', models: [{ id: modelId, name: 'synthetic-roleplay', sizeBytes: 24 }] },
+        services: { localModel: { state: startedModelId ? 'running' : 'stopped', configured: true, runtimeInstalled: true, modelId: startedModelId || null } },
+    });
+    await page.route('**/api/leslie/local-model/status', route => route.fulfill({
+        status: 200, contentType: 'application/json', body: JSON.stringify(status()),
+    }));
+    await page.route('**/api/leslie/local-model/start', route => {
+        startedModelId = route.request().postDataJSON().modelId;
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: status() }) });
+    });
+    await page.route('**/api/leslie/local-model/probe', route => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ probe: { runtime: 'koboldcpp', endpoint: 'http://127.0.0.1:5001', models: ['synthetic-roleplay'] } }),
+    }));
+    await page.route('**/api/leslie/local-model/detect', route => route.fulfill({
+        status: 200, contentType: 'application/json', body: JSON.stringify({ detected: null }),
+    }));
+
+    await preparePage(page);
+    await page.locator('.leslie-sidebar-actions [data-action="settings"]').click();
+    await page.locator('.leslie-settings-navigation [data-leslie-detail="model"]').click();
+    await page.locator('[data-leslie-api-kind="local"]').click();
+    await expect(page.locator('[data-leslie-local-model-select]')).toHaveValue(modelId);
+    await page.locator('[data-leslie-local-model-detect]').click();
+
+    await expect.poll(() => startedModelId).toBe(modelId);
+    await expect(page.locator('#main_api')).toHaveValue('textgenerationwebui');
+    await expect(page.locator('#textgen_type')).toHaveValue('koboldcpp');
+    await expect(page.locator('#koboldcpp_api_url_text')).toHaveValue('http://127.0.0.1:5001/');
+    await expect(page.locator('[data-leslie-local-model-detect-status]')).toHaveAttribute('data-state', 'success');
 });
 
 test('Leslie settings becomes a full-screen settings page on phones', async ({ page }) => {

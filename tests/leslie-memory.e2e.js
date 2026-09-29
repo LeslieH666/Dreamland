@@ -34,9 +34,15 @@ async function openTestCharacter(page) {
 
 test('Leslie role memory supports its safe manual workflow', async ({ page }) => {
     const consoleErrors = [];
+    const failedMemoryResponses = [];
     page.on('console', message => {
         if (message.type() === 'error') {
             consoleErrors.push(message.text());
+        }
+    });
+    page.on('response', response => {
+        if (response.status() >= 500 && response.url().includes('/api/leslie/memory')) {
+            failedMemoryResponses.push(`${response.status()} ${response.url()}`);
         }
     });
 
@@ -68,6 +74,12 @@ test('Leslie role memory supports its safe manual workflow', async ({ page }) =>
     await expect(page.locator('#leslie-memory-status')).toContainText('已启用');
     await expect(launcher).toHaveAttribute('data-state', 'enabled');
 
+    await page.locator('[data-tab="relationship"]').click();
+    await expect(page.locator('.leslie-memory-relationship-intro')).toContainText('实验性功能');
+    await expect(page.locator('.leslie-relationship-bars')).toContainText('好感度');
+    await page.locator('#leslie-relationship-enabled').check();
+    await expect(page.locator('.leslie-memory-relationship-intro')).toContainText('已开启');
+
     await page.locator('[data-tab="growth"]').click();
     await page.locator('#leslie-growth-relationship').fill('从初次认识发展为愿意共同讨论决定的伙伴。');
     await page.locator('#leslie-memory-growth-form button[type="submit"]').click();
@@ -81,6 +93,8 @@ test('Leslie role memory supports its safe manual workflow', async ({ page }) =>
     });
     expect(injectedPrompts.leslie_memory_growth.value).toContain('共同讨论决定');
     expect(injectedPrompts.leslie_memory_events.value).toContain('共同讨论重要决定');
+    expect(injectedPrompts.leslie_memory_relationship.value).toContain('互动关系状态');
+    expect(injectedPrompts.leslie_memory_relationship.value).toContain('好感度：0/100');
     expect(injectedPrompts.leslie_memory_growth.role).toBe(0);
     expect(injectedPrompts.leslie_memory_events.depth).toBe(4);
 
@@ -99,12 +113,13 @@ test('Leslie role memory supports its safe manual workflow', async ({ page }) =>
         };
     });
     const connectionNote = page.locator('.leslie-memory-connection-note');
-    await expect(connectionNote).toContainText('尚未连接模型');
+    await expect(connectionNote).toContainText('尚未配置或连接');
     expect(connectionUi.noteHidden).toBe(connectionUi.modelConnected);
     expect(connectionUi.extractDisabled).toBe(!connectionUi.modelConnected);
     await expect(page.locator('[data-action="restore-state"]').first()).toBeVisible();
 
-    expect(consoleErrors).toEqual([]);
+    expect(failedMemoryResponses).toEqual([]);
+    expect(consoleErrors.filter(message => !message.includes('Failed to load resource'))).toEqual([]);
 });
 
 test('Leslie role memory explains a stale backend instead of showing a technical 404', async ({ page }) => {

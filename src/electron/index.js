@@ -6,6 +6,7 @@ import yargs from 'yargs';
 import { serverEvents, EVENT_NAMES } from '../server-events.js';
 import { companionSession } from '../leslie-bridge/companion-session.js';
 import { getLocalServiceStatus, runLocalServiceAction, startManagedLocalModel } from './local-services.js';
+import { sealActiveUserSpace } from '../leslie-user-spaces/vault.js';
 
 const cliArguments = yargs(process.argv)
     .usage('Usage: <your-start-script> [options]')
@@ -40,6 +41,7 @@ let mainWindow;
 let companionHostSeen = false;
 let tray;
 let backgroundTickTimer;
+let stopRequestTimer;
 let isQuitting = false;
 let backgroundNoticeShown = false;
 let momentsBackgroundState = {
@@ -190,7 +192,6 @@ function updateTrayMenu() {
         {
             label: '退出 LeslieTavern',
             click: () => {
-                isQuitting = true;
                 app.quit();
             },
         },
@@ -303,11 +304,26 @@ if (!hasSingleInstanceLock) {
         installTray();
         powerMonitor.on('resume', () => sendBackgroundTick('resume'));
         backgroundTickTimer = setInterval(() => sendBackgroundTick('timer'), 60_000);
+        const stopRequestPath = path.join(getProjectRoot(), 'Run', `LeslieTavern.stop-${process.pid}`);
+        stopRequestTimer = setInterval(() => {
+            if (!fs.existsSync(stopRequestPath)) return;
+            fs.rmSync(stopRequestPath, { force: true });
+            app.quit();
+        }, 500);
         startServer();
     });
 
-    app.on('before-quit', () => {
+    app.on('before-quit', (event) => {
+        try {
+            sealActiveUserSpace(globalThis.DATA_ROOT);
+        } catch (error) {
+            console.error('Could not encrypt the active user space before desktop exit:', error);
+            event.preventDefault();
+            isQuitting = false;
+            return;
+        }
         isQuitting = true;
         clearInterval(backgroundTickTimer);
+        clearInterval(stopRequestTimer);
     });
 }

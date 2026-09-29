@@ -5,10 +5,12 @@ import crypto from 'node:crypto';
 import storage from 'node-persist';
 import express from 'express';
 
-import { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey, getAccountVersion } from '../users.js';
+import { areLeslieUserSpacesEnabled, getUserAvatar, getUserDirectories, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey, getAccountVersion } from '../users.js';
 import { SETTINGS_FILE } from '../constants.js';
 import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
 import { color, Cache, getConfigValue } from '../util.js';
+import { rewrapUserSpace, sealActiveUserSpace } from '../leslie-user-spaces/vault.js';
+import { flushUserStats } from './stats.js';
 
 const RESET_CACHE = new Cache(5 * 60 * 1000);
 
@@ -21,9 +23,14 @@ router.post('/logout', async (request, response) => {
             return response.sendStatus(500);
         }
 
+        if (areLeslieUserSpacesEnabled()) {
+            await flushUserStats();
+            sealActiveUserSpace(globalThis.DATA_ROOT);
+        }
         request.session.handle = null;
         request.session.csrfToken = null;
         request.session.version = null;
+        request.session.leslieServerSession = null;
         request.session = null;
         return response.sendStatus(204);
     } catch (error) {
@@ -81,7 +88,19 @@ router.post('/change-avatar', async (request, response) => {
             return response.status(404).json({ error: 'User not found' });
         }
 
-        await storage.setItem(toAvatarKey(request.body.handle), request.body.avatar);
+        if (areLeslieUserSpacesEnabled()) {
+            if (request.body.handle !== request.user.profile.handle) {
+                return response.status(403).json({ error: 'Switch to that user before changing their avatar.' });
+            }
+            const avatarPath = path.join(getUserDirectories(user.handle).root, '.leslie-profile-avatar');
+            if (request.body.avatar) {
+                await fsPromises.writeFile(avatarPath, request.body.avatar, { encoding: 'utf8' });
+            } else {
+                await fsPromises.rm(avatarPath, { force: true });
+            }
+        } else {
+            await storage.setItem(toAvatarKey(request.body.handle), request.body.avatar);
+        }
 
         return response.sendStatus(204);
     } catch (error) {
@@ -95,6 +114,13 @@ router.post('/change-password', async (request, response) => {
         if (!request.body.handle) {
             console.warn('Change password failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (areLeslieUserSpacesEnabled() && (typeof request.body.newPassword !== 'string' || !request.body.newPassword)) {
+            return response.status(400).json({ error: 'A password is required.' });
+        }
+        if (areLeslieUserSpacesEnabled() && typeof request.body.oldPassword !== 'string') {
+            return response.status(400).json({ error: 'The current password is required to change an encrypted space password.' });
         }
 
         if (request.body.handle !== request.user.profile.handle && !request.user.profile.admin) {
@@ -115,9 +141,13 @@ router.post('/change-password', async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        if (!request.user.profile.admin && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
+        if ((areLeslieUserSpacesEnabled() || !request.user.profile.admin) && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
             console.error('Change password failed: Incorrect password');
             return response.status(403).json({ error: 'Incorrect password' });
+        }
+
+        if (areLeslieUserSpacesEnabled()) {
+            rewrapUserSpace(globalThis.DATA_ROOT, user.handle, request.body.oldPassword, request.body.newPassword);
         }
 
         if (request.body.newPassword) {
@@ -129,7 +159,12 @@ router.post('/change-password', async (request, response) => {
             user.salt = '';
         }
 
-        await storage.setItem(toKey(request.body.handle), user);
+        try {
+            await storage.setItem(toKey(request.body.handle), user);
+        } catch (error) {
+            if (areLeslieUserSpacesEnabled()) rewrapUserSpace(globalThis.DATA_ROOT, user.handle, request.body.newPassword, request.body.oldPassword);
+            throw error;
+        }
 
         // Update session version to keep the current session valid after password change
         if (request.session && request.session.handle === user.handle) {

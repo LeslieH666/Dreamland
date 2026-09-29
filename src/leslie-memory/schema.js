@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
-export const MEMORY_SCHEMA_VERSION = 4;
+export const MEMORY_SCHEMA_VERSION = 5;
 export const MEMORY_LEVELS = Object.freeze(['A', 'B', 'C']);
 export const MEMORY_STATUSES = Object.freeze(['active', 'pending', 'archived', 'invalid', 'superseded']);
 export const MEMORY_MODEL_PROVIDERS = Object.freeze(['chat', 'local', 'deepseek', 'openai-compatible']);
+export const RELATIONSHIP_DIMENSIONS = Object.freeze(['affection', 'trust', 'intimacy', 'rapport', 'security', 'bond']);
 
 const MAX_SUMMARY_LENGTH = 2000;
 const MAX_LABEL_LENGTH = 120;
@@ -56,6 +57,28 @@ function cleanCandidateChange(value) {
     };
 
     return Object.values(candidate).some(Boolean) ? candidate : null;
+}
+
+export function normalizeRelationshipImpact(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return null;
+    }
+    const sourceChanges = value.changes && typeof value.changes === 'object' && !Array.isArray(value.changes)
+        ? value.changes
+        : {};
+    const changes = Object.fromEntries(RELATIONSHIP_DIMENSIONS.map(dimension => [
+        dimension,
+        Math.round(clampNumber(sourceChanges[dimension], -3, 3, 0)),
+    ]));
+    return {
+        version: 1,
+        changes,
+        reason: cleanString(value.reason, 1000),
+        targets: cleanStringArray(value.targets, 24, 500),
+        source: ['ai-extraction', 'api-conversion', 'manual'].includes(value.source) ? value.source : 'ai-extraction',
+        analyzedAt: cleanString(value.analyzedAt, 64) || new Date().toISOString(),
+        revoked: value.revoked === true,
+    };
 }
 
 export function isMemoryId(value) {
@@ -189,6 +212,17 @@ export function createInitialState() {
             cDecayTurns: 8,
             memoryModel: createInitialMemoryModelSettings(),
         },
+        relationship: {
+            enabled: false,
+            experimental: true,
+            calculatorVersion: 1,
+            conversion: {
+                status: 'not-started',
+                convertedAt: null,
+                convertedEventCount: 0,
+                lastError: null,
+            },
+        },
         createdAt: now,
         updatedAt: now,
     };
@@ -202,6 +236,12 @@ export function normalizeMemoryState(value) {
         : {};
     const analysis = source.analysis && typeof source.analysis === 'object' && !Array.isArray(source.analysis)
         ? source.analysis
+        : {};
+    const relationship = source.relationship && typeof source.relationship === 'object' && !Array.isArray(source.relationship)
+        ? source.relationship
+        : {};
+    const conversion = relationship.conversion && typeof relationship.conversion === 'object' && !Array.isArray(relationship.conversion)
+        ? relationship.conversion
         : {};
     const now = new Date().toISOString();
     return {
@@ -226,6 +266,17 @@ export function normalizeMemoryState(value) {
             cDecayTurns: Math.round(clampNumber(settings.cDecayTurns, 1, 100, initial.settings.cDecayTurns)),
             memoryModel: normalizeMemoryModelSettings(settings.memoryModel),
         },
+        relationship: {
+            enabled: relationship.enabled === true,
+            experimental: true,
+            calculatorVersion: 1,
+            conversion: {
+                status: ['not-started', 'running', 'completed', 'error'].includes(conversion.status) ? conversion.status : 'not-started',
+                convertedAt: conversion.convertedAt ? cleanString(conversion.convertedAt, 64) : null,
+                convertedEventCount: Math.round(clampNumber(conversion.convertedEventCount, 0, 100_000, 0)),
+                lastError: conversion.lastError ? cleanString(conversion.lastError, 2000) : null,
+            },
+        },
         createdAt: cleanString(source.createdAt, 64) || now,
         updatedAt: cleanString(source.updatedAt, 64) || now,
     };
@@ -241,6 +292,14 @@ export function mergeState(current, patch) {
         growth: { ...(currentSource.growth ?? {}), ...base.growth },
         analysis: { ...(currentSource.analysis ?? {}), ...base.analysis },
         settings: { ...(currentSource.settings ?? {}), ...base.settings },
+        relationship: {
+            ...(currentSource.relationship ?? {}),
+            ...base.relationship,
+            conversion: {
+                ...(currentSource.relationship?.conversion ?? {}),
+                ...base.relationship.conversion,
+            },
+        },
     };
 
     if (typeof source.enabled === 'boolean') {
@@ -293,6 +352,26 @@ export function mergeState(current, patch) {
             next.settings.memoryModel = normalizeMemoryModelSettings(settings.memoryModel);
         }
     }
+    if (source.relationship && typeof source.relationship === 'object' && !Array.isArray(source.relationship)) {
+        if (typeof source.relationship.enabled === 'boolean') {
+            next.relationship.enabled = source.relationship.enabled;
+        }
+        const conversion = source.relationship.conversion;
+        if (conversion && typeof conversion === 'object' && !Array.isArray(conversion)) {
+            if (['not-started', 'running', 'completed', 'error'].includes(conversion.status)) {
+                next.relationship.conversion.status = conversion.status;
+            }
+            if (conversion.convertedAt !== undefined) {
+                next.relationship.conversion.convertedAt = conversion.convertedAt ? cleanString(conversion.convertedAt, 64) : null;
+            }
+            if (conversion.convertedEventCount !== undefined) {
+                next.relationship.conversion.convertedEventCount = Math.round(clampNumber(conversion.convertedEventCount, 0, 100_000, next.relationship.conversion.convertedEventCount));
+            }
+            if (conversion.lastError !== undefined) {
+                next.relationship.conversion.lastError = conversion.lastError ? cleanString(conversion.lastError, 2000) : null;
+            }
+        }
+    }
 
     next.schemaVersion = MEMORY_SCHEMA_VERSION;
     next.revision = Number(base.revision ?? 0) + 1;
@@ -305,7 +384,7 @@ export function normalizeEvent(value, { previous = null, sourceType = 'manual' }
     const now = new Date().toISOString();
     const level = MEMORY_LEVELS.includes(String(source.level).toUpperCase()) ? String(source.level).toUpperCase() : (previous?.level ?? 'C');
     const requestedStatus = MEMORY_STATUSES.includes(source.status) ? source.status : null;
-    const defaultStatus = level === 'A' && sourceType === 'ai' ? 'pending' : 'active';
+    const defaultStatus = 'active';
     const status = requestedStatus ?? previous?.status ?? defaultStatus;
 
     const event = {
@@ -320,9 +399,13 @@ export function normalizeEvent(value, { previous = null, sourceType = 'manual' }
         sourceType: ['manual', 'ai', 'import'].includes(source.sourceType) ? source.sourceType : (previous?.sourceType ?? sourceType),
         status,
         approved: typeof source.approved === 'boolean' ? source.approved : (previous?.approved ?? (status === 'active' && level === 'A')),
+        autoApprovedAt: cleanString(source.autoApprovedAt ?? previous?.autoApprovedAt, 64) || null,
         pinned: typeof source.pinned === 'boolean' ? source.pinned : (previous?.pinned ?? false),
         reinforcement: Math.round(clampNumber(source.reinforcement, 1, 1000, previous?.reinforcement ?? 1)),
         candidateChange: cleanCandidateChange(source.candidateChange ?? previous?.candidateChange),
+        relationshipImpact: source.relationshipImpact === null
+            ? null
+            : normalizeRelationshipImpact(source.relationshipImpact ?? previous?.relationshipImpact),
         supersedes: cleanStringArray(source.supersedes ?? previous?.supersedes, 50, 64),
         createdAt: previous?.createdAt ?? (cleanString(source.createdAt, 64) || now),
         updatedAt: now,
@@ -331,7 +414,11 @@ export function normalizeEvent(value, { previous = null, sourceType = 'manual' }
     if (!event.summary) {
         throw new TypeError('A Leslie memory event requires a summary.');
     }
-    if (event.level === 'A' && !event.approved && event.status === 'active') {
+    if (event.level === 'A' && sourceType === 'ai' && source.approved === undefined) {
+        event.approved = true;
+        event.status = 'active';
+        event.autoApprovedAt = event.autoApprovedAt || now;
+    } else if (event.level === 'A' && !event.approved && event.status === 'active') {
         event.status = 'pending';
     }
     if (event.level !== 'A') {

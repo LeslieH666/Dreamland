@@ -114,6 +114,8 @@ test('desktop keeps contacts and chat visible together', async ({ page }) => {
     const shell = page.locator('#sheld');
     await expect(sidebar).toBeVisible();
     await expect(shell).toBeVisible();
+    await expect(page.locator('.leslie-sidebar-actions [data-leslie-privacy-quick-toggle]')).toBeVisible();
+    await expect(page.locator('#leslie-chat-actions [data-leslie-privacy-quick-toggle]')).toBeHidden();
     await expect(sidebar).not.toHaveAttribute('aria-hidden', /.+/);
     await expect(shell).not.toHaveAttribute('aria-hidden', /.+/);
     await expect(page.locator('.leslie-mobile-back')).toBeHidden();

@@ -112,7 +112,7 @@ if (Test-Path -LiteralPath $PidPath) {
     $oldPid = 0
     [void][int]::TryParse((Get-Content -LiteralPath $PidPath -Raw).Trim(), [ref]$oldPid)
     if ($oldPid -gt 0 -and (Get-Process -Id $oldPid -ErrorAction SilentlyContinue)) {
-        Write-Host "LeslieTavern is already running (PID $oldPid)." -ForegroundColor Yellow
+        Write-Host "DreamLand is already running (PID $oldPid)." -ForegroundColor Yellow
         exit 0
     }
     Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
@@ -150,7 +150,7 @@ for ($attempt = 0; $attempt -lt 90; $attempt++) {
     if ($process.HasExited) {
         Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
         $errorText = if (Test-Path -LiteralPath $stderrLog) { Get-Content -LiteralPath $stderrLog -Raw -ErrorAction SilentlyContinue } else { '' }
-        throw "LeslieTavern failed to start. Check $stderrLog`r`n$errorText"
+        throw "DreamLand failed to start. Check $stderrLog`r`n$errorText"
     }
     if (Test-Path -LiteralPath $stdoutLog) {
         $logText = Get-Content -LiteralPath $stdoutLog -Raw -ErrorAction SilentlyContinue
@@ -176,7 +176,7 @@ for ($attempt = 0; $attempt -lt 90; $attempt++) {
 }
 
 if ($started) {
-    Write-Host "LeslieTavern started on $actualListener. Closing the window keeps it in the system tray; use the tray Exit command or the stop shortcut to end it." -ForegroundColor Green
+    Write-Host "DreamLand started on $actualListener. Closing the window keeps it in the system tray; use the tray Exit command or the stop shortcut to end it." -ForegroundColor Green
     if ($expectedIpv4 -eq '0.0.0.0') {
         $lanAccess = Get-LanAccessDetails -Port $expectedPort
         [string[]]$addressFileLines = @(
@@ -186,7 +186,7 @@ if ($started) {
             'Current numeric LAN addresses:'
             $lanAccess.IpUrls
             ''
-            'This file is regenerated whenever LeslieTavern starts.'
+            'This file is regenerated whenever DreamLand starts.'
         )
         [IO.File]::WriteAllLines($LanAddressPath, $addressFileLines, [Text.UTF8Encoding]::new($false))
 
@@ -200,5 +200,5 @@ if ($started) {
         Write-Host 'Devices on the directly connected private subnet are allowed automatically; Windows Firewall still enforces the inbound boundary.' -ForegroundColor Yellow
     }
 } else {
-    Write-Host "LeslieTavern is still initializing. Logs: $LogsPath" -ForegroundColor Yellow
+    Write-Host "DreamLand is still initializing. Logs: $LogsPath" -ForegroundColor Yellow
 }

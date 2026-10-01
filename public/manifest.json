@@ -1,40 +1,23 @@
 {
-    "name": "SillyTavern",
-    "short_name": "SillyTavern",
+    "name": "DreamLand",
+    "short_name": "DreamLand",
     "start_url": "/",
     "display": "standalone",
-    "theme_color": "#202124",
-    "background_color": "#202124",
+    "theme_color": "#163c63",
+    "background_color": "#edf2f5",
     "icons": [
         {
-            "src": "img/apple-icon-57x57.png",
-            "sizes": "57x57",
-            "type": "image/png"
-        },
-        {
-            "src": "img/apple-icon-72x72.png",
-            "sizes": "72x72",
-            "type": "image/png"
-        },
-        {
-            "src": "img/apple-icon-114x114.png",
-            "sizes": "114x114",
-            "type": "image/png"
-        },
-        {
-            "src": "img/apple-icon-144x144.png",
-            "sizes": "144x144",
-            "type": "image/png"
-        },
-        {
-            "src": "img/apple-icon-192x192.png",
+            "src": "img/dreamland/icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
-            "src": "img/apple-icon-512x512.png",
+            "src": "img/dreamland/icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
-    ]
+    ],
+    "description": "角色对话、双线故事与桌面陪伴空间"
 }

@@ -4,7 +4,7 @@ $ExpectedExecutable = [IO.Path]::GetFullPath((Join-Path $PackageRoot 'Runtime\el
 $PidPath = Join-Path $PackageRoot 'Run\LeslieTavern.pid'
 
 if (-not (Test-Path -LiteralPath $PidPath)) {
-    Write-Host 'LeslieTavern is not running.' -ForegroundColor Yellow
+    Write-Host 'DreamLand is not running.' -ForegroundColor Yellow
     exit 0
 }
 
@@ -16,7 +16,7 @@ if (-not [int]::TryParse((Get-Content -LiteralPath $PidPath -Raw).Trim(), [ref]$
 $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
 if (-not $process) {
     Remove-Item -LiteralPath $PidPath -Force
-    Write-Host 'LeslieTavern is already stopped.' -ForegroundColor Green
+    Write-Host 'DreamLand is already stopped.' -ForegroundColor Green
     exit 0
 }
 
@@ -24,8 +24,9 @@ if ($process.Path -and [IO.Path]::GetFullPath($process.Path) -ne $ExpectedExecut
     throw "PID $processId does not belong to this portable package. Stop refused."
 }
 
-[void]$process.CloseMainWindow()
-for ($attempt = 0; $attempt -lt 20; $attempt++) {
+$StopRequestPath = Join-Path $PackageRoot "Run\LeslieTavern.stop-$processId"
+[IO.File]::WriteAllText($StopRequestPath, 'quit', [Text.UTF8Encoding]::new($false))
+for ($attempt = 0; $attempt -lt 120; $attempt++) {
     Start-Sleep -Milliseconds 500
     if (-not (Get-Process -Id $processId -ErrorAction SilentlyContinue)) {
         break
@@ -33,7 +34,7 @@ for ($attempt = 0; $attempt -lt 20; $attempt++) {
 }
 
 if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
-    Stop-Process -Id $processId -Force
+    throw 'DreamLand did not complete a safe exit. The process was left running so its user space remains protected.'
 }
 Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
-Write-Host 'LeslieTavern stopped.' -ForegroundColor Green
+Write-Host 'DreamLand stopped.' -ForegroundColor Green

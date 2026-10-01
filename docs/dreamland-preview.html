@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DreamLand · 实际界面预览</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #203342; background: #edf2f5; font: 15px/1.7 system-ui, "Microsoft YaHei UI", sans-serif; }
+    main { max-width: 1420px; margin: auto; padding: 40px 24px 64px; }
+    header { display: flex; align-items: center; gap: 18px; margin-bottom: 30px; }
+    header img { width: 58px; height: 58px; }
+    h1 { margin: 0; font-size: clamp(26px, 4vw, 38px); letter-spacing: -.04em; }
+    p { margin: 5px 0 0; color: #637985; }
+    .choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    button { color: inherit; cursor: pointer; font: inherit; }
+    .choice { text-align: left; background: #fcfdfe; border: 1px solid #d5e1e7; border-top: 4px solid var(--accent); border-radius: 12px; padding: 16px; }
+    .choice[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent); }
+    .choice b { display: block; font-size: 18px; }
+    .choice small { display: block; color: #637985; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 14px; }
+    .toolbar button { border: 1px solid #d5e1e7; border-radius: 8px; padding: 8px 14px; background: #fcfdfe; }
+    .toolbar button[aria-pressed="true"] { background: #315f82; color: white; border-color: #315f82; }
+    button:focus-visible { outline: 3px solid #5daed0; outline-offset: 4px; }
+    figure { margin: 0; padding: 12px; border: 1px solid #d5e1e7; border-radius: 16px; background: #fcfdfe; }
+    .frame { min-height: 220px; display: flex; justify-content: center; background: #e3eaee; border-radius: 8px; overflow: hidden; }
+    .frame img { display: block; width: 100%; height: auto; object-fit: contain; }
+    .frame.mobile img { width: 320px; max-width: 100%; }
+    figcaption { margin: 10px 4px 0; color: #637985; font-size: 13px; }
+    h2 { margin: 32px 0 0; font-size: 21px; }
+    a { color: #315f82; }
+    footer { margin-top: 30px; color: #637985; font-size: 13px; }
+    @media (max-width: 700px) { main { padding: 24px 14px; } .choices { grid-template-columns: repeat(2, 1fr); } .choice { padding: 12px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header><img src="../public/img/dreamland/icon.svg" alt=""><div><h1>DreamLand，四种归处。</h1><p>实际运行页面 · 合成演示数据 · 点击切换风格和场景</p></div></header>
+    <div class="choices" aria-label="选择风格">
+      <button class="choice" data-style="clear" aria-pressed="true" style="--accent:#315f82"><b>澄光 <small>Clear / 新用户默认</small></b><small>蓝灰与白 · 窄导航 · 柔和气泡</small></button>
+      <button class="choice" data-style="moon" aria-pressed="false" style="--accent:#947132"><b>月幕 <small>Moon</small></b><small>静谧夜色 · 暖金 · 顶部导航</small></button>
+      <button class="choice" data-style="paper" aria-pressed="false" style="--accent:#316353"><b>梦境手帖 <small>Paper</small></b><small>暖纸墨绿 · 书页正文 · 书架会话</small></button>
+      <button class="choice" data-style="blue" aria-pressed="false" style="--accent:#086b9c"><b>蔚蓝终端 <small>Blue</small></b><small>蓝白几何 · 档案网格 · BA 灵感</small></button>
+    </div>
+    <div class="toolbar" aria-label="预览场景">
+      <button data-scene="home" aria-pressed="true">亮色首页</button>
+      <button data-scene="chat" aria-pressed="false">对话</button>
+      <button data-scene="dark" aria-pressed="false">暗色首页</button>
+      <button data-scene="settings" aria-pressed="false">外观设置</button>
+      <button data-scene="320" aria-pressed="false">320px 手机</button>
+    </div>
+    <figure><div class="frame" id="theme-frame"><img id="theme-image" src="assets/dreamland/dreamland-clear-home.png" alt="澄光亮色首页实际截图"></div><figcaption id="theme-caption">澄光 · 亮色首页</figcaption></figure>
+    <h2>同一套工具表面</h2>
+    <p>记忆、朋友圈、工坊、模型连接与登录入口沿用各自功能，并共享主题颜色。</p>
+    <div class="toolbar" aria-label="工具页面">
+      <button data-tool="memory" aria-pressed="true">记忆侧栏</button>
+      <button data-tool="moments" aria-pressed="false">朋友圈</button>
+      <button data-tool="workshop" aria-pressed="false">角色工坊</button>
+      <button data-tool="model" aria-pressed="false">模型连接</button>
+      <button data-tool="login" aria-pressed="false">登录</button>
+    </div>
+    <figure><div class="frame"><img id="tool-image" src="assets/dreamland/dreamland-showcase-memory.png" alt="记忆侧栏实际截图" loading="lazy"></div><figcaption>工具截图使用澄光；登录示例使用梦境手帖。内容来自隔离的合成演示空间。</figcaption></figure>
+    <footer>使用方式：会话栏外观按钮 → 选择风格；设置 → 通用与外观 → 装饰与背景。已有 Cupertino / 经典偏好仍可保留和切回。<br>蔚蓝终端为非官方、非商业的界面交流学习主题，内置原创几何和品牌图。<a href="dreamland-appearance.md">完整说明与回退方式</a> · <a href="../public/img/dreamland/introduction.png">产品介绍图</a></footer>
+  </main>
+  <script>
+    const labels = { clear: '澄光', moon: '月幕', paper: '梦境手帖', blue: '蔚蓝终端' };
+    const scenes = { home: '亮色首页', chat: '对话（月幕为暗色，其余为亮色）', dark: '暗色首页', settings: '外观设置', 320: '320px 手机' };
+    let style = 'clear';
+    let scene = 'home';
+    function refresh() {
+      const caption = `${labels[style]} · ${scenes[scene]}`;
+      document.getElementById('theme-image').src = `assets/dreamland/dreamland-${style}-${scene}.png`;
+      document.getElementById('theme-image').alt = `${caption}实际截图`;
+      document.getElementById('theme-caption').textContent = caption;
+      document.getElementById('theme-frame').classList.toggle('mobile', scene === '320');
+      document.querySelectorAll('[data-style]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.style === style)));
+      document.querySelectorAll('[data-scene]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.scene === scene)));
+    }
+    document.querySelectorAll('[data-style]').forEach(button => button.addEventListener('click', () => { style = button.dataset.style; refresh(); }));
+    document.querySelectorAll('[data-scene]').forEach(button => button.addEventListener('click', () => { scene = button.dataset.scene; refresh(); }));
+    document.querySelectorAll('[data-tool]').forEach(button => button.addEventListener('click', () => {
+      document.getElementById('tool-image').src = `assets/dreamland/dreamland-showcase-${button.dataset.tool}.png`;
+      document.getElementById('tool-image').alt = `${button.textContent}实际截图`;
+      document.querySelectorAll('[data-tool]').forEach(choice => choice.setAttribute('aria-pressed', String(choice === button)));
+    }));
+  </script>
+</body>
+</html>

@@ -20,7 +20,7 @@ const OFFLINE_STATE: LeslieCompanionState = {
   },
 }
 
-/** Keep a renderer informed about the active LeslieTavern character. */
+/** Keep a renderer informed about the active DreamLand character. */
 export function useLeslieCompanionState() {
   const getState = useElectronEventaInvoke(electronLeslieBridgeGetCompanionState)
   const state = ref<LeslieCompanionState>(OFFLINE_STATE)
@@ -34,7 +34,7 @@ export function useLeslieCompanionState() {
     }
     catch (cause) {
       state.value = OFFLINE_STATE
-      error.value = errorMessageFrom(cause) ?? 'LeslieTavern is not available.'
+      error.value = errorMessageFrom(cause) ?? 'DreamLand is not available.'
     }
   }
 

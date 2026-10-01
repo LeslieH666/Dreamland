@@ -33,6 +33,7 @@ import {
     addOneMessage,
     clearChat,
     Generate,
+    generateRaw,
     select_rm_info,
     setCharacterId,
     setCharacterName,
@@ -87,6 +88,43 @@ import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { compressRequest } from './request-compression.js';
+import {
+    mountGroupOrchestratorControls,
+    normalizeGroupOrchestratorSettings,
+    planSmartGroupTurn,
+    readGroupOrchestratorControls,
+    syncGroupOrchestratorControls,
+} from './leslie-group-orchestrator.js';
+import {
+    LESLIE_GROUP_CHAT_METADATA_KEY,
+    MAX_TEMPORARY_ROLES,
+    TEMPORARY_ROLE_STATES,
+    addTemporaryRole,
+    branchTemporaryRoleMetadata,
+    clearTemporaryCharacterRuntime,
+    getEffectiveGroupMemberAvatars,
+    getSwipeGroupMemberAvatars,
+    getTemporaryRoleById,
+    getTemporaryRoleMetadata,
+    isTemporaryCharacter,
+    markTemporaryRoleReview,
+    mountTemporaryRoleControls,
+    promptForTemporaryRole,
+    promptForTemporaryRoleArchive,
+    renderTemporaryRoleControls,
+    setTemporaryRoleAutomation,
+    setTemporaryRoleReviewBusy,
+    setTemporaryRoleState,
+    shouldReviewTemporaryRoles,
+    showTemporaryRoleDetails,
+    syncTemporaryCharacterRuntime,
+} from './leslie-group-temporary-roles.js';
+import {
+    LESLIE_TEMPORARY_ROLE_REVIEW_PURPOSE,
+    buildTemporaryRoleReviewPrompt,
+    getTemporaryRoleReviewSchema,
+    normalizeTemporaryRoleReview,
+} from './leslie-group-temporary-role-ai-core.js';
 
 export {
     selected_group,
@@ -118,6 +156,52 @@ let group_generation_id = null;
 let fav_grp_checked = false;
 let openGroupId = null;
 let newGroupMembers = [];
+const temporaryRoleReviewRuntime = {
+    controller: null,
+    contextKey: '',
+    running: false,
+};
+
+function getTemporaryRoleReviewContextKey() {
+    if (!selected_group) {
+        return '';
+    }
+    const source = chat.slice(-8).map(message => [
+        Boolean(message?.is_user),
+        String(message?.original_avatar ?? ''),
+        Number(message?.swipe_id ?? 0),
+        String(message?.mes ?? ''),
+    ]);
+    let fingerprint = 2166136261;
+    for (const character of JSON.stringify(source)) {
+        fingerprint ^= character.charCodeAt(0);
+        fingerprint = Math.imul(fingerprint, 16777619);
+    }
+    return `${selected_group}::${getCurrentChatId() ?? ''}::${chat.length}::${fingerprint >>> 0}`;
+}
+
+function abortTemporaryRoleReview() {
+    temporaryRoleReviewRuntime.controller?.abort();
+    temporaryRoleReviewRuntime.controller = null;
+    temporaryRoleReviewRuntime.contextKey = '';
+    temporaryRoleReviewRuntime.running = false;
+    setTemporaryRoleReviewBusy(false);
+}
+
+function getRuntimeGroupMemberAvatars(group, { includeArchivedForSwipe = false } = {}) {
+    return includeArchivedForSwipe
+        ? getSwipeGroupMemberAvatars(group, chat_metadata)
+        : getEffectiveGroupMemberAvatars(group, chat_metadata);
+}
+
+function getPromptGroupMemberAvatars(group, characterId) {
+    const members = getRuntimeGroupMemberAvatars(group);
+    const draftedCharacter = characters[characterId];
+    if (isTemporaryCharacter(draftedCharacter) && !members.includes(draftedCharacter.avatar)) {
+        members.push(draftedCharacter.avatar);
+    }
+    return members;
+}
 
 export const group_activation_strategy = {
     NATURAL: 0,
@@ -253,6 +337,7 @@ async function validateGroup(group) {
  * @returns {Promise<void>} A promise that resolves when the chat messages have been loaded.
  */
 export async function getGroupChat(groupId, reload = false) {
+    abortTemporaryRoleReview();
     const group = groups.find((x) => x.id === groupId);
     if (!group) {
         console.warn('Group not found', groupId);
@@ -309,7 +394,12 @@ export async function getGroupChat(groupId, reload = false) {
         await printMessages();
     }
 
+    if (Object.hasOwn(metadata, LESLIE_GROUP_CHAT_METADATA_KEY)) {
+        metadata[LESLIE_GROUP_CHAT_METADATA_KEY] = getTemporaryRoleMetadata(metadata);
+    }
     updateChatMetadata(metadata, true);
+    syncTemporaryCharacterRuntime(chat_metadata, characters);
+    renderTemporaryRoleControls(chat_metadata, { visible: openGroupId === groupId });
 
     if (reload) {
         select_group_chats(groupId, true);
@@ -327,7 +417,9 @@ export async function getGroupChat(groupId, reload = false) {
  */
 export function getGroupMembers(groupId = selected_group) {
     const group = groups.find((x) => x.id === groupId);
-    return group?.members.map(member => characters.find(x => x.avatar === member)) ?? [];
+    return group
+        ? getRuntimeGroupMemberAvatars(group).map(member => characters.find(x => x.avatar === member)).filter(Boolean)
+        : [];
 }
 
 /**
@@ -338,7 +430,8 @@ export function getGroupNames() {
     if (!selected_group) {
         return [];
     }
-    const groupMembers = groups.find(x => x.id == selected_group)?.members;
+    const group = groups.find(x => x.id == selected_group);
+    const groupMembers = group ? getRuntimeGroupMemberAvatars(group) : [];
     return Array.isArray(groupMembers)
         ? groupMembers.map(x => characters.find(y => y.avatar === x)?.name).filter(x => x)
         : [];
@@ -365,11 +458,13 @@ export function findGroupMemberId(arg, full = false) {
         return;
     }
 
+    const runtimeMembers = getRuntimeGroupMemberAvatars(group);
+
     const index = parseInt(arg);
     const searchByString = isNaN(index);
 
     if (searchByString) {
-        const memberNames = group.members.map(x => ({
+        const memberNames = runtimeMembers.map(x => ({
             avatar: x,
             name: characters.find(y => y.avatar === x)?.name,
             index: characters.findIndex(y => y.avatar === x),
@@ -393,7 +488,7 @@ export function findGroupMemberId(arg, full = false) {
 
         return !full ? chid : { ...{ id: chid }, ...result[0].item };
     } else {
-        const memberAvatar = group.members[index];
+        const memberAvatar = runtimeMembers[index];
 
         if (memberAvatar === undefined) {
             console.warn(`WARN: No group member found at index ${index}`);
@@ -431,8 +526,9 @@ export function getGroupDepthPrompts(groupId, characterId) {
 
     console.debug('getGroupDepthPrompts entered for group: ', groupId);
     const group = groups.find(x => x.id === groupId);
+    const runtimeMembers = group ? getPromptGroupMemberAvatars(group, characterId) : [];
 
-    if (!group || !Array.isArray(group.members) || !group.members.length) {
+    if (!group || !runtimeMembers.length) {
         return [];
     }
 
@@ -442,7 +538,7 @@ export function getGroupDepthPrompts(groupId, characterId) {
 
     const depthPrompts = [];
 
-    for (const member of group.members) {
+    for (const member of runtimeMembers) {
         const index = characters.findIndex(x => x.avatar === member);
         const character = characters[index];
 
@@ -451,7 +547,7 @@ export function getGroupDepthPrompts(groupId, characterId) {
             continue;
         }
 
-        if (group.disabled_members.includes(member) && characterId !== index) {
+        if (group.disabled_members?.includes(member) && characterId !== index) {
             console.debug(`Skipping disabled group member: ${member}`);
             continue;
         }
@@ -496,9 +592,10 @@ export function getGroupCharacterCards(groupId, characterId) {
  */
 export function getGroupCharacterCardsLazy(groupId, characterId) {
     const group = groups.find(x => x.id === groupId);
+    const runtimeMembers = group ? getPromptGroupMemberAvatars(group, characterId) : [];
 
     // If no group cards should be generated, return null so caller knows to fall back
-    if (!group || !group?.generation_mode || !Array.isArray(group.members) || !group.members.length) {
+    if (!group || !group?.generation_mode || !runtimeMembers.length) {
         return null;
     }
 
@@ -546,11 +643,11 @@ export function getGroupCharacterCardsLazy(groupId, characterId) {
      */
     function collectField(fieldName, getter, preprocess = null) {
         const values = [];
-        for (const member of group.members) {
+        for (const member of runtimeMembers) {
             const index = characters.findIndex(x => x.avatar === member);
             const character = characters[index];
             if (index === -1 || !character) continue;
-            if (group.disabled_members.includes(member) && characterId !== index && group.generation_mode !== group_generation_mode.APPEND_DISABLED) {
+            if (group.disabled_members?.includes(member) && characterId !== index && group.generation_mode !== group_generation_mode.APPEND_DISABLED) {
                 continue;
             }
             values.push(replaceAndPrepareForJoin(getter(character), character.name, fieldName, preprocess));
@@ -602,15 +699,18 @@ async function getFirstCharacterMessage(character) {
         ? substituteParams(messageText.trim(), { name2Override: character.name })
         : '';
     mes.force_avatar =
-        character.avatar != 'none'
+        character.avatar != 'none' && !isTemporaryCharacter(character)
             ? getThumbnailUrl('avatar', character.avatar)
             : default_avatar;
     return mes;
 }
 
 function resetSelectedGroup() {
+    abortTemporaryRoleReview();
     selected_group = null;
     is_group_generating = false;
+    clearTemporaryCharacterRuntime(characters);
+    renderTemporaryRoleControls({}, { visible: false });
 }
 
 /**
@@ -788,6 +888,12 @@ async function getGroups() {
             if (Array.isArray(group.chats) && group.chats.some(x => typeof x === 'number')) {
                 group.chats = group.chats.map(x => String(x));
             }
+        }
+
+        if (selected_group && groups.some(group => group.id === selected_group)) {
+            syncTemporaryCharacterRuntime(chat_metadata, characters);
+        } else {
+            clearTemporaryCharacterRuntime(characters);
         }
     }
 }
@@ -968,8 +1074,10 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
     /** @type {any} Caution: JS war crimes ahead */
     let textResult = '';
     const group = groups.find((x) => x.id === selected_group);
+    const effectiveMembers = group ? getRuntimeGroupMemberAvatars(group) : [];
+    const swipeMembers = group ? getRuntimeGroupMemberAvatars(group, { includeArchivedForSwipe: true }) : [];
 
-    if (!group || !Array.isArray(group.members) || !group.members.length) {
+    if (!group || !effectiveMembers.length) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
         return Promise.resolve();
     }
@@ -1000,37 +1108,64 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
         }
 
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
-        const enabledMembers = group.members.filter(x => !group.disabled_members.includes(x));
+        const enabledMembers = effectiveMembers.filter(x => !group.disabled_members.includes(x));
         let activatedMembers = [];
+        let smartTurnPlan = null;
 
         if (params && typeof params.force_chid == 'number') {
             activatedMembers = [params.force_chid];
         } else if (type === 'quiet') {
-            activatedMembers = activateSwipe(group.members, { allowSystem: true }).slice(0, 1);
+            activatedMembers = activateSwipe(swipeMembers, { allowSystem: true }).slice(0, 1);
 
             if (activatedMembers.length === 0) {
-                activatedMembers = activateListOrder(group.members.slice(0, 1));
+                activatedMembers = activateListOrder(effectiveMembers.slice(0, 1));
             }
         } else if (type === 'swipe' || type === 'continue') {
-            activatedMembers = activateSwipe(group.members, { allowSystem: false });
+            activatedMembers = activateSwipe(swipeMembers, { allowSystem: false });
 
             if (activatedMembers.length === 0) {
                 toastr.warning(t`Deleted group member swiped. To get a reply, add them back to the group.`);
                 throw new Error('Deleted group member swiped');
             }
         } else if (type === 'impersonate') {
-            activatedMembers = activateImpersonate(group.members);
-        } else if (activationStrategy === group_activation_strategy.NATURAL) {
-            activatedMembers = activateNaturalOrder(enabledMembers, activationText, lastMessage, group.allow_self_responses, isUserInput);
-        } else if (activationStrategy === group_activation_strategy.LIST) {
-            activatedMembers = activateListOrder(enabledMembers);
-        } else if (activationStrategy === group_activation_strategy.POOLED) {
-            activatedMembers = activatePooledOrder(enabledMembers, lastMessage, isUserInput);
-        } else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
-            activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
+            activatedMembers = activateImpersonate(effectiveMembers);
+        } else {
+            const smartSettings = normalizeGroupOrchestratorSettings(group.leslie_group_orchestrator);
+            if (smartSettings.enabled) {
+                try {
+                    smartTurnPlan = planSmartGroupTurn({
+                        group: { ...group, members: effectiveMembers },
+                        characters,
+                        chat,
+                        activationText,
+                        isUserInput,
+                        byAutoMode,
+                        talkativenessDefault: talkativeness_default,
+                    });
+                    activatedMembers = smartTurnPlan.speakerAvatars
+                        .map(avatar => characters.findIndex(character => character.avatar === avatar))
+                        .filter(characterId => characterId !== -1);
+                } catch (error) {
+                    console.error('Leslie group speaker planning failed; using the native natural-order fallback.', error);
+                    activatedMembers = activateNaturalOrder(enabledMembers, activationText, lastMessage, group.allow_self_responses, isUserInput);
+                }
+            } else if (activationStrategy === group_activation_strategy.NATURAL) {
+                activatedMembers = activateNaturalOrder(enabledMembers, activationText, lastMessage, group.allow_self_responses, isUserInput);
+            } else if (activationStrategy === group_activation_strategy.LIST) {
+                activatedMembers = activateListOrder(enabledMembers);
+            } else if (activationStrategy === group_activation_strategy.POOLED) {
+                activatedMembers = activatePooledOrder(enabledMembers, lastMessage, isUserInput);
+            } else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
+                activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
+            }
         }
 
         if (activatedMembers.length === 0) {
+            if (smartTurnPlan?.stop) {
+                is_group_automode_enabled = false;
+                $('#rm_group_automode').prop('checked', false);
+                return;
+            }
             //toastr.warning('All group members are disabled. Enable at least one to get a reply.');
 
             // Send user message as is
@@ -1406,7 +1541,7 @@ async function groupChatAutoModeWorker() {
 
     const group = groups.find((x) => x.id === selected_group);
 
-    if (!group || !Array.isArray(group.members) || !group.members.length) {
+    if (!group || !getRuntimeGroupMemberAvatars(group).length) {
         return;
     }
 
@@ -1492,6 +1627,15 @@ async function onGroupActivationStrategyInput(e) {
     if (openGroupId) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
         _thisGroup.activation_strategy = Number(e.target.value);
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+async function onGroupOrchestratorInput() {
+    if (openGroupId) {
+        const group = groups.find(item => item.id == openGroupId);
+        group.leslie_group_orchestrator = readGroupOrchestratorControls();
+        syncGroupOrchestratorControls(group);
         await editGroup(openGroupId, false, false);
     }
 }
@@ -1602,6 +1746,7 @@ function getGroupCharacters({ doFilter = false, onlyMembers = false } = {}) {
     const characterIndexMap = new Map(characters.map((char, index) => [char, index]));
 
     const results = characters
+        .filter((x) => !isTemporaryCharacter(x))
         .filter((x) => isGroupMember(thisGroup, x.avatar) == onlyMembers)
         .map((x) => ({ item: x, id: characterIndexMap.get(x), type: 'character' }));
 
@@ -1837,6 +1982,8 @@ function select_group_chats(groupId, skipAnimation) {
 
     $('#rm_group_generation_mode_join_prefix').val(group?.generation_mode_join_prefix ?? '').attr('setting', 'generation_mode_join_prefix');
     $('#rm_group_generation_mode_join_suffix').val(group?.generation_mode_join_suffix ?? '').attr('setting', 'generation_mode_join_suffix');
+    syncGroupOrchestratorControls(group);
+    renderTemporaryRoleControls(chat_metadata, { visible: Boolean(group && selected_group === groupId) });
     toggleHiddenControls(group, generationMode);
 
     // bottom buttons
@@ -2114,6 +2261,7 @@ async function createGroup() {
         chat_id: chatName,
         chats: chats,
         auto_mode_delay: autoModeDelay,
+        leslie_group_orchestrator: readGroupOrchestratorControls(),
     };
 
     const createGroupResponse = await fetch('/api/groups/create', {
@@ -2364,9 +2512,17 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId, chat
 
     group.chats.push(name);
 
+    const bookmarkMetadata = { ...chat_metadata, ...(metadata || {}) };
+    if (mesId !== undefined && Object.hasOwn(bookmarkMetadata, LESLIE_GROUP_CHAT_METADATA_KEY)) {
+        bookmarkMetadata[LESLIE_GROUP_CHAT_METADATA_KEY] = branchTemporaryRoleMetadata(
+            bookmarkMetadata[LESLIE_GROUP_CHAT_METADATA_KEY],
+            mesId,
+        );
+    }
+
     /** @type {ChatHeader} */
     const chatHeader = {
-        chat_metadata: { ...chat_metadata, ...(metadata || {}) },
+        chat_metadata: bookmarkMetadata,
         user_name: 'unused',
         character_name: 'unused',
     };
@@ -2448,7 +2604,317 @@ function doCurMemberListPopout() {
     }
 }
 
+async function persistTemporaryRoleMetadata(metadata) {
+    updateChatMetadata({ [LESLIE_GROUP_CHAT_METADATA_KEY]: metadata }, false);
+    syncTemporaryCharacterRuntime(chat_metadata, characters);
+    renderTemporaryRoleControls(chat_metadata, { visible: Boolean(openGroupId && openGroupId === selected_group) });
+    await saveChatConditional();
+}
+
+function getTemporaryRoleExistingNames(group, metadata) {
+    const permanentNames = group.members
+        .map(avatar => characters.find(character => character.avatar === avatar)?.name)
+        .filter(Boolean);
+    return [...permanentNames, ...metadata.temporary_roles.map(role => role.name)];
+}
+
+async function applyTemporaryRoleReview(review, contextKey, { automatic = false } = {}) {
+    if (contextKey !== getTemporaryRoleReviewContextKey() || is_group_generating || document.body.dataset.generating === 'true') {
+        return false;
+    }
+
+    const group = groups.find(item => item.id === selected_group);
+    if (!group) {
+        return false;
+    }
+
+    let changed = false;
+    let speakRoleId = '';
+    if (review.proposal) {
+        const metadata = getTemporaryRoleMetadata(chat_metadata);
+        const creation = await promptForTemporaryRole({
+            existingNames: getTemporaryRoleExistingNames(group, metadata),
+            messageIndex: chat.length,
+            draft: review.proposal.role,
+            proposalReason: review.proposal.reason,
+        });
+        if (contextKey !== getTemporaryRoleReviewContextKey()) {
+            return false;
+        }
+        if (creation?.role) {
+            await persistTemporaryRoleMetadata(addTemporaryRole(
+                chat_metadata[LESLIE_GROUP_CHAT_METADATA_KEY],
+                creation.role,
+            ));
+            setTemporaryRoleReviewBusy(true);
+            changed = true;
+            speakRoleId = creation.speakImmediately ? creation.role.id : '';
+            toastr.success(`AI 草案已确认，临时角色“${creation.role.name}”已加入当前聊天。`);
+        }
+    }
+
+    if (review.archiveSuggestions.length && contextKey === getTemporaryRoleReviewContextKey()) {
+        const metadata = getTemporaryRoleMetadata(chat_metadata);
+        const selectedRoleIds = await promptForTemporaryRoleArchive(review.archiveSuggestions, metadata.temporary_roles);
+        if (contextKey !== getTemporaryRoleReviewContextKey()) {
+            return changed;
+        }
+        if (selectedRoleIds?.length) {
+            let updated = chat_metadata[LESLIE_GROUP_CHAT_METADATA_KEY];
+            for (const roleId of selectedRoleIds) {
+                updated = setTemporaryRoleState(updated, roleId, TEMPORARY_ROLE_STATES.ARCHIVED, chat.length);
+            }
+            await persistTemporaryRoleMetadata(updated);
+            setTemporaryRoleReviewBusy(true);
+            changed = true;
+            toastr.success(`已归档 ${selectedRoleIds.length} 个退场临时角色，历史消息保持不变。`);
+        }
+    }
+
+    if (!automatic && !changed && !review.proposal && !review.archiveSuggestions.length) {
+        toastr.info('AI 没有发现需要新增或归档的临时角色。');
+    }
+
+    if (speakRoleId && contextKey === getTemporaryRoleReviewContextKey()) {
+        const characterId = characters.findIndex(character => character.data?.extensions?.leslie_temporary_role?.id === speakRoleId);
+        if (characterId >= 0) {
+            try {
+                await generateGroupWrapper(false, 'normal', { force_chid: characterId });
+            } catch (error) {
+                console.warn('[Leslie Temporary Roles] Confirmed role was created but could not speak immediately.', error);
+                toastr.warning('临时角色已经创建，但未能立即接续发言。');
+            }
+        }
+    }
+    return changed;
+}
+
+async function requestTemporaryRoleReview({ allowProposal, allowArchive, automatic = false } = {}) {
+    if (temporaryRoleReviewRuntime.running || is_group_generating || document.body.dataset.generating === 'true') {
+        if (!automatic) {
+            toastr.warning('请等待当前回复或临时角色审查完成。');
+        }
+        return;
+    }
+    if (online_status === 'no_connection') {
+        if (!automatic) {
+            toastr.warning('请先连接聊天模型。');
+        }
+        return;
+    }
+
+    const group = groups.find(item => item.id === selected_group);
+    const contextKey = getTemporaryRoleReviewContextKey();
+    if (!group || !contextKey) {
+        return;
+    }
+
+    const metadata = getTemporaryRoleMetadata(chat_metadata);
+    const activeRoles = metadata.temporary_roles.filter(role => role.state === TEMPORARY_ROLE_STATES.ACTIVE);
+    allowProposal = Boolean(allowProposal && metadata.temporary_roles.length < MAX_TEMPORARY_ROLES);
+    allowArchive = Boolean(allowArchive && activeRoles.length);
+    if (!allowProposal && !allowArchive) {
+        if (!automatic) {
+            toastr.info('当前没有可执行的临时角色审查项目。');
+        }
+        return;
+    }
+
+    const controller = new AbortController();
+    temporaryRoleReviewRuntime.controller = controller;
+    temporaryRoleReviewRuntime.contextKey = contextKey;
+    temporaryRoleReviewRuntime.running = true;
+    setTemporaryRoleReviewBusy(true);
+
+    try {
+        await persistTemporaryRoleMetadata(markTemporaryRoleReview(
+            chat_metadata[LESLIE_GROUP_CHAT_METADATA_KEY],
+            chat.length,
+        ));
+        setTemporaryRoleReviewBusy(true);
+        const raw = await generateRaw({
+            prompt: buildTemporaryRoleReviewPrompt({
+                permanentMembers: group.members.map(avatar => characters.find(character => character.avatar === avatar)).filter(Boolean),
+                temporaryRoles: metadata.temporary_roles,
+                recentMessages: chat
+                    .filter(message => !message?.is_system && message?.mes)
+                    .slice(-16)
+                    .map(message => ({
+                        speaker: message.is_user ? '用户 Persona' : message.name,
+                        text: message.mes,
+                    })),
+                allowProposal,
+                allowArchive,
+            }),
+            responseLength: 1_400,
+            jsonSchema: getTemporaryRoleReviewSchema(),
+            signal: controller.signal,
+            systemPrompt: `Purpose: ${LESLIE_TEMPORARY_ROLE_REVIEW_PURPOSE}. Return only the requested JSON review.`,
+            skipPromptHooks: true,
+        });
+        if (controller.signal.aborted || contextKey !== getTemporaryRoleReviewContextKey() || is_group_generating || document.body.dataset.generating === 'true') {
+            return;
+        }
+        const review = normalizeTemporaryRoleReview(raw, {
+            existingNames: getTemporaryRoleExistingNames(group, metadata),
+            activeRoleIds: activeRoles.map(role => role.id),
+        });
+        if (!allowProposal) {
+            review.proposal = null;
+        }
+        if (!allowArchive) {
+            review.archiveSuggestions = [];
+        }
+        await applyTemporaryRoleReview(review, contextKey, { automatic });
+    } catch (error) {
+        if (!controller.signal.aborted) {
+            console.warn('[Leslie Temporary Roles] Model review failed open.', error);
+            if (!automatic) {
+                toastr.error('AI 临时角色审查失败；普通群聊和手动创建仍可使用。');
+            }
+        }
+    } finally {
+        if (temporaryRoleReviewRuntime.controller === controller) {
+            temporaryRoleReviewRuntime.controller = null;
+            temporaryRoleReviewRuntime.contextKey = '';
+            temporaryRoleReviewRuntime.running = false;
+            setTemporaryRoleReviewBusy(false);
+            renderTemporaryRoleControls(chat_metadata, { visible: Boolean(openGroupId && openGroupId === selected_group) });
+        }
+    }
+}
+
+async function onTemporaryRoleAutomationInput() {
+    if (!selected_group || openGroupId !== selected_group || temporaryRoleReviewRuntime.running) {
+        renderTemporaryRoleControls(chat_metadata, { visible: Boolean(openGroupId && openGroupId === selected_group) });
+        return;
+    }
+    let metadata = setTemporaryRoleAutomation(chat_metadata[LESLIE_GROUP_CHAT_METADATA_KEY], {
+        proposal_enabled: $('#leslie_group_temp_role_auto_proposal').prop('checked'),
+        archive_suggestions_enabled: $('#leslie_group_temp_role_auto_archive').prop('checked'),
+        review_interval_messages: Number($('#leslie_group_temp_role_review_interval').val()),
+    });
+    metadata = markTemporaryRoleReview(metadata, chat.length);
+    await persistTemporaryRoleMetadata(metadata);
+}
+
+function scheduleTemporaryRoleReview(detail) {
+    if (!selected_group || ![null, undefined, 'normal', 'auto'].includes(detail?.type)) {
+        return;
+    }
+    const metadata = getTemporaryRoleMetadata(chat_metadata);
+    if (!shouldReviewTemporaryRoles(metadata, chat.length)) {
+        return;
+    }
+    setTimeout(() => {
+        const current = getTemporaryRoleMetadata(chat_metadata);
+        if (!shouldReviewTemporaryRoles(current, chat.length)) {
+            return;
+        }
+        void requestTemporaryRoleReview({
+            allowProposal: current.automation.proposal_enabled,
+            allowArchive: current.automation.archive_suggestions_enabled,
+            automatic: true,
+        });
+    }, 0);
+}
+
+async function onTemporaryRoleCreate() {
+    if (!selected_group || openGroupId !== selected_group) {
+        toastr.warning('请先打开当前群聊的编辑面板。');
+        return;
+    }
+    if (is_group_generating) {
+        toastr.warning('请等待当前回复生成完成后再修改临时角色。');
+        return;
+    }
+
+    const group = groups.find(item => item.id === selected_group);
+    if (!group) {
+        return;
+    }
+
+    const permanentNames = group.members
+        .map(avatar => characters.find(character => character.avatar === avatar)?.name)
+        .filter(Boolean);
+    const temporaryNames = getTemporaryRoleMetadata(chat_metadata).temporary_roles.map(role => role.name);
+
+    try {
+        const creation = await promptForTemporaryRole({
+            existingNames: [...permanentNames, ...temporaryNames],
+            messageIndex: chat.length,
+        });
+        if (!creation?.role) {
+            return;
+        }
+        const metadata = addTemporaryRole(chat_metadata[LESLIE_GROUP_CHAT_METADATA_KEY], creation.role);
+        await persistTemporaryRoleMetadata(metadata);
+        toastr.success(`临时角色“${creation.role.name}”已加入当前聊天。`);
+        if (creation.speakImmediately) {
+            const characterId = characters.findIndex(character => character.data?.extensions?.leslie_temporary_role?.id === creation.role.id);
+            if (characterId >= 0) {
+                await generateGroupWrapper(false, 'normal', { force_chid: characterId });
+            }
+        }
+    } catch (error) {
+        console.error('Failed to create Leslie temporary group role.', error);
+        toastr.error(error instanceof Error ? error.message : '临时角色创建失败。');
+    }
+}
+
+async function onTemporaryRoleAction(event) {
+    const action = String(event.currentTarget?.dataset?.tempRoleAction ?? '');
+    const roleId = String(event.currentTarget?.dataset?.tempRoleId ?? '');
+    const role = getTemporaryRoleById(chat_metadata, roleId);
+    if (!role || !action) {
+        return;
+    }
+
+    if (action === 'view') {
+        await showTemporaryRoleDetails(role);
+        return;
+    }
+    if (is_group_generating) {
+        toastr.warning('请等待当前回复生成完成后再操作临时角色。');
+        return;
+    }
+
+    if (action === 'speak') {
+        if (role.state !== TEMPORARY_ROLE_STATES.ACTIVE) {
+            toastr.warning('只有活跃的临时角色可以发言。');
+            return;
+        }
+        const characterId = characters.findIndex(character => character.data?.extensions?.leslie_temporary_role?.id === roleId);
+        if (characterId === -1) {
+            toastr.error('临时角色运行时未就绪，请重新打开当前聊天。');
+            return;
+        }
+        await generateGroupWrapper(false, 'normal', { force_chid: characterId });
+        return;
+    }
+
+    if (!Object.values(TEMPORARY_ROLE_STATES).includes(action)) {
+        return;
+    }
+
+    try {
+        const metadata = setTemporaryRoleState(
+            chat_metadata[LESLIE_GROUP_CHAT_METADATA_KEY],
+            roleId,
+            action,
+            chat.length,
+        );
+        await persistTemporaryRoleMetadata(metadata);
+        toastr.success(`“${role.name}”已切换为${action === TEMPORARY_ROLE_STATES.ACTIVE ? '活跃' : action === TEMPORARY_ROLE_STATES.DORMANT ? '休眠' : '归档'}状态。`);
+    } catch (error) {
+        console.error('Failed to update Leslie temporary group role.', error);
+        toastr.error(error instanceof Error ? error.message : '临时角色状态更新失败。');
+    }
+}
+
 jQuery(() => {
+    mountGroupOrchestratorControls();
+    mountTemporaryRoleControls();
     if (!CSS.supports('field-sizing', 'content')) {
         $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
             resetScrollHeight($(this));
@@ -2484,6 +2950,26 @@ jQuery(() => {
     $('#rm_group_automode_delay').on('input', onGroupAutoModeDelayInput);
     $('#rm_group_generation_mode_join_prefix').on('input', onGroupGenerationModeTemplateInput);
     $('#rm_group_generation_mode_join_suffix').on('input', onGroupGenerationModeTemplateInput);
+    $('#leslie_group_orchestrator_enabled, #leslie_group_orchestrator_preset, #leslie_group_orchestrator_max_speakers').on('change', onGroupOrchestratorInput);
+    $(document).on('click', '#leslie_group_temp_role_create', onTemporaryRoleCreate);
+    $(document).on('click', '#leslie_group_temp_role_ai_propose', () => {
+        void requestTemporaryRoleReview({ allowProposal: true, allowArchive: false });
+    });
+    $(document).on('click', '#leslie_group_temp_role_ai_archive', () => {
+        void requestTemporaryRoleReview({ allowProposal: false, allowArchive: true });
+    });
+    $(document).on('change', '#leslie_group_temp_role_auto_proposal, #leslie_group_temp_role_auto_archive, #leslie_group_temp_role_review_interval', onTemporaryRoleAutomationInput);
+    $(document).on('click', '[data-temp-role-action]', onTemporaryRoleAction);
+    eventSource.on(event_types.GROUP_WRAPPER_FINISHED, scheduleTemporaryRoleReview);
+    for (const eventName of [
+        event_types.MESSAGE_SENT,
+        event_types.MESSAGE_EDITED,
+        event_types.MESSAGE_DELETED,
+        event_types.MESSAGE_SWIPED,
+        event_types.MESSAGE_SWIPE_DELETED,
+    ].filter(Boolean)) {
+        eventSource.on(eventName, abortTemporaryRoleReview);
+    }
     $('#group_avatar_button').on('input', uploadGroupAvatar);
     $('#rm_group_restore_avatar').on('click', restoreGroupAvatar);
     $(document).on('click', '.group_member .right_menu_button', onGroupActionClick);

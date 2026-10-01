@@ -204,6 +204,7 @@ class LeslieVoiceSettings extends HTMLElement {
     #voices = [...VOLCENGINE_BUILTIN_VOICES];
     #catalogLoading = true;
     #voiceFilter = '';
+    #customVoiceDraft = '';
     #searchTimer;
 
     connectedCallback() {
@@ -329,7 +330,7 @@ class LeslieVoiceSettings extends HTMLElement {
                 <div class="leslie-voice-map">${voiceRows}</div>
                 ${characters.length === 0 ? `<p class="leslie-voice-note">${copy.noCharacter}</p>` : ''}
                 <form class="leslie-voice-custom-form">
-                    <label><strong>${copy.customVoice}</strong><small>${copy.customVoiceHelp}</small><input class="text_pole" name="voiceId" maxlength="512" autocomplete="off" placeholder="voice_type=zh_female_..."></label>
+                    <label><strong>${copy.customVoice}</strong><small>${copy.customVoiceHelp}</small><input class="text_pole" name="voiceId" maxlength="512" autocomplete="off" placeholder="voice_type=zh_female_..." value="${escapeHtml(this.#customVoiceDraft)}"></label>
                     <button type="submit" class="menu_button"><i class="fa-solid fa-plus" aria-hidden="true"></i>${copy.add}</button>
                 </form>
             </section>
@@ -395,6 +396,9 @@ class LeslieVoiceSettings extends HTMLElement {
     async onChange(event) {
         const target = event.target;
         if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
+        // Draft/search fields are handled by input events. Their blur must not
+        // replace the submit button between pointer-down and the form submit.
+        if (!target.matches('[data-voice-enable], [data-voice-auto], [data-voice-resource], [data-voice-speed], [data-voice-language], [data-voice-character], [name="leslie-voice-mode"]')) return;
         const settings = getProviderSettings();
         try {
             if (target.matches('[data-voice-enable]')) {
@@ -475,6 +479,11 @@ class LeslieVoiceSettings extends HTMLElement {
     /** @param {InputEvent} event */
     onInput(event) {
         const target = event.target;
+        if (target instanceof HTMLInputElement && target.name === 'voiceId') {
+            // Catalog and secret-status refreshes must preserve an unfinished paste.
+            this.#customVoiceDraft = target.value;
+            return;
+        }
         if (!(target instanceof HTMLInputElement) || !target.matches('[data-voice-search]')) return;
         this.#voiceFilter = target.value;
         clearTimeout(this.#searchTimer);
@@ -503,6 +512,7 @@ class LeslieVoiceSettings extends HTMLElement {
         saveSettingsDebounced();
         await this.refreshVoiceMap();
         this.#status = this.copy.importedVoice(voiceId);
+        this.#customVoiceDraft = '';
         this.#statusKind = 'ready';
         this.render();
     }

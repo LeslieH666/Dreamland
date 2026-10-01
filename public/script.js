@@ -35,6 +35,12 @@ import {
     initTextGenSettings,
 } from './scripts/textgen-settings.js';
 import { cleanLeslieLocalRoleplayOutput, isLesliePeachRoleplayModel, isLeslieQwenRoleplayModel, isLocalModelLoadingEnabled, LESLIE_LOCAL_ROLEPLAY_GUIDANCE, LESLIE_QWEN_ROLEPLAY_GUIDANCE } from './scripts/leslie-local-model-core.js';
+import {
+    LESLIE_GROUP_CHAT_METADATA_KEY,
+    getTemporaryRoleIdFromAvatar,
+    isTemporaryCharacter,
+    markTemporaryRoleActive,
+} from './scripts/leslie-group-temporary-roles-core.js';
 
 const LOCAL_TEXTGEN_API_TYPES = new Set([
     textgen_types.OOBA,
@@ -440,7 +446,7 @@ export let isChatSaving = false;
 let firstRun = false;
 export let settingsReady = false;
 let currentVersion = '0.0.0';
-export let displayVersion = 'SillyTavern';
+export let displayVersion = 'DreamLand';
 
 let generation_started = new Date();
 /** @type {Character[]} */
@@ -525,7 +531,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `DreamLand ${data.pkgVersion} · SillyTavern core`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -725,10 +731,10 @@ async function firstLoadInit() {
     initLoaderOverlay.classList.add('splash-screen');
 
     const splashLogo = document.createElement('img');
-    splashLogo.src = '/img/logo.png';
-    splashLogo.alt = 'SillyTavern';
+    splashLogo.src = '/img/dreamland/icon.svg';
+    splashLogo.alt = 'DreamLand';
     splashLogo.className = 'splash-logo';
-    splashLogo.ariaLabel = t`SillyTavern Logo`;
+    splashLogo.ariaLabel = 'DreamLand';
 
     const splashMessage = document.createElement('h2');
     splashMessage.className = 'splash-message';
@@ -1183,7 +1189,7 @@ export function tagToEntity(tag) {
  */
 export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     let entities = [
-        ...characters.map((item, index) => characterToEntity(item, index)),
+        ...characters.flatMap((item, index) => isTemporaryCharacter(item) ? [] : [characterToEntity(item, index)]),
         ...groups.map(item => groupToEntity(item)),
         ...(power_user.bogus_folders ? tags.filter(isBogusFolder).sort(compareTagsForSort).map(item => tagToEntity(item)) : []),
     ];
@@ -1326,7 +1332,11 @@ export async function getCharacters() {
         body: JSON.stringify({}),
     });
     if (response.ok) {
-        const previousAvatar = this_chid !== undefined ? characters[this_chid]?.avatar : null;
+        const previousCharacter = this_chid !== undefined ? characters[this_chid] : null;
+        const previousAvatar = previousCharacter && !isTemporaryCharacter(previousCharacter) ? previousCharacter.avatar : null;
+        if (isTemporaryCharacter(previousCharacter)) {
+            setCharacterId(undefined);
+        }
         characters.splice(0, characters.length);
         const getData = await response.json();
         for (let i = 0; i < getData.length; i++) {
@@ -6881,12 +6891,28 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
 
         if (selected_group) {
             console.debug('entering chat update for groups');
+            const currentCharacter = characters[this_chid];
+            const temporaryRole = currentCharacter?.data?.extensions?.leslie_temporary_role;
             let avatarImg = 'img/ai4.png';
-            if (characters[this_chid].avatar != 'none') {
-                avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
+            if (isTemporaryCharacter(currentCharacter)) {
+                avatarImg = default_avatar;
+                const roleId = getTemporaryRoleIdFromAvatar(currentCharacter.avatar) || temporaryRole.id;
+                newMessage.extra.leslie_temporary_role = {
+                    id: roleId,
+                    revision: temporaryRole.revision,
+                };
+                updateChatMetadata({
+                    [LESLIE_GROUP_CHAT_METADATA_KEY]: markTemporaryRoleActive(
+                        chat_metadata[LESLIE_GROUP_CHAT_METADATA_KEY],
+                        roleId,
+                        chat.length - 1,
+                    ),
+                }, false);
+            } else if (currentCharacter.avatar != 'none') {
+                avatarImg = getThumbnailUrl('avatar', currentCharacter.avatar);
             }
             newMessage.force_avatar = avatarImg;
-            newMessage.original_avatar = characters[this_chid].avatar;
+            newMessage.original_avatar = currentCharacter.avatar;
             newMessage.extra.gen_id = group_generation_id;
         }
 

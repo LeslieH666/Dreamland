@@ -107,7 +107,7 @@ function formatExactTimestamp(value) {
 
 function notify(type, message) {
     if (globalThis.toastr?.[type]) {
-        globalThis.toastr[type](message, 'Leslie 朋友圈');
+        globalThis.toastr[type](message, 'DreamLand 朋友圈');
         return;
     }
     console[type === 'error' ? 'error' : 'info'](`[Leslie Moments] ${message}`);
@@ -331,7 +331,7 @@ async function apiRequest(path = '', { method = 'GET', body } = {}) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
         if (response.status === 404 && data.error !== 'NOT_FOUND') {
-            throw new Error('朋友圈后台尚未加载。请完全关闭 LeslieTavern 后重新打开。');
+            throw new Error('朋友圈后台尚未加载。请完全关闭 DreamLand 后重新打开。');
         }
         throw new Error(data.message || `朋友圈请求失败（${response.status}）`);
     }

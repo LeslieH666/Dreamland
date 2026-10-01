@@ -1,3 +1,10 @@
+import {
+    TEMPORARY_ROLE_STATES,
+    createTemporaryCharacter,
+    getTemporaryRoleAvatar,
+    getTemporaryRoleMetadata,
+} from '../../leslie-group-temporary-roles-core.js';
+
 function cleanText(value) {
     return String(value ?? '').trim();
 }
@@ -40,7 +47,7 @@ export function getMemoryChatIdentity(context, persona = {}) {
             return { error: '请先打开一个群聊会话，再使用群聊记忆。', context };
         }
 
-        const members = (Array.isArray(group.members) ? group.members : []).map((avatar, groupIndex) => {
+        const permanentMembers = (Array.isArray(group.members) ? group.members : []).map((avatar, groupIndex) => {
             const { character, characterIndex } = getCharacterByAvatar(context, avatar);
             return {
                 avatar: cleanText(avatar),
@@ -51,6 +58,20 @@ export function getMemoryChatIdentity(context, persona = {}) {
                 disabled: Array.isArray(group.disabled_members) && group.disabled_members.includes(avatar),
             };
         });
+        const temporaryMembers = getTemporaryRoleMetadata(context.chatMetadata).temporary_roles.map((role, temporaryIndex) => {
+            const avatar = getTemporaryRoleAvatar(role.id);
+            const runtime = getCharacterByAvatar(context, avatar);
+            return {
+                avatar,
+                name: role.name,
+                character: runtime.character ?? createTemporaryCharacter(role),
+                characterIndex: runtime.characterIndex,
+                groupIndex: permanentMembers.length + temporaryIndex,
+                disabled: role.state !== TEMPORARY_ROLE_STATES.ACTIVE,
+                temporary: true,
+            };
+        });
+        const members = [...permanentMembers, ...temporaryMembers];
         if (!members.length) {
             return { error: '当前群聊没有可用成员，暂时无法建立群聊记忆。', context };
         }

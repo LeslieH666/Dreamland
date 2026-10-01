@@ -2,7 +2,8 @@
 param(
     [ValidateSet('Menu', 'Leslie', 'All', 'Airi', 'AiriStop', 'Stop', 'Doctor', 'Model', 'ModelStop')]
     [string]$Mode = 'Menu',
-    [switch]$RebuildAiri
+    [switch]$RebuildAiri,
+    [switch]$BridgeReady
 )
 
 $ErrorActionPreference = 'Stop'
@@ -334,7 +335,7 @@ function Stop-LocalModelOnly {
 function Start-All([bool]$ForceBuild) {
     Write-Section 'Starting LeslieTavern + AIRI'
     if (Get-TrackedProcess $LesliePidPath) {
-        throw 'LeslieTavern is already running without this launch session. Stop it, then start both applications together.'
+        throw 'DreamLand is already running without this launch session. Stop it, then start both applications together.'
     }
     if (Get-AiriTrackedProcess) {
         throw 'AIRI is already running. Stop both applications before starting a new combined session.'
@@ -390,7 +391,9 @@ function Start-AiriOnly {
     }
     $airiRoot = Resolve-AiriRoot
     $baseUrl = if ($env:LESLIE_BRIDGE_BASE_URL) { $env:LESLIE_BRIDGE_BASE_URL } else { "http://127.0.0.1:$(Get-LesliePort)/api/leslie/bridge/v1/" }
-    Wait-LeslieBridge $baseUrl $env:LESLIE_BRIDGE_TOKEN
+    if (-not $BridgeReady) {
+        Wait-LeslieBridge $baseUrl $env:LESLIE_BRIDGE_TOKEN
+    }
     Ensure-AiriBuild $airiRoot $false
     Start-Airi $airiRoot $baseUrl
 }

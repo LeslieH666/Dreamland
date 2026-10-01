@@ -20,7 +20,7 @@ if (Test-Path -LiteralPath $OutputPath) {
             throw "Output directory is not empty: $OutputPath"
         }
         if (-not (Test-Path -LiteralPath $MarkerPath)) {
-            throw 'The existing directory is not a LeslieTavern portable package. Refusing to clean it.'
+            throw 'The existing directory is not a DreamLand portable package. Refusing to clean it.'
         }
         Get-ChildItem -LiteralPath $OutputPath -Force | Remove-Item -Recurse -Force
     }
@@ -28,7 +28,7 @@ if (Test-Path -LiteralPath $OutputPath) {
     New-Item -ItemType Directory -Path $OutputPath | Out-Null
 }
 
-[IO.File]::WriteAllText($MarkerPath, "LeslieTavern Windows portable package`r`n", [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText($MarkerPath, "DreamLand Windows portable package`r`n", [Text.UTF8Encoding]::new($false))
 
 $AppPath = Join-Path $OutputPath 'App'
 $RuntimePath = Join-Path $OutputPath 'Runtime'
@@ -177,7 +177,7 @@ Invoke-RobocopyChecked -Arguments @(
 $gitCommit = (& git -C $ProjectRoot rev-parse HEAD 2>$null)
 $dirtyFiles = @(& git -C $ProjectRoot status --porcelain 2>$null)
 $manifest = @(
-    'LeslieTavern Windows x64 portable package',
+    'DreamLand Windows x64 portable package',
     "Built: $([DateTimeOffset]::Now.ToString('yyyy-MM-dd HH:mm:ss zzz'))",
     "Source: $ProjectRoot",
     "Git commit: $gitCommit",

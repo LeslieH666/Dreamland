@@ -1,7 +1,7 @@
 {
   "name": "leslietavern-electron",
   "version": "1.0.0",
-  "description": "Electron desktop shell for LeslieTavern",
+  "description": "DreamLand desktop shell (SillyTavern core)",
   "license": "AGPL-3.0",
   "author": "",
   "type": "module",

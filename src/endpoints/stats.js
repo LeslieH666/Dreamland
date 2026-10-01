@@ -8,7 +8,8 @@ import writeFileAtomic from 'write-file-atomic';
 const readFile = fs.promises.readFile;
 const readdir = fs.promises.readdir;
 
-import { getAllUserHandles, getUserDirectories } from '../users.js';
+import { areLeslieUserSpacesEnabled, getAllUserHandles, getUserDirectories } from '../users.js';
+import { getUnlockedUserSpace, hasUserVault } from '../leslie-user-spaces/vault.js';
 
 const STATS_FILE = 'stats.json';
 
@@ -163,6 +164,7 @@ export async function init() {
     try {
         const userHandles = await getAllUserHandles();
         for (const handle of userHandles) {
+            if ((areLeslieUserSpacesEnabled() || hasUserVault(globalThis.DATA_ROOT, handle)) && getUnlockedUserSpace() !== handle) continue;
             const directories = getUserDirectories(handle);
             try {
                 const statsFilePath = path.join(directories.root, STATS_FILE);
@@ -189,6 +191,7 @@ export async function init() {
 async function saveStatsToFile() {
     const userHandles = await getAllUserHandles();
     for (const handle of userHandles) {
+        if ((areLeslieUserSpacesEnabled() || hasUserVault(globalThis.DATA_ROOT, handle)) && getUnlockedUserSpace() !== handle) continue;
         if (!STATS.has(handle)) {
             continue;
         }
@@ -203,6 +206,24 @@ async function saveStatsToFile() {
             } catch (error) {
                 console.error('Failed to save stats to file.', error);
             }
+        }
+    }
+}
+
+export async function flushUserStats() {
+    await saveStatsToFile();
+}
+
+export async function loadUserStats(handle) {
+    const directories = getUserDirectories(handle);
+    const statsFilePath = path.join(directories.root, STATS_FILE);
+    try {
+        STATS.set(handle, JSON.parse(await readFile(statsFilePath, 'utf-8')));
+    } catch (error) {
+        if (error.code === 'ENOENT' || error instanceof SyntaxError) {
+            await recreateStats(handle, directories.chats, directories.characters);
+        } else {
+            throw error;
         }
     }
 }

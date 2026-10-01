@@ -7,6 +7,13 @@ import {
     getMemoryChatIdentity,
     getMemoryMessageSpeaker,
 } from '../public/scripts/extensions/leslie-memory/chat-context.js';
+import {
+    LESLIE_GROUP_CHAT_METADATA_KEY,
+    TEMPORARY_ROLE_STATES,
+    createTemporaryRole,
+    getTemporaryRoleAvatar,
+    setTemporaryRoleState,
+} from '../public/scripts/leslie-group-temporary-roles-core.js';
 
 function createGroupContext() {
     return {
@@ -124,6 +131,39 @@ describe('Leslie group speaker attribution', () => {
 
         expect(getMemoryMessageSpeaker(context.chat[0], context, identity)).toBe('香夜梨（香夜梨.png）');
         expect(getMemoryMessageSpeaker(context.chat[2], context, identity)).toBe('香夜梨（雅雪.png）');
+    });
+
+    test('keeps archived temporary roles in the shared group memory roster for historical attribution', () => {
+        const context = createGroupContext();
+        const role = createTemporaryRole({
+            name: '送信人',
+            description: '只在这一幕送来一封信。',
+        }, {
+            id: 'temp_messenger-01',
+            createdAtMessage: 1,
+            createdAt: '2026-09-27T08:00:00.000Z',
+        });
+        const archived = setTemporaryRoleState(
+            { temporary_roles: [role] },
+            role.id,
+            TEMPORARY_ROLE_STATES.ARCHIVED,
+            4,
+            '2026-09-27T08:05:00.000Z',
+        );
+        context.chatMetadata[LESLIE_GROUP_CHAT_METADATA_KEY] = archived;
+        const message = {
+            is_user: false,
+            original_avatar: getTemporaryRoleAvatar(role.id),
+            name: role.name,
+            mes: '信已经送到。',
+        };
+
+        const identity = getMemoryChatIdentity(context);
+
+        expect(identity.chatKey).toBe('group:group-42::shared-chat');
+        expect(identity.members.at(-1)).toMatchObject({ name: '送信人', temporary: true, disabled: true });
+        expect(getMemoryMessageSpeaker(message, context, identity)).toBe('送信人');
+        expect(buildMemoryCoreSnapshot(identity, () => ({})).description).toContain('送信人');
     });
 });
 

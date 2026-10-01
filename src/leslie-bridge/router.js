@@ -151,7 +151,7 @@ router.post('/chat/completions', (request, response) => {
                 unsubscribe();
                 response.end(`data: ${JSON.stringify({ error: {
                     code: event.code || 'COMPANION_TURN_FAILED',
-                    message: event.message || 'The LeslieTavern turn failed.',
+                    message: event.message || 'The DreamLand turn failed.',
                 } })}\n\n`);
             }
         });

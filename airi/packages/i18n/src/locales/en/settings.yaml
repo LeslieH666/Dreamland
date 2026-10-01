@@ -1357,14 +1357,14 @@ pages:
         description: OpenAI Compatible
         title: OpenAI Compatible
       leslie-tavern:
-        description: Use LeslieTavern for character speech and local voice input.
+        description: Use DreamLand for character speech and local voice input.
         title: Leslie Tavern
         connection:
-          description: Check the automatic local connection to LeslieTavern.
+          description: Check the automatic local connection to DreamLand.
           environment: AIRI reads the Bridge address and bearer token from the Electron main process environment.
           title: Local companion connection
       leslie-tavern-chat:
-        description: Use the active LeslieTavern character, chat, memory, and model.
+        description: Use the active DreamLand character, chat, memory, and model.
         title: Leslie Tavern Chat
       nvidia:
         description: build.nvidia.com

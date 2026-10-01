@@ -7,15 +7,19 @@ import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
 import {
     KEY_PREFIX,
     toKey,
+    toAvatarKey,
     requireAdminMiddleware,
     getUserAvatar,
     getAllUserHandles,
     getPasswordSalt,
     getPasswordHash,
+    areLeslieUserSpacesEnabled,
     getUserDirectories,
+    ensureUserDirectoriesExist,
     ensurePublicDirectoriesExist,
 } from '../users.js';
 import { DEFAULT_USER } from '../constants.js';
+import { hasUserVault, purgeUserVault, sealUserSpace } from '../leslie-user-spaces/vault.js';
 
 export const router = express.Router();
 
@@ -176,6 +180,10 @@ router.post('/create', requireAdminMiddleware, async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
+        if (areLeslieUserSpacesEnabled() && (typeof request.body.password !== 'string' || !request.body.password)) {
+            return response.status(400).json({ error: 'A password is required.' });
+        }
+
         const handles = await getAllUserHandles();
         const handle = slugify(request.body.handle);
 
@@ -183,8 +191,11 @@ router.post('/create', requireAdminMiddleware, async (request, response) => {
             console.warn('Create user failed: Invalid handle');
             return response.status(400).json({ error: 'Invalid handle' });
         }
+        if (areLeslieUserSpacesEnabled() && !/^[a-z0-9][a-z0-9-]{0,63}$/.test(handle)) {
+            return response.status(400).json({ error: 'Invalid account handle.' });
+        }
 
-        if (handles.some(x => x === handle)) {
+        if (handles.some(x => x === handle) || (areLeslieUserSpacesEnabled() && hasUserVault(globalThis.DATA_ROOT, handle))) {
             console.warn('Create user failed: User with that handle already exists');
             return response.status(409).json({ error: 'User already exists' });
         }
@@ -202,13 +213,28 @@ router.post('/create', requireAdminMiddleware, async (request, response) => {
             enabled: true,
         };
 
-        await storage.setItem(toKey(handle), newUser);
+        if (areLeslieUserSpacesEnabled()) {
+            const directories = getUserDirectories(newUser.handle);
+            if (await fsPromises.stat(directories.root).then(() => true).catch(() => false)) {
+                return response.status(409).json({ error: 'A user space directory already exists.' });
+            }
+            try {
+                ensureUserDirectoriesExist(directories);
+                await checkForNewContent([directories], [CONTENT_TYPES.SETTINGS]);
+                sealUserSpace(globalThis.DATA_ROOT, newUser.handle, request.body.password);
+                await storage.setItem(toKey(handle), newUser);
+            } catch (error) {
+                purgeUserVault(globalThis.DATA_ROOT, newUser.handle);
+                throw error;
+            }
+        } else {
+            await storage.setItem(toKey(handle), newUser);
+            console.info('Creating data directories for', newUser.handle);
+            await ensurePublicDirectoriesExist();
+            const directories = getUserDirectories(newUser.handle);
+            await checkForNewContent([directories], [CONTENT_TYPES.SETTINGS]);
+        }
 
-        // Create user directories
-        console.info('Creating data directories for', newUser.handle);
-        await ensurePublicDirectoriesExist();
-        const directories = getUserDirectories(newUser.handle);
-        await checkForNewContent([directories], [CONTENT_TYPES.SETTINGS]);
         return response.json({ handle: newUser.handle });
     } catch (error) {
         console.error('User create failed:', error);
@@ -233,9 +259,13 @@ router.post('/delete', requireAdminMiddleware, async (request, response) => {
             return response.status(400).json({ error: 'Sorry, but the default user cannot be deleted. It is required as a fallback.' });
         }
 
+        if (request.body.purge && areLeslieUserSpacesEnabled()) {
+            purgeUserVault(globalThis.DATA_ROOT, request.body.handle);
+        }
         await storage.removeItem(toKey(request.body.handle));
+        if (request.body.purge) await storage.removeItem(toAvatarKey(request.body.handle));
 
-        if (request.body.purge) {
+        if (request.body.purge && !areLeslieUserSpacesEnabled()) {
             const directories = getUserDirectories(request.body.handle);
             console.info('Deleting data directories for', request.body.handle);
             await fsPromises.rm(directories.root, { recursive: true, force: true });

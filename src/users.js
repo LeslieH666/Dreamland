@@ -24,10 +24,14 @@ import { serverDirectory } from './server-directory.js';
 import { filterValidIpPatterns, getIpFromRequest } from './express-common.js';
 import { extensionsEnabledFeatureGuard } from './endpoints/extensions.js';
 import { resolveLeslieSessionStorage, resolveLeslieStorageRoot } from './leslie-demo-mode.js';
+import { getUnlockedUserSpace, hasUserVault } from './leslie-user-spaces/vault.js';
 
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
-const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
+let ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
+let LESLIE_USER_SPACES = false;
+const USER_SPACES_KEY = 'leslie:user-spaces-enabled';
+const SERVER_SESSION_ID = crypto.randomBytes(16).toString('hex');
 const AUTHELIA_AUTH = getConfigValue('sso.autheliaAuth', false, 'boolean');
 const AUTHENTIK_AUTH = getConfigValue('sso.authentikAuth', false, 'boolean');
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
@@ -119,7 +123,7 @@ export async function ensurePublicDirectoriesExist() {
     }
 
     const userHandles = await getAllUserHandles();
-    const directoriesList = userHandles.map(handle => getUserDirectories(handle));
+    const directoriesList = userHandles.filter(handle => (!LESLIE_USER_SPACES && !hasUserVault(globalThis.DATA_ROOT, handle)) || getUnlockedUserSpace() === handle).map(handle => getUserDirectories(handle));
     directoriesList.forEach(ensureUserDirectoriesExist);
     return directoriesList;
 }
@@ -230,7 +234,7 @@ export function cleanUploads() {
  */
 export async function getUserDirectoriesList() {
     const userHandles = await getAllUserHandles();
-    const directoriesList = userHandles.map(handle => getUserDirectories(handle));
+    const directoriesList = userHandles.filter(handle => (!LESLIE_USER_SPACES && !hasUserVault(globalThis.DATA_ROOT, handle)) || getUnlockedUserSpace() === handle).map(handle => getUserDirectories(handle));
     return directoriesList;
 }
 
@@ -238,6 +242,7 @@ export async function getUserDirectoriesList() {
  * Perform migration from the old user data format to the new one.
  */
 export async function migrateUserData() {
+    if (LESLIE_USER_SPACES) return;
     const publicDirectory = path.join(process.cwd(), 'public');
 
     // No need to migrate if the characters directory doesn't exists
@@ -575,6 +580,30 @@ export async function initUserStorage(dataRoot) {
     if (keys.length === 0) {
         await storage.setItem(toKey(DEFAULT_USER.handle), DEFAULT_USER);
     }
+
+    LESLIE_USER_SPACES = await storage.getItem(USER_SPACES_KEY) === true;
+    ENABLE_ACCOUNTS ||= LESLIE_USER_SPACES;
+}
+
+export function areUserAccountsEnabled() {
+    return ENABLE_ACCOUNTS;
+}
+
+export function areLeslieUserSpacesEnabled() {
+    return LESLIE_USER_SPACES;
+}
+
+/** Persist the account gate only after all account passwords have been checked. */
+export async function activateLeslieUserSpaces() {
+    await storage.setItem(USER_SPACES_KEY, true);
+    LESLIE_USER_SPACES = true;
+    ENABLE_ACCOUNTS = true;
+}
+
+export function stampLeslieLoginSession(session) {
+    if (LESLIE_USER_SPACES) {
+        session.leslieServerSession = SERVER_SESSION_ID;
+    }
 }
 
 /**
@@ -708,13 +737,19 @@ export function getUserDirectories(handle) {
 /**
  * Gets the avatar URL for the provided user.
  * @param {string} handle User handle
+ * @param {boolean} publicView Whether the caller is on the unauthenticated login page.
  * @returns {Promise<string>} User avatar URL
  */
-export async function getUserAvatar(handle) {
+export async function getUserAvatar(handle, publicView = false) {
     try {
+        if (LESLIE_USER_SPACES) {
+            if (publicView || getUnlockedUserSpace() !== handle) return PUBLIC_USER_AVATAR;
+            const encryptedAvatarPath = path.join(getUserDirectories(handle).root, '.leslie-profile-avatar');
+            if (fs.existsSync(encryptedAvatarPath)) return fs.readFileSync(encryptedAvatarPath, 'utf8');
+        }
         // Check if the user has a custom avatar
         const avatarKey = toAvatarKey(handle);
-        const avatar = await storage.getItem(avatarKey);
+        const avatar = LESLIE_USER_SPACES ? null : await storage.getItem(avatarKey);
 
         if (avatar) {
             return avatar;
@@ -759,6 +794,10 @@ export function shouldRedirectToLogin(request) {
  */
 export async function tryAutoLogin(request, basicAuthMode) {
     if (!ENABLE_ACCOUNTS || request.user || !request.session) {
+        return false;
+    }
+
+    if (LESLIE_USER_SPACES) {
         return false;
     }
 
@@ -950,9 +989,19 @@ async function basicUserLogin(request) {
  * @returns {string} Account version tag
  */
 export function getAccountVersion(user) {
-    return crypto.createHash('shake256', { outputLength: 8 })
-        .update(JSON.stringify([user.handle, user.password, user.salt]))
-        .digest('hex');
+    let hash;
+    try {
+        hash = crypto.createHash('shake256', { outputLength: 8 });
+    } catch (error) {
+        // Some Electron runtimes omit SHAKE even when their Node version is
+        // recent. Keep the session tag eight bytes long in that environment.
+        if (error?.message !== 'Digest method not supported' && error?.code !== 'ERR_OSSL_EVP_UNSUPPORTED') {
+            throw error;
+        }
+        hash = crypto.createHash('sha256');
+    }
+    return hash.update(JSON.stringify([user.handle, user.password, user.salt]))
+        .digest('hex').slice(0, 16);
 }
 
 /**
@@ -962,6 +1011,9 @@ export function getAccountVersion(user) {
  * @param {import('express').NextFunction} next Next function
  */
 export async function setUserDataMiddleware(request, response, next) {
+    if (LESLIE_USER_SPACES && request.sessionOptions) {
+        request.sessionOptions.maxAge = undefined;
+    }
     // If user accounts are disabled, use the default user
     if (!ENABLE_ACCOUNTS) {
         const handle = DEFAULT_USER.handle;
@@ -981,11 +1033,33 @@ export async function setUserDataMiddleware(request, response, next) {
         return response.sendStatus(500);
     }
 
-    // If user accounts are enabled, get the user from the session
-    let handle = request.session?.handle;
+    // Browser requests use the cookie session. An authenticated Leslie Bridge
+    // request has no browser cookie, so bind it only to the currently unlocked
+    // encrypted space. This keeps AIRI inside the same user boundary without
+    // persisting or disclosing the process-scoped Bridge token.
+    const bridgeRequest = request.leslieBridge?.authenticated === true;
+    let handle = bridgeRequest && LESLIE_USER_SPACES
+        ? getUnlockedUserSpace()
+        : request.session?.handle;
+
+    // Login is renewed on every server launch. An old cookie must not expose
+    // another person's chat after the desktop app is restarted.
+    if (!bridgeRequest && LESLIE_USER_SPACES && handle && request.session.leslieServerSession !== SERVER_SESSION_ID) {
+        request.session.handle = null;
+        request.session.version = null;
+        request.session.leslieServerSession = null;
+        handle = null;
+    }
 
     // If we have the only user and it's not password protected, use it
     if (!handle) {
+        return next();
+    }
+
+    if (LESLIE_USER_SPACES && getUnlockedUserSpace() !== handle) {
+        request.session.handle = null;
+        request.session.version = null;
+        request.session.leslieServerSession = null;
         return next();
     }
 
@@ -1002,7 +1076,7 @@ export async function setUserDataMiddleware(request, response, next) {
         return next();
     }
 
-    if (Object.hasOwn(request.session, 'version')) {
+    if (!bridgeRequest && Object.hasOwn(request.session, 'version')) {
         if (request.session.version !== getAccountVersion(user)) {
             console.warn('User data has changed since the session was created. Invalidating session for user:', handle);
             request.session.handle = null;
@@ -1011,12 +1085,12 @@ export async function setUserDataMiddleware(request, response, next) {
             request.session = null;
             return response.sendStatus(403);
         }
-    } else {
+    } else if (!bridgeRequest) {
         // If there is no version in the session, it means it's an old session. Upgrade it by adding the version.
         request.session.version = getAccountVersion(user);
     }
 
-    const { demoMode, storageHandle } = resolveLeslieSessionStorage(request.session, handle);
+    const { demoMode, storageHandle } = resolveLeslieSessionStorage(bridgeRequest ? null : request.session, handle);
     const directories = getUserDirectories(storageHandle);
     request.user = {
         profile: user,
@@ -1040,7 +1114,11 @@ export async function setUserDataMiddleware(request, response, next) {
  * @param {import('express').NextFunction} next Next function
  */
 export function requireLoginMiddleware(request, response, next) {
-    if (!request.user) {
+    // Leslie Bridge requests already passed their process-scoped bearer-token
+    // middleware. Its health and companion-state routes must remain available
+    // while an encrypted user space is still locked; data-bearing routes only
+    // receive request.user after setUserDataMiddleware binds the open space.
+    if (!request.user && request.leslieBridge?.authenticated !== true) {
         return response.sendStatus(403);
     }
 

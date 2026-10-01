@@ -6,6 +6,14 @@
     position: relative;
 }
 
+/* Both destinations are useful on mobile's separate list and chat pages.
+   The desktop shows them together, so keep the sidebar control only. */
+@media (min-width: 701px) {
+    #leslie-chat-actions [data-leslie-privacy-quick-toggle="header"] {
+        display: none;
+    }
+}
+
 .leslie-privacy-quick-toggle.is-active {
     color: #fff;
     background: var(--leslie-shell-accent, #2481cc);

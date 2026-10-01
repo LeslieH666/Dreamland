@@ -2,7 +2,6 @@ import type { PiniaPlugin } from 'pinia'
 import type { SyncedPiniaRuntime } from 'pinia-plugin-synced'
 import type { InjectionKey, Plugin } from 'vue'
 
-import { createSyncedPiniaPlugin } from 'pinia-plugin-synced'
 import { inject } from 'vue'
 
 /** Provides the synchronization runtime installed by {@link setupSynced}. */

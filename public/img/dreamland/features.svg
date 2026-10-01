@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="640" viewBox="0 0 1440 640">
+<rect width="1440" height="640" rx="28" fill="#edf2f5"/>
+<g font-family="Segoe UI, Microsoft YaHei, sans-serif" fill="#203342">
+<text x="70" y="98" font-size="48" font-weight="600">DreamLand</text><text x="70" y="144" font-size="22" fill="#637985">让故事与陪伴，有一个归处。</text>
+<g fill="#fcfdfe" stroke="#d5e1e7"><rect x="70" y="208" width="620" height="155" rx="18"/><rect x="750" y="208" width="620" height="155" rx="18"/><rect x="70" y="403" width="620" height="155" rx="18"/><rect x="750" y="403" width="620" height="155" rx="18"/></g>
+<g font-size="26" font-weight="600"><text x="102" y="262">角色对话 · 双线故事</text><text x="782" y="262">长期记忆 · 身份空间</text><text x="102" y="457">朋友圈 · 角色语音</text><text x="782" y="457">创作工坊 · 自选模型</text></g>
+<g font-size="19" fill="#637985"><text x="102" y="311">角色卡、群聊、故事与现实线，延续已有会话。</text><text x="782" y="311">整理角色记忆与关系，保留可管理的长期上下文。</text><text x="102" y="506">分享近况、收听回复，让陪伴延伸到对话之外。</text><text x="782" y="506">编写与审校角色，连接在线 API 或本地模型。</text></g>
+</g></svg>

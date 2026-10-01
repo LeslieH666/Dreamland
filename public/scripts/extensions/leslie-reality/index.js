@@ -14,10 +14,12 @@ import {
     beginRealitySession,
     buildRealityMessageSystemPrompt,
     buildRealityTimePrompt,
+    createRealityChatBinding,
     getWorldLineKind,
     hasUsableRealityProfile,
     LESLIE_WORLD_LINE_METADATA_KEY,
     LESLIE_WORLD_LINE_SCHEMA_VERSION,
+    matchesRealityChatBinding,
     normalizeRealityProfile,
     validateRealityMessage,
 } from '../../leslie-reality-context.js';
@@ -28,7 +30,8 @@ const MAX_MESSAGE_LENGTH = 6000;
 const SUPPORTED_GENERATION_TYPES = new Set(['normal', 'regenerate', 'swipe', 'continue', undefined]);
 
 let profileTask = null;
-let sessionOpeningTask = null;
+const sessionOpeningTasks = new Map();
+const foregroundRealityTasks = new Set();
 
 function cleanText(value, maximumLength = MAX_MESSAGE_LENGTH) {
     return String(value ?? '').trim().slice(0, maximumLength);
@@ -159,6 +162,39 @@ function getRealityMetadata() {
     return metadata && typeof metadata === 'object' ? metadata : null;
 }
 
+function getCurrentRealityBinding() {
+    return createRealityChatBinding({
+        characterId: this_chid,
+        chatId: characters[this_chid]?.chat,
+        metadata: chat_metadata,
+    });
+}
+
+function isCurrentRealityBinding(binding) {
+    return matchesRealityChatBinding(binding, {
+        characterId: this_chid,
+        chatId: characters[this_chid]?.chat,
+        metadata: chat_metadata,
+    });
+}
+
+function getRealityBindingKey(binding) {
+    return [binding.characterId, binding.chatId, binding.integrity, binding.sessionStartedAt].join('\u0000');
+}
+
+function isCancelled(error, signal) {
+    return Boolean(signal?.aborted || error?.name === 'AbortError');
+}
+
+async function cancelPendingRealityTasks() {
+    const tasks = [
+        ...sessionOpeningTasks.values(),
+        ...foregroundRealityTasks,
+    ];
+    tasks.forEach(task => task.controller.abort(new Error('Chat changed')));
+    await Promise.allSettled(tasks.map(task => task.promise));
+}
+
 function buildHistory(messages) {
     return (Array.isArray(messages) ? messages : [])
         .filter(message => !message?.is_system && cleanText(message?.mes))
@@ -187,6 +223,7 @@ async function generateValidatedMessage({
     history = [],
     purpose = 'reply',
     memoryContext = {},
+    signal = null,
 }) {
     const context = getContext();
     const characterName = getCharacterProfileSource().name;
@@ -202,6 +239,7 @@ async function generateValidatedMessage({
     }
     let retryFeedback = '';
     for (let attempt = 0; attempt < 2; attempt++) {
+        signal?.throwIfAborted?.();
         const systemPrompt = buildRealityMessageSystemPrompt({
             characterName,
             userName: context.name1,
@@ -216,7 +254,9 @@ async function generateValidatedMessage({
             systemPrompt,
             trimNames: false,
             skipPromptHooks: true,
+            signal,
         });
+        signal?.throwIfAborted?.();
         const validation = validateRealityMessage(raw, { characterName });
         if (validation.valid) {
             return validation.text;
@@ -272,45 +312,62 @@ async function prepareOpening({ personaSourceKey = '', previousMetadata = null }
 }
 
 async function generateSessionOpening() {
-    if (sessionOpeningTask) {
-        return sessionOpeningTask;
+    const binding = getCurrentRealityBinding();
+    const metadata = getRealityMetadata();
+    if (!binding || metadata?.schemaVersion !== LESLIE_WORLD_LINE_SCHEMA_VERSION) {
+        return null;
     }
+    const taskKey = getRealityBindingKey(binding);
+    if (sessionOpeningTasks.has(taskKey)) {
+        return sessionOpeningTasks.get(taskKey).promise;
+    }
+    const controller = new AbortController();
+    const history = structuredClone(chat);
     const promise = (async () => {
-        const metadata = getRealityMetadata();
-        if (getWorldLineKind(chat_metadata) !== 'reality' || metadata?.schemaVersion !== LESLIE_WORLD_LINE_SCHEMA_VERSION) {
-            return null;
+        try {
+            const profile = await ensureRealityProfile(metadata.realityProfile);
+            if (!isCurrentRealityBinding(binding)) return null;
+            const query = buildHistory(history).slice(-3).map(message => message.content).join('\n');
+            const memoryContext = await getMemoryContext(query);
+            if (!isCurrentRealityBinding(binding)) return null;
+            const requestId = createRequestId();
+            const text = await generateValidatedMessage({
+                metadata,
+                profile,
+                history,
+                purpose: 'session-opening',
+                memoryContext,
+                signal: controller.signal,
+            });
+            if (!isCurrentRealityBinding(binding)) return null;
+            await saveReply({ type: 'normal', getMessage: text });
+            if (!isCurrentRealityBinding(binding)) return null;
+            markLatestRealityMessage({ purpose: 'session-opening', requestId, profile });
+            const latestMetadata = getRealityMetadata();
+            if (!latestMetadata) return null;
+            updateChatMetadata({
+                [LESLIE_WORLD_LINE_METADATA_KEY]: {
+                    ...latestMetadata,
+                    realityProfile: profile,
+                    lastOpeningSessionAt: latestMetadata.sessionStartedAt,
+                    lastOpeningAt: new Date().toISOString(),
+                    lastOpeningRequestId: requestId,
+                },
+            });
+            await saveChatConditional();
+            return text;
+        } catch (error) {
+            if (isCancelled(error, controller.signal)) {
+                return null;
+            }
+            throw error;
         }
-        const profile = await ensureRealityProfile(metadata.realityProfile);
-        const query = buildHistory(chat).slice(-3).map(message => message.content).join('\n');
-        const memoryContext = await getMemoryContext(query);
-        const requestId = createRequestId();
-        const text = await generateValidatedMessage({
-            metadata,
-            profile,
-            history: chat,
-            purpose: 'session-opening',
-            memoryContext,
-        });
-        await saveReply({ type: 'normal', getMessage: text });
-        markLatestRealityMessage({ purpose: 'session-opening', requestId, profile });
-        const latestMetadata = getRealityMetadata() ?? metadata;
-        updateChatMetadata({
-            [LESLIE_WORLD_LINE_METADATA_KEY]: {
-                ...latestMetadata,
-                realityProfile: profile,
-                lastOpeningSessionAt: latestMetadata.sessionStartedAt,
-                lastOpeningAt: new Date().toISOString(),
-                lastOpeningRequestId: requestId,
-            },
-        });
-        await saveChatConditional();
-        return text;
     })().finally(() => {
-        if (sessionOpeningTask === promise) {
-            sessionOpeningTask = null;
+        if (sessionOpeningTasks.get(taskKey)?.promise === promise) {
+            sessionOpeningTasks.delete(taskKey);
         }
     });
-    sessionOpeningTask = promise;
+    sessionOpeningTasks.set(taskKey, { promise, controller });
     return promise;
 }
 
@@ -323,33 +380,61 @@ export async function interceptRealityGeneration(coreChat, _contextSize, abort, 
         return;
     }
     abort(true);
-    try {
-        const metadata = getRealityMetadata();
-        if (metadata?.schemaVersion !== LESLIE_WORLD_LINE_SCHEMA_VERSION) {
-            throw new Error('旧版现实会话正在迁移，请稍等片刻后重试。');
-        }
-        const profile = await ensureRealityProfile(metadata.realityProfile);
-        if (profile.sourceHash !== metadata.realityProfile?.sourceHash) {
-            updateChatMetadata({
-                [LESLIE_WORLD_LINE_METADATA_KEY]: { ...metadata, realityProfile: profile },
-            });
-            await saveMetadata();
-        }
-        const history = buildHistory(coreChat);
-        const query = history.slice(-3).map(message => message.content).join('\n');
-        const memoryContext = await getMemoryContext(query);
-        const purpose = type === 'continue' ? 'continue' : 'reply';
-        const text = await generateValidatedMessage({ metadata, profile, history: coreChat, purpose, memoryContext });
-        const requestId = createRequestId();
-        await saveReply({ type: type ?? 'normal', getMessage: text });
-        markLatestRealityMessage({ purpose, requestId, profile });
-        await saveChatConditional();
-    } catch (error) {
-        console.error('[Leslie Reality] Generation failed.', error);
-        globalThis.toastr?.error(error?.message || '现实世界线消息生成失败，原聊天没有被删除。');
+    const binding = getCurrentRealityBinding();
+    if (!binding) {
+        return;
     }
+    const controller = new AbortController();
+    const metadata = structuredClone(getRealityMetadata());
+    const history = structuredClone(coreChat);
+    const task = { controller, promise: null };
+    const promise = (async () => {
+        try {
+            if (metadata?.schemaVersion !== LESLIE_WORLD_LINE_SCHEMA_VERSION) {
+                throw new Error('旧版现实会话正在迁移，请稍等片刻后重试。');
+            }
+            const profile = await ensureRealityProfile(metadata.realityProfile);
+            if (!isCurrentRealityBinding(binding)) return;
+            if (profile.sourceHash !== metadata.realityProfile?.sourceHash) {
+                updateChatMetadata({
+                    [LESLIE_WORLD_LINE_METADATA_KEY]: { ...metadata, realityProfile: profile },
+                });
+                await saveMetadata();
+                if (!isCurrentRealityBinding(binding)) return;
+            }
+            const normalizedHistory = buildHistory(history);
+            const query = normalizedHistory.slice(-3).map(message => message.content).join('\n');
+            const memoryContext = await getMemoryContext(query);
+            if (!isCurrentRealityBinding(binding)) return;
+            const purpose = type === 'continue' ? 'continue' : 'reply';
+            const text = await generateValidatedMessage({
+                metadata,
+                profile,
+                history,
+                purpose,
+                memoryContext,
+                signal: controller.signal,
+            });
+            if (!isCurrentRealityBinding(binding)) return;
+            const requestId = createRequestId();
+            await saveReply({ type: type ?? 'normal', getMessage: text });
+            if (!isCurrentRealityBinding(binding)) return;
+            markLatestRealityMessage({ purpose, requestId, profile });
+            await saveChatConditional();
+        } catch (error) {
+            if (isCancelled(error, controller.signal)) {
+                return;
+            }
+            console.error('[Leslie Reality] Generation failed.', error);
+            globalThis.toastr?.error(error?.message || '现实世界线消息生成失败，原聊天没有被删除。');
+        }
+    })().finally(() => foregroundRealityTasks.delete(task));
+    task.promise = promise;
+    foregroundRealityTasks.add(task);
+    await promise;
 }
 
 globalThis.LeslieRealityPrepareOpening = prepareOpening;
 globalThis.LeslieRealityGenerateSessionOpening = generateSessionOpening;
 globalThis.LeslieRealityGenerate = interceptRealityGeneration;
+globalThis.LeslieRealityCancelPending = cancelPendingRealityTasks;

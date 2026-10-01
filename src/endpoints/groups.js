@@ -8,6 +8,7 @@ import { sync as writeFileAtomicSync, default as writeFileAtomic } from 'write-f
 
 import { color, tryParse } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
+import { normalizeLeslieGroupOrchestrator } from '../leslie-group-orchestrator/schema.js';
 
 export const router = express.Router();
 
@@ -125,6 +126,9 @@ router.post('/all', (request, response) => {
             const filePath = path.join(request.user.directories.groups, file);
             const fileContents = fs.readFileSync(filePath, 'utf8');
             const group = JSON.parse(fileContents);
+            if (Object.hasOwn(group, 'leslie_group_orchestrator')) {
+                group.leslie_group_orchestrator = normalizeLeslieGroupOrchestrator(group.leslie_group_orchestrator);
+            }
             const groupStat = fs.statSync(filePath);
             group.date_added = groupStat.birthtimeMs;
             group.create_date = new Date(groupStat.birthtimeMs).toISOString();
@@ -175,6 +179,9 @@ router.post('/create', (request, response) => {
         auto_mode_delay: request.body.auto_mode_delay ?? 5,
         generation_mode_join_prefix: request.body.generation_mode_join_prefix ?? '',
         generation_mode_join_suffix: request.body.generation_mode_join_suffix ?? '',
+        ...(Object.hasOwn(request.body, 'leslie_group_orchestrator') && {
+            leslie_group_orchestrator: normalizeLeslieGroupOrchestrator(request.body.leslie_group_orchestrator),
+        }),
     };
     const pathToFile = path.join(request.user.directories.groups, sanitize(`${id}.json`));
     const fileData = JSON.stringify(groupMetadata, null, 4);
@@ -192,6 +199,9 @@ router.post('/edit', getFileNameValidationFunction('id'), (request, response) =>
         return response.sendStatus(400);
     }
     warnOnGroupMetadata(request.body);
+    if (Object.hasOwn(request.body, 'leslie_group_orchestrator')) {
+        request.body.leslie_group_orchestrator = normalizeLeslieGroupOrchestrator(request.body.leslie_group_orchestrator);
+    }
     const id = request.body.id;
     const pathToFile = path.join(request.user.directories.groups, sanitize(`${id}.json`));
     const fileData = JSON.stringify(request.body, null, 4);

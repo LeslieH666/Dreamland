@@ -181,7 +181,7 @@ defineProvider<LeslieBridgeProviderConfig>({
   id: 'leslie-tavern',
   name: 'Leslie Tavern',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.leslie-tavern.title'),
-  description: 'Speak with the voice assigned to the active LeslieTavern character.',
+  description: 'Speak with the voice assigned to the active DreamLand character.',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.leslie-tavern.description'),
   tasks: ['text-to-speech', 'speech-to-text', 'automatic-speech-recognition', 'asr', 'stt'],
   capabilities: {
@@ -223,7 +223,7 @@ defineProvider<LeslieBridgeProviderConfig>({
             && status.speechAvailable
             && companion.connected
             && companion.voice.available
-          const reason = status.error || (valid ? '' : 'Configure the active character voice in LeslieTavern.')
+          const reason = status.error || (valid ? '' : 'Configure the active character voice in DreamLand.')
           return {
             errors: valid ? [] : [{ error: new Error(reason) }],
             reason,
@@ -250,7 +250,7 @@ defineProvider<LeslieBridgeChatProviderConfig>({
   id: 'leslie-tavern-chat',
   name: 'Leslie Tavern Chat',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.leslie-tavern-chat.title'),
-  description: 'Use the active LeslieTavern character, chat, memory, and model.',
+  description: 'Use the active DreamLand character, chat, memory, and model.',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.leslie-tavern-chat.description'),
   tasks: ['chat'],
   icon: 'i-lucide:messages-square',
@@ -280,7 +280,7 @@ defineProvider<LeslieBridgeChatProviderConfig>({
             && status.chatAvailable
             && status.companionConnected
             && Boolean(status.binding)
-          const reason = status.error || (valid ? '' : 'Open LeslieTavern and select a character.')
+          const reason = status.error || (valid ? '' : 'Open DreamLand and select a character.')
           return {
             errors: valid ? [] : [{ error: new Error(reason) }],
             reason,

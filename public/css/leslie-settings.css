@@ -3009,3 +3009,99 @@ body.leslie-modern .leslie-settings-detail {
         width: 100%;
     }
 }
+body.leslie-modern .leslie-user-space-list {
+    display: grid;
+    gap: 0.65rem;
+    margin: 1rem 0;
+}
+
+body.leslie-modern .leslie-user-space-row {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 0.75rem;
+}
+
+body.leslie-modern .leslie-user-space-row span:nth-child(2) {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+body.leslie-modern .leslie-user-space-row small {
+    opacity: 0.7;
+}
+
+body.leslie-modern .leslie-user-space-form {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin-top: 1rem;
+}
+
+body.leslie-modern .leslie-user-space-form label {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+    color: var(--leslie-text);
+    font-size: 13px;
+    font-weight: 650;
+}
+
+body.leslie-modern .leslie-user-space-form input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 9px 12px;
+    color: var(--leslie-text);
+    background: var(--leslie-surface-subtle);
+    border: 1px solid var(--leslie-border);
+    border-radius: 11px;
+    box-shadow: none;
+    font: inherit;
+    font-size: 15px;
+}
+
+body.leslie-modern .leslie-user-space-form input:focus-visible {
+    border-color: var(--leslie-accent);
+    outline: 2px solid color-mix(in srgb, var(--leslie-accent) 30%, transparent);
+    outline-offset: 1px;
+}
+
+body.leslie-modern .leslie-user-space-password-tip {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--leslie-text-soft);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+body.leslie-modern .leslie-user-space-form > button {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 44px;
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    body.leslie-modern .leslie-user-space-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    body.leslie-modern .leslie-user-space-form > button {
+        width: 100%;
+    }
+}

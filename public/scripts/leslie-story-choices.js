@@ -1,5 +1,6 @@
 import {
     chat,
+    chat_metadata,
     eventSource,
     event_types,
     generateQuietPrompt,
@@ -24,6 +25,10 @@ import {
     LESLIE_STORY_CHOICE_PURPOSE,
     normalizeStoryChoices,
 } from './leslie-story-choices-core.js';
+import {
+    getActivePlotPlan,
+    LESLIE_PLOT_COMPASS_CHANGED_EVENT,
+} from './leslie-plot-compass-core.js';
 
 const GENERATION_DELAY = 280;
 const BUSY_RETRY_DELAY = 220;
@@ -304,7 +309,10 @@ async function generateChoices({ force = false } = {}) {
     try {
         const requestChoices = async (correction) => {
             const raw = await generateQuietPrompt({
-                quietPrompt: buildStoryChoicePrompt(identity, { correction }),
+                quietPrompt: buildStoryChoicePrompt(identity, {
+                    correction,
+                    activePlan: getActivePlotPlan(chat_metadata, chat.length),
+                }),
                 responseLength: 620,
                 jsonSchema: getStoryChoiceSchema(identity),
                 signal: controller.signal,
@@ -508,6 +516,7 @@ function bindLifecycleEvents() {
             scheduleChoiceGeneration({ force: true });
         }
     });
+    window.addEventListener(LESLIE_PLOT_COMPASS_CHANGED_EVENT, () => handleChatInvalidated({ schedule: true }));
 }
 
 function initLeslieStoryChoices() {

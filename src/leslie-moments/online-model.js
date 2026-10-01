@@ -4,7 +4,7 @@ import path from 'node:path';
 import { SETTINGS_FILE } from '../constants.js';
 
 const PROVIDERS = Object.freeze({
-    deepseek: { label: 'DeepSeek', url: 'https://api.deepseek.com/chat/completions', secret: 'api_key_deepseek', modelField: 'deepseek_model', format: 'openai' },
+    deepseek: { label: 'DeepSeek', url: 'https://api.deepseek.com/beta/chat/completions', secret: 'api_key_deepseek', modelField: 'deepseek_model', format: 'deepseek' },
     openai: { label: 'OpenAI', url: 'https://api.openai.com/v1/chat/completions', secret: 'api_key_openai', modelField: 'openai_model', format: 'openai' },
     openrouter: { label: 'OpenRouter', url: 'https://openrouter.ai/api/v1/chat/completions', secret: 'api_key_openrouter', modelField: 'openrouter_model', format: 'openai' },
     claude: { label: 'Claude', url: 'https://api.anthropic.com/v1/messages', secret: 'api_key_claude', modelField: 'claude_model', format: 'claude' },
@@ -88,7 +88,13 @@ export async function generateMomentsOnline({ directories, onlineModel, input, s
             : {
                 url: provider.url,
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-                body: { model, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }], max_tokens: responseLength, stream: false },
+                body: {
+                    model,
+                    messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+                    max_tokens: responseLength,
+                    stream: false,
+                    ...(provider.format === 'deepseek' ? { thinking: { type: 'disabled' } } : {}),
+                },
             };
     let response;
     try {

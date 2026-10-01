@@ -41,8 +41,8 @@ const iconClasses = computed(() => {
 
 const buttonLabel = computed(() => {
   if (state.value.binding)
-    return `已绑定 LeslieTavern 角色：${state.value.binding.characterName}`
-  return state.value.connected ? '请在 LeslieTavern 选择角色' : '正在等待 LeslieTavern'
+    return `已绑定 DreamLand 角色：${state.value.binding.characterName}`
+  return state.value.connected ? '请在 DreamLand 选择角色' : '正在等待 DreamLand'
 })
 </script>
 

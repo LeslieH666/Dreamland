@@ -3,6 +3,9 @@ import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { canViewSecrets } from './secrets.js';
 import { renderTemplateAsync } from './templates.js';
 import { ensureImageFormatSupported, getBase64Async, humanFileSize } from './utils.js';
+import { clearUserSpaceBrowserState, watchUserSpaceChanges } from './leslie-user-space-browser.js';
+
+watchUserSpaceChanges();
 
 /**
  * @type {import('../../src/users.js').UserViewModel} Logged in user
@@ -859,10 +862,18 @@ async function openAdminPanel() {
  * @returns {Promise<void>}
  */
 async function logout() {
-    await fetch('/api/users/logout', {
+    const response = await fetch('/api/users/logout', {
         method: 'POST',
         headers: getRequestHeaders({ omitContentType: true }),
     });
+    if (!response.ok) {
+        toastr.error('Could not safely close the current user space. Please try again.');
+        return;
+    }
+    const mode = await fetch('/api/users/mode').then(result => result.json()).catch(() => ({ encryptedSpaces: true }));
+    if (mode.encryptedSpaces) {
+        clearUserSpaceBrowserState();
+    }
 
     // On an explicit logout stop auto login
     // to allow user to change username even

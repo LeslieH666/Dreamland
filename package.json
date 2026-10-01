@@ -110,7 +110,7 @@
     },
     "name": "leslietavern",
     "private": true,
-    "description": "An experimental desktop-oriented SillyTavern fork with Leslie memory, identity, moments, and voice features.",
+    "description": "DreamLand: character conversations, stories, memory, moments, voice and desktop companionship, powered by SillyTavern.",
     "keywords": [
         "character-chat",
         "electron",

@@ -126,7 +126,7 @@ describe('Leslie memory store', () => {
         });
 
         expect(result.identityStatus).toBe('matched');
-        expect(result.memory.manifest.schemaVersion).toBe(4);
+        expect(result.memory.manifest.schemaVersion).toBe(5);
         expect(result.memory.manifest.identityBinding.personaName).toBe('哥哥');
         expect(mismatch.identityStatus).toBe('mismatch');
         expect(() => store.assertStoryScope(result.memory.manifest.id, otherBinding.storyScopeId)).toThrow(/different Persona/);
@@ -282,20 +282,92 @@ describe('Leslie memory store', () => {
         expect(result.memory.state.enabled).toBe(false);
     });
 
-    test('keeps AI A memories pending until explicitly approved', () => {
+    test('automatically approves AI A memories for real-time relationship calculation', () => {
         const { memory } = store.ensureMemory({ chatKey: 'chat', characterKey: 'character' });
         const [event] = store.upsertEvents(memory.manifest.id, [{
             summary: 'The character decided to trust the user after a rescue.',
             level: 'A',
             source: [{ messageId: 12, swipeId: 0, hash: 'abc' }],
+            relationshipImpact: {
+                changes: { affection: 1, trust: 3, intimacy: 1, rapport: 0, security: 2, bond: 2 },
+                reason: 'A rescue established lasting trust.',
+            },
         }], { sourceType: 'ai' });
 
-        expect(event.status).toBe('pending');
-        expect(event.approved).toBe(false);
+        expect(event.status).toBe('active');
+        expect(event.approved).toBe(true);
+        expect(event.relationshipImpact.changes.trust).toBe(3);
+    });
 
-        const approved = store.patchEvent(memory.manifest.id, event.id, { status: 'active', approved: true });
-        expect(approved.status).toBe('active');
-        expect(approved.approved).toBe(true);
+    test('keeps the experimental relationship toggle separate from memory injection', () => {
+        const { memory } = store.ensureMemory({ chatKey: 'chat', characterKey: 'character' });
+        const state = store.updateState(memory.manifest.id, { relationship: { enabled: true } });
+
+        expect(state.enabled).toBe(false);
+        expect(state.relationship.enabled).toBe(true);
+        expect(state.relationship.experimental).toBe(true);
+    });
+
+    test('projects A and B as long-term scores while C fades with message age', () => {
+        const { memory } = store.ensureMemory({ chatKey: 'chat', characterKey: 'character' });
+        const id = memory.manifest.id;
+        store.updateState(id, { relationship: { enabled: true }, settings: { cDecayTurns: 8 } });
+        store.upsertEvents(id, [
+            {
+                summary: 'A lasting act of trust.',
+                level: 'A',
+                importance: 100,
+                confidence: 1,
+                approved: true,
+                source: [{ messageId: 2 }],
+                relationshipImpact: {
+                    changes: { affection: 1, trust: 3, intimacy: 0, rapport: 0, security: 0, bond: 0 },
+                    reason: 'Long-term trust evidence.',
+                },
+            },
+            {
+                summary: 'A considerate daily detail.',
+                level: 'C',
+                importance: 100,
+                confidence: 1,
+                source: [{ messageId: 10 }],
+                relationshipImpact: {
+                    changes: { affection: 0, trust: 0, intimacy: 0, rapport: 3, security: 0, bond: 0 },
+                    reason: 'Recent mutual understanding.',
+                },
+            },
+        ]);
+
+        const fresh = store.getRelationship(id, { currentMessageId: 10 });
+        const faded = store.getRelationship(id, { currentMessageId: 18 });
+
+        expect(fresh.enabled).toBe(true);
+        expect(fresh.dimensions.affection).toBe(3);
+        expect(fresh.dimensions.trust).toBe(9);
+        expect(fresh.dimensions.rapport).toBe(1.5);
+        expect(faded.dimensions.trust).toBe(9);
+        expect(faded.dimensions.rapport).toBeCloseTo(0.6, 1);
+    });
+
+    test('removes a relationship contribution when its source message becomes invalid', () => {
+        const { memory } = store.ensureMemory({ chatKey: 'chat', characterKey: 'character' });
+        const id = memory.manifest.id;
+        store.updateState(id, { relationship: { enabled: true } });
+        store.upsertEvents(id, [{
+            summary: 'A promise was kept.',
+            level: 'B',
+            importance: 80,
+            confidence: 1,
+            source: [{ messageId: 4, swipeId: 0, hash: 'before' }],
+            relationshipImpact: {
+                changes: { affection: 0, trust: 3, intimacy: 0, rapport: 0, security: 0, bond: 0 },
+                reason: 'The promise increased trust.',
+            },
+        }]);
+
+        expect(store.getRelationship(id, { currentMessageId: 5 }).dimensions.trust).toBeGreaterThan(0);
+        store.invalidateByMessageIds(id, [4], 'Message was swiped.');
+        expect(store.getRelationship(id, { currentMessageId: 5 }).dimensions.trust).toBe(0);
     });
 
     test('reinforces repeated AI memories instead of creating duplicates', () => {
@@ -341,7 +413,7 @@ describe('Leslie memory store', () => {
         expect(store.listHistory(id).map(item => item.revision)).toEqual(expect.arrayContaining([0, 1]));
 
         const restored = store.restoreState(id, 1);
-        expect(restored.relationship).toBeUndefined();
+        expect(restored.relationship.enabled).toBe(false);
         expect(restored.growth.relationship).toBe('Cautious allies.');
         expect(restored.revision).toBe(3);
     });
@@ -360,19 +432,42 @@ describe('Leslie memory store', () => {
         const legacyManifest = JSON.parse(fs.readFileSync(paths.manifest, 'utf8'));
         legacyManifest.schemaVersion = 2;
         delete legacyManifest.identityBinding.worldLine;
+        store.appendEventRecords(memory.manifest.id, [{
+            id: '77777777-7777-4777-8777-777777777777',
+            summary: 'A legacy formative event awaiting approval.',
+            level: 'A',
+            importance: 90,
+            confidence: 0.8,
+            participants: [],
+            tags: [],
+            source: [{ messageId: 1, swipeId: 0, hash: 'legacy' }],
+            sourceType: 'ai',
+            status: 'pending',
+            approved: false,
+            pinned: false,
+            reinforcement: 1,
+            candidateChange: null,
+            supersedes: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        }]);
         fs.writeFileSync(paths.state, `${JSON.stringify(legacyState)}\n`);
         fs.writeFileSync(paths.manifest, `${JSON.stringify(legacyManifest)}\n`);
 
         const migrated = store.getMemory(memory.manifest.id);
         const historyFiles = fs.readdirSync(paths.history);
 
-        expect(migrated.manifest.schemaVersion).toBe(4);
-        expect(migrated.state.schemaVersion).toBe(4);
+        expect(migrated.manifest.schemaVersion).toBe(5);
+        expect(migrated.state.schemaVersion).toBe(5);
+        expect(migrated.state.relationship.enabled).toBe(false);
         expect(migrated.manifest.identityBinding.worldLine).toBe('story');
         expect(migrated.state.settings.memoryModel.provider).toBe('chat');
         expect(migrated.state.growth.relationship).toBe('A preserved legacy relationship.');
+        expect(migrated.events[0].status).toBe('active');
+        expect(migrated.events[0].approved).toBe(true);
         expect(historyFiles.some(file => file.startsWith('state-migration-v2-'))).toBe(true);
         expect(historyFiles.some(file => file.startsWith('manifest-migration-v2-'))).toBe(true);
+        expect(historyFiles.some(file => file.startsWith('events-migration-v2-'))).toBe(true);
     });
 
     test('persists a separate memory model and restores the previous selection', () => {

@@ -1,20 +1,28 @@
-# LeslieTavern
+# DreamLand
+
+让故事与陪伴，有一个归处。原 LeslieTavern，现统一使用 DreamLand 品牌。
+
+![DreamLand 原创产品介绍概念图](public/img/dreamland/introduction.png)
+
+![DreamLand 功能介绍](public/img/dreamland/features.svg)
+
+提供 **澄光、月幕、梦境手帖、蔚蓝终端** 四套完整界面风格，支持亮色、暗色和氛围控制。点击会话栏的外观按钮，或进入“设置 → 通用与外观”切换；Cupertino 与经典界面保留。品牌插画是概念图，实际界面见 [可切换截图预览](docs/dreamland-preview.html) 与 [主题与品牌说明](docs/dreamland-appearance.md)。
 
 [English](README.en.md) | 简体中文
 
 [![CI](https://github.com/LeslieH666/LeslieTavern/actions/workflows/ci.yml/badge.svg)](https://github.com/LeslieH666/LeslieTavern/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
-LeslieTavern 是基于 [SillyTavern](https://github.com/SillyTavern/SillyTavern) 开发的实验性桌面聊天分支。SillyTavern 的聊天、角色卡、群聊、World Info、Swipe、模型适配和 JSONL 存储仍是权威核心；Leslie 功能以可选扩展和服务形式叠加，普通聊天在这些功能不可用时仍应保持可用。
+DreamLand 是基于 [SillyTavern](https://github.com/SillyTavern/SillyTavern) 开发的实验性桌面聊天分支。SillyTavern 的聊天、角色卡、群聊、World Info、Swipe、模型适配和 JSONL 存储仍是权威核心；Leslie 功能以可选扩展和服务形式叠加，普通聊天在这些功能不可用时仍应保持可用。
 
-本仓库同时包含 `airi/` 桌面陪伴前端。LeslieTavern 与 AIRI 共享一个 Git 根目录和项目版本，由本仓库统一继续演化；两个应用保留各自的 npm/pnpm 依赖边界，通过默认关闭的 Leslie Bridge v1 对接。
+本仓库同时包含 `airi/` 桌面陪伴前端。DreamLand 与 AIRI 共享一个 Git 根目录和项目版本，由本仓库统一继续演化；两个应用保留各自的 npm/pnpm 依赖边界，通过默认关闭的 Leslie Bridge v1 对接。
 
 > 当前处于可运行原型阶段，不是 SillyTavern 官方版本，也不是经过签名的正式发行版。
 
 ## 主要功能
 
 - 保留 SillyTavern 的角色卡、群聊、World Info、Swipe、模型适配和 JSONL 聊天格式。
-- 提供 Windows Electron 桌面入口、单一 `Leslie Heaven` 启动入口、应用内本地服务控制和便携构建脚本。
+- 提供 Windows Electron 桌面入口、单一 `DreamLand` 启动入口、应用内本地服务控制和便携构建脚本。
 - 提供 Leslie 身份、Persona / 剧情线隔离，以及彼此可产生少量记忆共鸣的故事线与现实线聊天。现实线只提取去剧情核心性格，由当前 API 动态生成开场，并严格保存为普通即时消息；朋友圈另有桌面双栏布局、真实已读、连续评论回复、可查看点赞名单、按角色授权主动发帖、独立记忆和托盘后台运行。
 - 提供火山引擎角色语音配置、试听与回复自动朗读。
 - 提供可选的互动引导输入：围绕当前用户 Persona 生成三个可点击回复，并回到原有聊天生成链路；故事线单角色聊天还可使用“剧情罗盘”生成三个跨场景、跨阶段且具有长期影响的主线篇章、可选轮数建议，并把用户采用的主线固定在聊天界面。手机端使用独立标题条和底部抽屉查看主线，不占用聊天头部按钮空间。
@@ -51,7 +59,7 @@ npm ci --prefix tests
 npm run validate
 ```
 
-`validate` 会依次执行仓库边界检查、LeslieTavern 源码 lint、测试目录 lint 和单元测试。端到端测试需要单独启动服务：
+`validate` 会依次执行仓库边界检查、DreamLand 源码 lint、测试目录 lint 和单元测试。端到端测试需要单独启动服务：
 
 ```bash
 npm run test:e2e --prefix tests
@@ -69,14 +77,14 @@ pnpm run dev
 
 本项目只保留一个日常启动入口：
 
-- `启动 Leslie Heaven.cmd`：启动 LeslieTavern 桌面端。
+- `启动 DreamLand.cmd`：启动 DreamLand 桌面端。
 - `备份用户数据.cmd`
 - `打开用户数据目录.cmd`
 - `查看运行日志.cmd`
 
-启动后可在“设置 → 模型连接”中选择并连接本地模型。同一私有子网的手机访问 LeslieTavern 时，也可选择电脑 `models/` 中的模型并请求电脑启动；AIRI 与本地模型的停止操作仍仅在 Electron 桌面端开放。脚本和服务使用项目根目录下的本地 `data/`、`Runtime/`、`Config/` 与 `Run/`；这些目录不会进入 Git。
+启动后可在“设置 → 模型连接”中选择并连接本地模型。同一私有子网的手机访问 DreamLand 时，也可选择电脑 `models/` 中的模型并请求电脑启动；AIRI 与本地模型的停止操作仍仅在 Electron 桌面端开放。脚本和服务使用项目根目录下的本地 `data/`、`Runtime/`、`Config/` 与 `Run/`；这些目录不会进入 Git。
 启用局域网监听后，与访问地址属于同一私有子网的设备无需逐个填写 IP；切换家庭 Wi-Fi 或手机热点后会自动使用新子网，公网及未用于当前连接的其他网段仍被拒绝。
-AIRI 启动、自动角色绑定和使用方法见 [LeslieTavern 与 AIRI 启动指南](docs/airi-launcher.md)。AIRI 不需要手动选择聊天 provider、模型或音色。
+AIRI 启动、自动角色绑定和使用方法见 [DreamLand 与 AIRI 启动指南](docs/airi-launcher.md)。AIRI 不需要手动选择聊天 provider、模型或音色。
 
 ### 本地模型与角色工坊
 
@@ -91,8 +99,8 @@ models/Peach-2.0-9B-8k-Roleplay/Peach-2.0-9B-8k-Roleplay.Q4_K_M.gguf
 
 使用流程：
 
-1. 将下载的单文件 GGUF 放进项目的 `models/` 或其子目录。双击 `启动 Leslie Heaven.cmd`，打开“设置 → 模型连接 → 本地 API”；可点击“打开模型目录”直接定位。
-2. 在电脑端或同一私有子网的手机上，从 KoboldCpp 卡片选择扫描到的模型，点击“连接所选模型”或“一键识别并自动配置”。快捷识别会优先连接已运行的适配模型；没有运行中的模型时，电脑会启动所选 GGUF。页面等待就绪并自动填入聊天连接设置；无需提前在电脑端运行模型。电脑端可在同一卡片点击“停止本地模型”以释放显存。手机端操作时，LeslieTavern 电脑服务须保持运行且可从手机访问。
+1. 将下载的单文件 GGUF 放进项目的 `models/` 或其子目录。双击 `启动 DreamLand.cmd`，打开“设置 → 模型连接 → 本地 API”；可点击“打开模型目录”直接定位。
+2. 在电脑端或同一私有子网的手机上，从 KoboldCpp 卡片选择扫描到的模型，点击“连接所选模型”或“一键识别并自动配置”。快捷识别会优先连接已运行的适配模型；没有运行中的模型时，电脑会启动所选 GGUF。页面等待就绪并自动填入聊天连接设置；无需提前在电脑端运行模型。电脑端可在同一卡片点击“停止本地模型”以释放显存。手机端操作时，DreamLand 电脑服务须保持运行且可从手机访问。
 3. 打开“AI 角色工坊”，在“角色卡生成接口”中选择当前聊天 API 或当前已连接的本地模型。
 4. 检查简报、知识核对、JSON 草稿和质量审校；预览不会自动写入角色目录。
 5. 只有点击“带入角色编辑器”并在原有编辑流程中保存，才会创建正式角色卡。
@@ -150,7 +158,7 @@ SillyTavern chat engine
    └─ AIRI companion frontend
 ```
 
-LeslieTavern 负责提示词组装、角色与聊天状态、记忆、模型和持久化；AIRI 负责显示模型、输入、回复展示、音频播放和口型同步。AIRI 不会建立第二套角色提示词，也不会自行选择模型或音色。完整边界见 [AIRI Bridge 说明](docs/airi-bridge.md)。
+DreamLand 负责提示词组装、角色与聊天状态、记忆、模型和持久化；AIRI 负责显示模型、输入、回复展示、音频播放和口型同步。AIRI 不会建立第二套角色提示词，也不会自行选择模型或音色。完整边界见 [AIRI Bridge 说明](docs/airi-bridge.md)。
 
 ## 用户数据与隐私
 
@@ -174,11 +182,11 @@ npm run check:repo
 - [Cupertino UI 重构与回退说明](docs/cupertino-ui-refactor.md)
 - [角色卡工作流](docs/character-card-workflow.md)
 - [AIRI Bridge 说明](docs/airi-bridge.md)
-- [LeslieTavern 与 AIRI 启动指南](docs/airi-launcher.md)
+- [DreamLand 与 AIRI 启动指南](docs/airi-launcher.md)
 - [数据与打包说明](docs/data-and-packaging.md)
 - [贡献指南](CONTRIBUTING.md)
 - [变更记录](CHANGELOG.md)
 
 ## 上游与许可证
 
-LeslieTavern 是 SillyTavern 的衍生项目，并非官方发行版。上游项目及原作者保留其各自权利；衍生代码继续采用 [GNU AGPL-3.0](LICENSE) 许可证。网络部署和修改版本分发同样需要遵守 AGPL-3.0。
+DreamLand 是 SillyTavern 的衍生项目，并非官方发行版。上游项目及原作者保留其各自权利；衍生代码继续采用 [GNU AGPL-3.0](LICENSE) 许可证。网络部署和修改版本分发同样需要遵守 AGPL-3.0。

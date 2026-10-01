@@ -23,6 +23,8 @@ module.exports = {
     ignorePatterns: [
         '*.min.js',
         'node_modules/**/*',
+        'test-results/**/*',
+        'playwright-report/**/*',
     ],
     globals: {
         SillyTavern: 'readonly',

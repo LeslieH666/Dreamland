@@ -7,7 +7,7 @@
  * without replacing DOM nodes, event handlers, or SillyTavern data flows.
  */
 
-body.leslie-modern[data-leslie-design-language="cupertino"] {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) {
     color-scheme: light;
 
     --cu-blue: #007aff;
@@ -89,7 +89,7 @@ body.leslie-modern[data-leslie-design-language="cupertino"] {
     letter-spacing: normal;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"][data-leslie-color-scheme="dark"] {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"])[data-leslie-color-scheme="dark"] {
     color-scheme: dark;
 
     --cu-blue: #0a84ff;
@@ -115,27 +115,27 @@ body.leslie-modern[data-leslie-design-language="cupertino"][data-leslie-color-sc
     --cu-shadow-menu: 0 22px 56px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"],
-body.leslie-modern[data-leslie-design-language="cupertino"] button,
-body.leslie-modern[data-leslie-design-language="cupertino"] input,
-body.leslie-modern[data-leslie-design-language="cupertino"] select,
-body.leslie-modern[data-leslie-design-language="cupertino"] textarea {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]),
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) button,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) input,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) select,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) textarea {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] :where(button, input, select, textarea, [tabindex]):focus-visible {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) :where(button, input, select, textarea, [tabindex]):focus-visible {
     outline: 3px solid color-mix(in srgb, var(--cu-blue) 34%, transparent);
     outline-offset: 2px;
 }
 
 /* Sidebar chrome and continuous conversation list. */
-body.leslie-modern[data-leslie-design-language="cupertino"] #leslie-conversation-sidebar {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) #leslie-conversation-sidebar {
     font-family: inherit;
     background: var(--cu-secondary-background);
     border-right-color: var(--cu-separator);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-header {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-sidebar-header {
     min-height: 64px;
     padding: 0 12px 0 16px;
     background: var(--cu-glass-strong);
@@ -144,11 +144,11 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-head
     -webkit-backdrop-filter: blur(22px) saturate(145%);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-brand {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-brand {
     gap: 10px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-brand-mark {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-brand-mark {
     width: 36px;
     height: 36px;
     background: var(--cu-blue);
@@ -157,19 +157,19 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-brand-mark {
     font-size: 15px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-brand-copy strong {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-brand-copy strong {
     font-size: 17px;
     font-weight: 650;
     letter-spacing: -0.01em;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-brand-copy small {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-brand-copy small {
     display: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-icon-button,
-body.leslie-modern[data-leslie-design-language="cupertino"] #leslie-chat-actions #leslie-memory-launcher,
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-header-memory-button {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-icon-button,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) #leslie-chat-actions #leslie-memory-launcher,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-header-memory-button {
     width: 44px;
     height: 44px;
     min-width: 44px;
@@ -177,21 +177,21 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-header-memor
     border-radius: 50%;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-icon-button:hover,
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-icon-button:focus-visible,
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-header-memory-button:hover,
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-header-memory-button:focus-visible {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-icon-button:hover,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-icon-button:focus-visible,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-header-memory-button:hover,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-header-memory-button:focus-visible {
     color: var(--cu-blue);
     background: var(--cu-fill);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-tools {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-sidebar-tools {
     padding: 10px 10px 8px;
     background: var(--cu-secondary-background);
     border-bottom-color: var(--cu-separator-soft);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-search {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-search {
     min-height: 36px;
     grid-template-columns: 30px minmax(0, 1fr) 30px;
     color: var(--cu-secondary-label);
@@ -201,18 +201,18 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation
     box-shadow: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-search:focus-within {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-search:focus-within {
     background: var(--cu-fill-strong);
     border: 0;
     box-shadow: 0 0 0 3px var(--cu-blue-soft);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-search input {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-search input {
     height: 36px;
     font-size: 14px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-filters {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-filters {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-top: 9px;
@@ -222,7 +222,7 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation
     border-radius: 9px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-filters button {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-filters button {
     min-height: 30px;
     padding: 0 8px;
     color: var(--cu-secondary-label);
@@ -231,18 +231,18 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation
     font-weight: 560;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-filters button.is-active {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-filters button.is-active {
     color: var(--cu-label);
     background: var(--cu-secondary-background);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.13);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-list {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-list {
     padding: 0;
     scrollbar-gutter: stable;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item {
     min-height: 70px;
     grid-template-columns: 48px minmax(0, 1fr);
     margin: 0;
@@ -252,7 +252,7 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation
     transition: background-color 120ms ease;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item::before {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item::before {
     top: auto;
     right: 0;
     bottom: 0;
@@ -265,52 +265,52 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation
     transform: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item:hover,
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item:focus-visible {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item:hover,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item:focus-visible {
     background: var(--cu-fill);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item.is-active {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item.is-active {
     background: var(--cu-blue-soft);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item.is-active::before {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item.is-active::before {
     opacity: 1;
     transform: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-avatar {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-avatar {
     width: 48px;
     height: 48px;
     border: 0;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-primary strong {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-primary strong {
     font-size: 15px;
     font-weight: 620;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-primary time {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-primary time {
     font-size: 11px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-preview {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-preview {
     font-size: 13px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-footer {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-sidebar-footer {
     padding: 7px 10px 9px;
     background: var(--cu-glass-strong);
     border-top-color: var(--cu-separator-soft);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-connection-card {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-connection-card {
     min-height: 50px;
     border-radius: 11px;
 }
 
 /* Navigation is the functional glass layer; message content stays opaque. */
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #leslie-chat-header {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #leslie-chat-header {
     min-height: 62px;
     flex-basis: 62px;
     padding: 0 12px 0 16px;
@@ -321,24 +321,24 @@ body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-lay
     -webkit-backdrop-filter: blur(24px) saturate(150%);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-chat-avatar {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-chat-avatar {
     width: 40px;
     height: 40px;
     border: 0;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-chat-heading strong {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-chat-heading strong {
     font-size: 15px;
     font-weight: 620;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-chat-heading small {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-chat-heading small {
     margin-top: 3px;
     font-size: 11px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-chat-more-menu,
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-chat-more-menu,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-theme-menu {
     background: var(--cu-glass-strong);
     border-color: var(--cu-separator);
     border-radius: 14px;
@@ -347,35 +347,35 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu {
     -webkit-backdrop-filter: blur(24px) saturate(150%);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-chat-more-menu {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-chat-more-menu {
     top: 55px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-chat-more-menu button,
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu button {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-chat-more-menu button,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-theme-menu button {
     border-radius: 9px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-theme-menu {
     width: 236px;
     padding: 7px;
 }
 
 /* iMessage-inspired bubbles adapted for long role-play and Markdown content. */
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat {
     padding: 18px max(18px, calc((100% - 1040px) / 2)) 12px;
     gap: 3px;
     color: var(--cu-label);
     background: var(--cu-system-background);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes,
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] {
     padding: 2px 0;
     gap: 8px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
     max-width: min(76%, 780px);
     padding: 9px 13px 10px;
     color: var(--cu-label);
@@ -385,46 +385,46 @@ body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-lay
     box-shadow: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block {
     color: #ffffff;
     background: var(--cu-outgoing-bubble);
     border: 0;
     border-radius: 19px 6px 19px 19px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] :where(.mes_text, .ch_name, .timestamp, .mes_timer, .mesIDDisplay, .tokenCounterDisplay, a) {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] :where(.mes_text, .ch_name, .timestamp, .mes_timer, .mesIDDisplay, .tokenCounterDisplay, a) {
     color: #ffffff;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] :where(.timestamp, .mes_timer, .mesIDDisplay, .tokenCounterDisplay) {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] :where(.timestamp, .mes_timer, .mesIDDisplay, .tokenCounterDisplay) {
     opacity: 0.72;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes[is_system="true"] .mes_block {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes[is_system="true"] .mes_block {
     color: var(--cu-secondary-label);
     background: var(--cu-fill);
     border: 0;
     border-radius: 999px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) .mes .avatar,
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) .mes .avatar img {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) .mes .avatar,
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) .mes .avatar img {
     width: 36px;
     height: 36px;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) .mes .avatar img {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) .mes .avatar img {
     border: 0;
     box-shadow: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) .mes_block .ch_name {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) .mes_block .ch_name {
     color: var(--cu-blue);
     font-weight: 620;
 }
 
 /* Composer: one quiet field and one obvious primary action. */
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #form_sheld {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #form_sheld {
     padding: 9px max(18px, calc((100% - 1040px) / 2)) 12px;
     background: var(--cu-glass);
     border-top-color: var(--cu-separator-soft);
@@ -433,7 +433,7 @@ body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-lay
     -webkit-backdrop-filter: blur(24px) saturate(150%);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #send_form {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #send_form {
     min-height: 50px;
     background: var(--cu-secondary-background) !important;
     border: 1px solid var(--cu-separator);
@@ -441,33 +441,33 @@ body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-lay
     box-shadow: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #send_form:has(#send_textarea:focus-visible) {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #send_form:has(#send_textarea:focus-visible) {
     border-color: color-mix(in srgb, var(--cu-blue) 58%, var(--cu-separator));
     box-shadow: 0 0 0 3px var(--cu-blue-soft);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #send_textarea {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #send_textarea {
     color: var(--cu-label);
     line-height: 1.45;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #send_textarea::placeholder {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #send_textarea::placeholder {
     color: var(--cu-tertiary-label);
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) :where(#send_but, #mes_continue) {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) :where(#send_but, #mes_continue) {
     color: #ffffff;
     background: var(--cu-blue);
     border-radius: 50%;
     box-shadow: none;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) :where(#send_but, #mes_continue):hover {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) :where(#send_but, #mes_continue):hover {
     background: var(--cu-blue-pressed);
 }
 
 /* Keep popup controls usable in both compact desktop and touch layouts. */
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu-heading {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-theme-menu-heading {
     padding: 5px 9px 4px;
     color: var(--cu-secondary-label);
     font-size: 11px;
@@ -475,75 +475,75 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu-h
     letter-spacing: 0.02em;
 }
 
-body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu-separator {
+body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-theme-menu-separator {
     border-top-color: var(--cu-separator-soft);
 }
 
 @media (max-width: 700px) {
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-header {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-sidebar-header {
         min-height: 58px;
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-tools {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-sidebar-tools {
         padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-search,
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-search input {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-search,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-search input {
         min-height: 40px;
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item {
         min-height: 74px;
         grid-template-columns: 52px minmax(0, 1fr);
         padding-inline: max(12px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right));
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-item::before {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-item::before {
         left: calc(max(12px, env(safe-area-inset-left)) + 63px);
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-conversation-avatar {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-conversation-avatar {
         width: 52px;
         height: 52px;
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #leslie-chat-header {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #leslie-chat-header {
         min-height: calc(58px + env(safe-area-inset-top));
         flex-basis: calc(58px + env(safe-area-inset-top));
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat {
         padding: 12px max(7px, env(safe-area-inset-right)) 8px max(7px, env(safe-area-inset-left));
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
         max-width: min(88%, calc(100% - 40px));
         padding: 8px 11px 9px;
         border-radius: 6px 18px 18px 18px;
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block {
         border-radius: 18px 6px 18px 18px;
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #form_sheld {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #form_sheld {
         padding: 7px max(7px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-left));
     }
 
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #send_form {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #send_form {
         min-height: 50px;
         border-radius: 23px;
     }
 }
 
 @media (prefers-reduced-transparency: reduce) {
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-header,
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-sidebar-footer,
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #leslie-chat-header,
-    body.leslie-modern[data-leslie-design-language="cupertino"]:not(.leslie-chat-layout-disabled) #form_sheld,
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-chat-more-menu,
-    body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-sidebar-header,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-sidebar-footer,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #leslie-chat-header,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]):not(.leslie-chat-layout-disabled) #form_sheld,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-chat-more-menu,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) .leslie-theme-menu {
         background: var(--cu-secondary-background);
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
@@ -551,9 +551,9 @@ body.leslie-modern[data-leslie-design-language="cupertino"] .leslie-theme-menu-s
 }
 
 @media (prefers-reduced-motion: reduce) {
-    body.leslie-modern[data-leslie-design-language="cupertino"] *,
-    body.leslie-modern[data-leslie-design-language="cupertino"] *::before,
-    body.leslie-modern[data-leslie-design-language="cupertino"] *::after {
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) *,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) *::before,
+    body.leslie-modern:is([data-leslie-design-language="cupertino"], [data-leslie-design-language="dreamland"]) *::after {
         scroll-behavior: auto !important;
     }
 }

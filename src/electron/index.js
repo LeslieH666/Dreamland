@@ -61,7 +61,7 @@ function isMainWindowSender(event) {
 
 ipcMain.handle('leslie:companion:poll', async (event, message) => {
     if (!isMainWindowSender(event)) {
-        throw new Error('Only the LeslieTavern window can own the companion session.');
+        throw new Error('Only the DreamLand window can own the companion session.');
     }
     const command = companionSession.pollHost({
         hostId: message?.hostId,
@@ -76,7 +76,7 @@ ipcMain.handle('leslie:companion:poll', async (event, message) => {
 
 ipcMain.handle('leslie:companion:publish', (event, message) => {
     if (!isMainWindowSender(event)) {
-        throw new Error('Only the LeslieTavern window can publish companion events.');
+        throw new Error('Only the DreamLand window can publish companion events.');
     }
     return companionSession.publishHostEvent({
         hostId: message?.hostId,
@@ -99,14 +99,14 @@ ipcMain.on('leslie:moments:status', (event, message) => {
 
 ipcMain.handle('leslie:services:status', (event) => {
     if (!isMainWindowSender(event)) {
-        throw new Error('Only the LeslieTavern window can inspect desktop services.');
+        throw new Error('Only the DreamLand window can inspect desktop services.');
     }
     return getLocalServiceStatus(getProjectRoot(), { busyServices: new Set(localServiceTasks.keys()) });
 });
 
 ipcMain.handle('leslie:services:open-models', async (event) => {
     if (!isMainWindowSender(event)) {
-        throw new Error('Only the LeslieTavern window can open the model directory.');
+        throw new Error('Only the DreamLand window can open the model directory.');
     }
     const directory = path.join(getProjectRoot(), 'models');
     fs.mkdirSync(directory, { recursive: true });
@@ -118,7 +118,7 @@ ipcMain.handle('leslie:services:open-models', async (event) => {
 
 ipcMain.handle('leslie:services:action', async (event, message) => {
     if (!isMainWindowSender(event)) {
-        throw new Error('Only the LeslieTavern window can control desktop services.');
+        throw new Error('Only the DreamLand window can control desktop services.');
     }
     const service = String(message?.service || '');
     const action = String(message?.action || '');
@@ -173,9 +173,9 @@ function updateTrayMenu() {
         return;
     }
     const statusLabel = getMomentsStatusLabel();
-    tray.setToolTip(`LeslieTavern · ${statusLabel.replace('朋友圈后台：', '')}`);
+    tray.setToolTip(`DreamLand · ${statusLabel.replace('朋友圈后台：', '')}`);
     tray.setContextMenu(Menu.buildFromTemplate([
-        { label: '打开 LeslieTavern', click: showMainWindow },
+        { label: '打开 DreamLand', click: showMainWindow },
         { type: 'separator' },
         { label: statusLabel, enabled: false },
         {
@@ -190,7 +190,7 @@ function updateTrayMenu() {
         },
         { type: 'separator' },
         {
-            label: '退出 LeslieTavern',
+            label: '退出 DreamLand',
             click: () => {
                 app.quit();
             },
@@ -202,7 +202,7 @@ function installTray() {
     if (tray && !tray.isDestroyed()) {
         return;
     }
-    const iconFile = process.platform === 'win32' ? 'favicon.ico' : path.join('img', 'apple-icon-192x192.png');
+    const iconFile = path.join('img', 'dreamland', process.platform === 'win32' ? 'icon.ico' : 'icon-192.png');
     const iconPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public', iconFile);
     tray = new Tray(iconPath);
     tray.on('double-click', showMainWindow);
@@ -228,7 +228,8 @@ function createSillyTavernWindow() {
         minHeight: 640,
         minWidth: 960,
         autoHideMenuBar: true,
-        title: 'LeslieTavern',
+        title: 'DreamLand',
+        icon: path.resolve(getProjectRoot(), 'public', 'img', 'dreamland', 'icon-192.png'),
         webPreferences: {
             preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)),
             contextIsolation: true,
@@ -249,8 +250,8 @@ function createSillyTavernWindow() {
         if (!backgroundNoticeShown) {
             backgroundNoticeShown = true;
             tray?.displayBalloon?.({
-                title: 'LeslieTavern 已转入后台',
-                content: '朋友圈互动会继续运行。需要完全关闭时，请从托盘选择“退出 LeslieTavern”。',
+                title: 'DreamLand 已转入后台',
+                content: '朋友圈互动会继续运行。需要完全关闭时，请从托盘选择“退出 DreamLand”。',
                 iconType: 'info',
             });
         }

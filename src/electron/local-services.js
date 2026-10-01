@@ -99,7 +99,7 @@ function getCommand(projectRoot, service, action, modelId, bridgeReady = false) 
 function getBridgeHealthUrl(environment = process.env) {
     const configured = String(environment.LESLIE_BRIDGE_BASE_URL ?? '').trim();
     if (!configured) {
-        throw new Error('This LeslieTavern session has no companion URL. Restart it with the Leslie Heaven launcher.');
+        throw new Error('This DreamLand session has no companion URL. Restart it with the DreamLand launcher.');
     }
     const baseUrl = new URL(configured);
     const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
@@ -120,7 +120,7 @@ export async function waitForLeslieBridge({
 } = {}) {
     const tokenConfiguration = getLeslieBridgeTokenConfiguration(environment);
     if (!tokenConfiguration.enabled) {
-        throw new Error('This LeslieTavern session has no valid companion token. Restart it with the Leslie Heaven launcher.');
+        throw new Error('This DreamLand session has no valid companion token. Restart it with the DreamLand launcher.');
     }
     const healthUrl = getBridgeHealthUrl(environment);
     let lastFailure = 'no response';
@@ -145,7 +145,7 @@ export async function waitForLeslieBridge({
             await delayImpl(retryDelayMs);
         }
     }
-    throw new Error(`Leslie Bridge did not become ready (${lastFailure}). Restart LeslieTavern and try again.`);
+    throw new Error(`Leslie Bridge did not become ready (${lastFailure}). Restart DreamLand and try again.`);
 }
 
 function spawnLocalServiceCommand(root, command, spawnProcess) {

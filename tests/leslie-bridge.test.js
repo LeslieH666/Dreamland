@@ -215,10 +215,10 @@ describe('Leslie Bridge authoritative companion session', () => {
     test('rejects a turn when no Leslie page owns an active character', () => {
         const session = createCompanionSession({ createId: () => 'turn-2' });
 
-        expect(() => session.createTurn('Hello.')).toThrow('Open LeslieTavern and select a character');
+        expect(() => session.createTurn('Hello.')).toThrow('Open DreamLand and select a character');
 
         session.updateHost('host-1', { ...snapshot, binding: null });
-        expect(() => session.createTurn('Hello.')).toThrow('Select a character in LeslieTavern');
+        expect(() => session.createTurn('Hello.')).toThrow('Select a character in DreamLand');
     });
 
     test('replaces stale bindings when the browser changes user space', async () => {

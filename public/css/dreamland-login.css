@@ -1,0 +1,7 @@
+body.login[data-leslie-design-language="dreamland"] { background: var(--dl-canvas); color: var(--dl-text); }
+body.login[data-leslie-design-language="dreamland"] #dialogue_popup { background: var(--dl-surface); color: var(--dl-text); border: 1px solid var(--dl-border); border-radius: var(--dl-radius); box-shadow: var(--cu-shadow-menu); }
+body.login[data-leslie-design-language="dreamland"] :where(.text_pole, .userSelectButton, .menu_button) { color: var(--dl-text); background: var(--dl-soft); border-color: var(--dl-border); border-radius: var(--dl-radius); }
+body.login[data-leslie-design-language="dreamland"] #logoBlock { color: var(--dl-text); }
+body.login[data-leslie-design-language="dreamland"] #logoBlock img { width: 44px; height: 44px; }
+body.login[data-leslie-design-language="dreamland"] .leslie-login-backdrop { background: radial-gradient(ellipse at 10% 15%, var(--cu-blue-soft), transparent 70%), var(--dl-canvas); }
+body.login[data-leslie-design-language="dreamland"] a { color: var(--dl-accent); }

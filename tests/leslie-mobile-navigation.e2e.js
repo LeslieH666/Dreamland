@@ -105,6 +105,8 @@ test('mobile starts on contacts and enters a dedicated chat page', async ({ page
 });
 
 test('desktop keeps contacts and chat visible together', async ({ page }) => {
+    // This case also verifies that an existing explicit Cupertino preference survives.
+    await page.addInitScript(() => localStorage.setItem('leslie.design.language', 'cupertino'));
     const consoleErrors = collectConsoleErrors(page);
     await page.setViewportSize({ width: 1280, height: 900 });
     await preparePage(page);
@@ -120,6 +122,11 @@ test('desktop keeps contacts and chat visible together', async ({ page }) => {
     await expect(shell).not.toHaveAttribute('aria-hidden', /.+/);
     await expect(page.locator('.leslie-mobile-back')).toBeHidden();
     await expect(page.locator('body')).toHaveAttribute('data-leslie-design-language', 'cupertino');
+
+    // Chat actions are available after entering a conversation, not on the home page.
+    await page.locator('#leslie-conversation-list .leslie-conversation-item').first().click();
+    await expect(page.locator('#chat > .mes')).not.toHaveCount(0);
+    await expect(page.locator('body')).not.toHaveClass(/leslie-chat-transitioning/);
 
     const cupertinoMotion = await probeMessageMotion(page, true);
     expect(cupertinoMotion.marked).toBe(true);

@@ -1,7 +1,7 @@
 # AIRI Live2D 与 Hiyori 结构分析
 
 > 归档日期：2026-09-20  
-> 范围：LeslieTavern 仓库内集成的 AIRI Desktop、Hiyori Free/Pro 模型包，以及可用于制作替代角色的 AI 辅助工作流。
+> 范围：DreamLand 仓库内集成的 AIRI Desktop、Hiyori Free/Pro 模型包，以及可用于制作替代角色的 AI 辅助工作流。
 
 ## 结论摘要
 

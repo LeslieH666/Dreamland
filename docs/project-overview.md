@@ -2,7 +2,7 @@
 
 ## Purpose
 
-LeslieTavern explores a desktop-first character-chat experience while retaining SillyTavern's established chat engine and data compatibility. New behavior is implemented around the existing core wherever possible so users can continue using character cards and conversations without a forced migration.
+DreamLand explores a desktop-first character-chat experience while retaining SillyTavern's established chat engine and data compatibility. New behavior is implemented around the existing core wherever possible so users can continue using character cards and conversations without a forced migration.
 
 ## Architecture
 
@@ -27,12 +27,12 @@ Optional companion boundary
    ├─ Process-scoped bearer authentication
    ├─ Capability discovery
    ├─ OpenAI-compatible Volcengine speech adapter
-   ├─ Active LeslieTavern character and chat binding
-   ├─ Authoritative LeslieTavern turn streaming
+   ├─ Active DreamLand character and chat binding
+   ├─ Authoritative DreamLand turn streaming
    └─ Bound-character Volcengine speech
 
 Local Windows workflow
-├─ One Leslie Heaven launcher
+├─ One DreamLand launcher
 ├─ Electron controls for AIRI and local-model stop; same-subnet mobile model selection and startup
 ├─ Ephemeral inherited Bridge token
 └─ Internal build, diagnostics, logs, and safe tracked-process shutdown scripts
@@ -53,8 +53,8 @@ Integrated source workspace
 - User data is local state and is not part of the source repository.
 - Direct LAN web access may be enabled explicitly with an allowlist that follows the private subnet used for each connection and a trusted-network firewall boundary. Same-subnet devices do not need per-IP entries, while public and unrelated routed networks remain blocked. Device discovery, data synchronization, cloud synchronization, and automatic memory writes still require separate security and approval designs before implementation.
 - The AIRI companion bridge is disabled by default and uses a process-scoped bearer token.
-- AIRI and local-model stop actions are exposed only through Electron IPC from the main LeslieTavern window. The authenticated HTTP API permits same-subnet clients to list project GGUF models, start a selected managed KoboldCpp model, and probe fixed host-loopback ports. It does not accept arbitrary paths, URLs, commands, or routed/public clients.
-- AIRI sends only the newest user input. LeslieTavern remains authoritative for prompt assembly, generation, persistence, character selection, and voice selection. The boundary is documented in [airi-bridge.md](airi-bridge.md).
+- AIRI and local-model stop actions are exposed only through Electron IPC from the main DreamLand window. The authenticated HTTP API permits same-subnet clients to list project GGUF models, start a selected managed KoboldCpp model, and probe fixed host-loopback ports. It does not accept arbitrary paths, URLs, commands, or routed/public clients.
+- AIRI sends only the newest user input. DreamLand remains authoritative for prompt assembly, generation, persistence, character selection, and voice selection. The boundary is documented in [airi-bridge.md](airi-bridge.md).
 
 ## Current maturity
 

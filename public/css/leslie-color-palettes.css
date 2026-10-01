@@ -1,7 +1,7 @@
 /* Each Leslie palette has a complete light and dark surface set. The original
  * SillyTavern theme and user.css continue to own their own colors. */
 
-body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette][data-leslie-color-scheme] {
     --cu-blue: var(--palette-accent);
     --cu-blue-pressed: var(--palette-accent-strong);
     --cu-blue-soft: var(--palette-accent-soft);
@@ -84,15 +84,15 @@ body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme] {
     --leslie-workspace-shadow: var(--palette-shadow);
 }
 
-body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme="light"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette][data-leslie-color-scheme="light"] {
     --palette-action: var(--palette-accent);
 }
 
-body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme="dark"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette][data-leslie-color-scheme="dark"] {
     --palette-action: var(--palette-outgoing);
 }
 
-body.leslie-modern[data-leslie-color-palette="jade"][data-leslie-color-scheme="light"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="jade"][data-leslie-color-scheme="light"] {
     --palette-canvas: #edf4f0;
     --palette-sidebar: #f9fcfa;
     --palette-surface: #ffffff;
@@ -111,7 +111,7 @@ body.leslie-modern[data-leslie-color-palette="jade"][data-leslie-color-scheme="l
     --palette-shadow: 0 18px 48px rgba(29, 58, 47, 0.16);
 }
 
-body.leslie-modern[data-leslie-color-palette="jade"][data-leslie-color-scheme="dark"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="jade"][data-leslie-color-scheme="dark"] {
     --palette-canvas: #111b19;
     --palette-sidebar: #15221e;
     --palette-surface: #1c2b26;
@@ -130,7 +130,7 @@ body.leslie-modern[data-leslie-color-palette="jade"][data-leslie-color-scheme="d
     --palette-shadow: 0 22px 56px rgba(0, 0, 0, 0.45);
 }
 
-body.leslie-modern[data-leslie-color-palette="iris"][data-leslie-color-scheme="light"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="iris"][data-leslie-color-scheme="light"] {
     --palette-canvas: #f0f0f8;
     --palette-sidebar: #fbfbff;
     --palette-surface: #ffffff;
@@ -149,7 +149,7 @@ body.leslie-modern[data-leslie-color-palette="iris"][data-leslie-color-scheme="l
     --palette-shadow: 0 18px 48px rgba(45, 42, 91, 0.17);
 }
 
-body.leslie-modern[data-leslie-color-palette="iris"][data-leslie-color-scheme="dark"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="iris"][data-leslie-color-scheme="dark"] {
     --palette-canvas: #151521;
     --palette-sidebar: #1a1a2a;
     --palette-surface: #232237;
@@ -168,7 +168,7 @@ body.leslie-modern[data-leslie-color-palette="iris"][data-leslie-color-scheme="d
     --palette-shadow: 0 22px 56px rgba(0, 0, 0, 0.47);
 }
 
-body.leslie-modern[data-leslie-color-palette="clay"][data-leslie-color-scheme="light"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="clay"][data-leslie-color-scheme="light"] {
     --palette-canvas: #f7f1eb;
     --palette-sidebar: #fdfaf6;
     --palette-surface: #fffdf9;
@@ -187,7 +187,7 @@ body.leslie-modern[data-leslie-color-palette="clay"][data-leslie-color-scheme="l
     --palette-shadow: 0 18px 48px rgba(84, 49, 33, 0.16);
 }
 
-body.leslie-modern[data-leslie-color-palette="clay"][data-leslie-color-scheme="dark"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="clay"][data-leslie-color-scheme="dark"] {
     --palette-canvas: #211915;
     --palette-sidebar: #291e19;
     --palette-surface: #33251f;
@@ -206,7 +206,7 @@ body.leslie-modern[data-leslie-color-palette="clay"][data-leslie-color-scheme="d
     --palette-shadow: 0 22px 56px rgba(0, 0, 0, 0.46);
 }
 
-body.leslie-modern[data-leslie-color-palette="slate"][data-leslie-color-scheme="light"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="slate"][data-leslie-color-scheme="light"] {
     --palette-canvas: #eef2f5;
     --palette-sidebar: #fafbfd;
     --palette-surface: #ffffff;
@@ -225,7 +225,7 @@ body.leslie-modern[data-leslie-color-palette="slate"][data-leslie-color-scheme="
     --palette-shadow: 0 18px 48px rgba(35, 57, 73, 0.16);
 }
 
-body.leslie-modern[data-leslie-color-palette="slate"][data-leslie-color-scheme="dark"] {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette="slate"][data-leslie-color-scheme="dark"] {
     --palette-canvas: #141b21;
     --palette-sidebar: #19232b;
     --palette-surface: #22303a;
@@ -244,16 +244,16 @@ body.leslie-modern[data-leslie-color-palette="slate"][data-leslie-color-scheme="
     --palette-shadow: 0 22px 56px rgba(0, 0, 0, 0.47);
 }
 
-body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme] #leslie-conversation-sidebar {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette][data-leslie-color-scheme] #leslie-conversation-sidebar {
     background: var(--palette-sidebar);
 }
 
-body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme] .leslie-settings-logo {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette][data-leslie-color-scheme] .leslie-settings-logo {
     background: var(--palette-action);
     box-shadow: 0 7px 18px color-mix(in srgb, var(--palette-action) 24%, transparent);
 }
 
-body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme] :is(
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette][data-leslie-color-scheme] :is(
     .leslie-brand-mark,
     .leslie-settings-nav-item.active > i,
     .leslie-settings-primary-button,
@@ -272,34 +272,34 @@ body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme] :is(
     background: var(--palette-action);
 }
 
-body.leslie-modern[data-leslie-color-palette][data-leslie-color-scheme] .leslieHomeCharacterPin.is-pinned {
+body.leslie-modern:not([data-leslie-design-language="dreamland"])[data-leslie-color-palette][data-leslie-color-scheme] .leslieHomeCharacterPin.is-pinned {
     background: var(--palette-action) !important;
 }
 
-body.leslie-modern .leslie-theme-menu {
+body.leslie-modern:not([data-leslie-design-language="dreamland"]) .leslie-theme-menu {
     max-height: calc(100dvh - 16px);
     overflow-y: auto;
     overscroll-behavior: contain;
 }
 
-body.leslie-modern .leslie-theme-menu button .leslie-palette-preview {
+body.leslie-modern:not([data-leslie-design-language="dreamland"]) .leslie-theme-menu button .leslie-palette-preview {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0;
 }
 
-body.leslie-modern .leslie-palette-preview i {
+body.leslie-modern:not([data-leslie-design-language="dreamland"]) .leslie-palette-preview i {
     width: 13px;
     height: 18px;
     border: 1px solid color-mix(in srgb, var(--palette-text) 18%, transparent);
 }
 
-body.leslie-modern .leslie-palette-preview i:first-child {
+body.leslie-modern:not([data-leslie-design-language="dreamland"]) .leslie-palette-preview i:first-child {
     border-radius: 7px 0 0 7px;
 }
 
-body.leslie-modern .leslie-palette-preview i:last-child {
+body.leslie-modern:not([data-leslie-design-language="dreamland"]) .leslie-palette-preview i:last-child {
     border-radius: 0 7px 7px 0;
     border-left: 0;
 }

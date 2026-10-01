@@ -1,21 +1,21 @@
-LeslieTavern Windows x64 懒人便携版
+DreamLand Windows x64 懒人便携版
 ====================================
 
 一、启动
 
-双击“启动 LeslieTavern.cmd”。首次启动需要初始化空白数据，可能比以后稍慢。
+双击“启动 DreamLand.cmd”。首次启动需要初始化空白数据，可能比以后稍慢。
 程序已内置 Electron、Node.js、Chromium 和生产依赖，不需要另外安装 Node.js 或 npm。
 
 二、关闭
 
-关闭 LeslieTavern 窗口后，程序会留在系统托盘并继续处理朋友圈互动。需要完全退出时，请在托盘菜单选择“退出 LeslieTavern”，也可以双击“关闭 LeslieTavern.cmd”。
+关闭 DreamLand 窗口后，程序会留在系统托盘并继续处理朋友圈互动。需要完全退出时，请在托盘菜单选择“退出 DreamLand”，也可以双击“关闭 DreamLand.cmd”。
 关闭脚本只会处理本便携包记录的主进程，不会批量结束电脑上的其他 Electron 程序。
 
 三、用户数据
 
 所有角色卡、聊天、世界书、设置、API 密钥和 Leslie 记忆都保存在“UserData”目录。
 本包不含制作者的私人角色、聊天、账号、API 密钥或记忆数据。
-移动到另一台电脑时，应在程序完全关闭后复制整个 LeslieTavern 文件夹。
+移动到另一台电脑时，应在程序完全关闭后复制整个 DreamLand 文件夹。
 
 四、备份
 
@@ -29,7 +29,7 @@ LeslieTavern Windows x64 懒人便携版
 
 六、模型连接
 
-首次使用需要在 LeslieTavern 的“设置 → 模型连接”中填写自己的 API 地址、密钥与模型。
+首次使用需要在 DreamLand 的“设置 → 模型连接”中填写自己的 API 地址、密钥与模型。
 这些信息只保存在当前便携包的 UserData 中。
 连接状态会区分“正在检测、已连接、已配置、未连接”；只有接口实际验证成功才会显示“已连接”。
 

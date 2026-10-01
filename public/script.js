@@ -446,7 +446,7 @@ export let isChatSaving = false;
 let firstRun = false;
 export let settingsReady = false;
 let currentVersion = '0.0.0';
-export let displayVersion = 'SillyTavern';
+export let displayVersion = 'DreamLand';
 
 let generation_started = new Date();
 /** @type {Character[]} */
@@ -531,7 +531,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `DreamLand ${data.pkgVersion} · SillyTavern core`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -731,10 +731,10 @@ async function firstLoadInit() {
     initLoaderOverlay.classList.add('splash-screen');
 
     const splashLogo = document.createElement('img');
-    splashLogo.src = '/img/logo.png';
-    splashLogo.alt = 'SillyTavern';
+    splashLogo.src = '/img/dreamland/icon.svg';
+    splashLogo.alt = 'DreamLand';
     splashLogo.className = 'splash-logo';
-    splashLogo.ariaLabel = t`SillyTavern Logo`;
+    splashLogo.ariaLabel = 'DreamLand';
 
     const splashMessage = document.createElement('h2');
     splashMessage.className = 'splash-message';

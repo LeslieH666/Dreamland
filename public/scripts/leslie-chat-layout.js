@@ -32,6 +32,8 @@ import { selectLatestCharacterChat } from './leslie-chat-selection.js';
 import { runCharacterExport, syncCharacterExportMenuState } from './leslie-character-export.js';
 import { getLeslieConnectionState } from './leslie-connection-state.js';
 import { user_avatar } from './personas.js';
+import { callGenericPopup, POPUP_TYPE } from './popup.js';
+import { DREAMLAND_BRAND, BLUE_ARCHIVE_NOTICE } from './dreamland-brand.js';
 import {
     beginRealitySession,
     getWorldLineKind,
@@ -164,12 +166,20 @@ function createSidebar() {
     sidebar.setAttribute('aria-label', '角色与会话');
     sidebar.innerHTML = `
         <header class="leslie-sidebar-header">
-            <div class="leslie-brand" aria-label="Leslie">
-                <span class="leslie-brand-mark"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i></span>
-                <span class="leslie-brand-copy"><strong>Leslie</strong><small>角色会话</small></span>
+            <div class="leslie-brand" aria-label="DreamLand">
+                <span class="leslie-brand-mark"><img src="${DREAMLAND_BRAND.icon}" alt=""></span>
+                <span class="leslie-brand-copy"><strong>DreamLand</strong><small>故事与陪伴的归处</small></span>
             </div>
             <div class="leslie-sidebar-actions"></div>
         </header>
+        <nav class="dreamland-navigation" aria-label="DreamLand 导航">
+            <button type="button" data-action="home" title="归处"><i class="fa-solid fa-house" aria-hidden="true"></i><span>归处</span></button>
+            <button type="button" data-action="moments" title="朋友圈"><i class="fa-solid fa-camera-retro" aria-hidden="true"></i><span>朋友圈</span></button>
+            <button type="button" data-action="workshop" title="角色工坊"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>工坊</span></button>
+            <button type="button" data-action="background" title="导入或选择背景"><i class="fa-solid fa-image" aria-hidden="true"></i><span>背景</span></button>
+            <button type="button" data-action="settings" title="设置"><i class="fa-solid fa-sliders" aria-hidden="true"></i><span>设置</span></button>
+            <button type="button" data-action="about" title="关于 DreamLand"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>关于</span></button>
+        </nav>
         <div class="leslie-sidebar-tools">
             <label class="leslie-conversation-search" for="leslie-conversation-search">
                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
@@ -1103,6 +1113,22 @@ async function handleAction(action) {
         return;
     }
     switch (action) {
+        case 'home':
+            document.getElementById('option_close_chat')?.click();
+            break;
+        case 'moments':
+            document.getElementById('leslie-moments-launcher')?.click();
+            break;
+        case 'workshop': {
+            ensureCharacterWorkspace('rm_button_create');
+            break;
+        }
+        case 'background':
+            document.querySelector('#backgrounds-button .drawer-toggle')?.click();
+            break;
+        case 'about':
+            await callGenericPopup(`<article class="dreamland-about"><img src="${DREAMLAND_BRAND.icon}" width="64" height="64" alt=""><h2>DreamLand</h2><p>${DREAMLAND_BRAND.tagline}</p><p>${DREAMLAND_BRAND.introduction}</p><p>原 LeslieTavern。基于 SillyTavern，集成 AIRI；衍生代码采用 AGPL-3.0，各上游作者保留其权利。</p><h3>蔚蓝终端 · Blue Archive Inspired</h3><p>${BLUE_ARCHIVE_NOTICE}</p><a href="${DREAMLAND_BRAND.feedback}" target="_blank" rel="noopener noreferrer">项目反馈与素材联系</a></article>`, POPUP_TYPE.TEXT);
+            break;
         case 'clear-search':
             searchInput.value = '';
             layoutState.query = '';

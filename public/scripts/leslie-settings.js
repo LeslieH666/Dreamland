@@ -33,6 +33,7 @@ import {
     syncLesliePrivacyModeControls,
 } from './leslie-privacy-mode.js';
 import './leslie-voice-settings.js';
+import { DREAMLAND_STYLES } from './dreamland-appearance-core.js';
 
 const SECONDARY_DRAWERS = [
     'ai-config-button',
@@ -51,16 +52,16 @@ const COPY = {
         close: '关闭设置',
         backToChat: '返回聊天',
         settings: '设置',
-        subtitle: 'Leslie 简洁模式',
+        subtitle: 'DreamLand 设置',
         introEyebrow: '日常设置',
         introTitle: '把常用的留在眼前',
         introBody: '这里只整理入口，不会删除或改写 SillyTavern 的原功能。常用选项可以直接调整，复杂功能仍保留在高级设置中。',
         safeNote: '聊天记录、角色卡和提示词顺序不会因这个界面而改变。',
         quickTitle: '外观与使用习惯',
-        quickBody: '基础主题沿用原设置；Leslie 主题色保存在当前浏览器。',
+        quickBody: '四套界面风格与外观偏好保存在当前浏览器；基础主题沿用原设置。',
         theme: '界面主题',
         themeHelp: '选择 SillyTavern 基础主题',
-        palette: 'Leslie 主题色',
+        palette: '原界面主题色',
         paletteHelp: '亮色和暗色会自动使用成套配色',
         language: '界面语言',
         languageHelp: '更改后页面会重新载入',
@@ -98,7 +99,7 @@ const COPY = {
         spacesSetupHelp: '在这台电脑上为默认空间设置密码；若已有密码，请输入原密码。启用后将迁移并加密现有数据，保留加密备份。密码丢失后无法解密。',
         spacesPasswordRequired: '请输入密码，不能留空。',
         spacesPasswordTip: '密码长度不限；较短的密码更容易被猜到。',
-        spacesLocalOnly: '首次启用只能在 LeslieTavern 电脑本机完成。',
+        spacesLocalOnly: '首次启用只能在 DreamLand 电脑本机完成。',
         spacesPassword: '密码',
         spacesConfirm: '确认密码',
         spacesEnable: '启用用户空间',
@@ -146,7 +147,7 @@ const COPY = {
         lockedBody: '这些功能仍然完整保留。只有需要精细调整时再展开，可减少误操作。',
         unlock: '展开高级设置',
         relock: '收起高级设置',
-        footer: 'Leslie 外观偏好可随时调整；其他设置仍可在对应面板中恢复。',
+        footer: 'DreamLand 外观偏好可随时调整；其他设置仍可在对应面板中恢复。',
         back: '返回设置首页',
         simpleDetail: '常用设置',
         navigation: '设置分类',
@@ -211,18 +212,18 @@ const COPY = {
         localModelAdvanced: '展开高级连接设置',
         localModelAdvancedHelp: 'Ollama、llama.cpp、其他运行时、手动地址和端口',
         localModelDetect: '一键识别并自动配置',
-        localModelDetectHelp: '由 LeslieTavern 电脑识别已运行的模型；若未运行，则启动上方选中的 GGUF 模型。',
+        localModelDetectHelp: '由 DreamLand 电脑识别已运行的模型；若未运行，则启动上方选中的 GGUF 模型。',
         localModelDetectChecking: '正在查找或启动本地模型，请稍候…',
         localModelDetectSuccess: '已识别并配置：',
         localModelDetectFailure: '未找到正在运行的适配模型，也没有可托管启动的 GGUF 模型。请检查模型目录或运行程序。',
         localModelLoading: '启用本地模型加载',
-        localModelLoadingHelp: '关闭后，LeslieTavern 不会自动连接或调用本地模型；不会删除模型文件。',
+        localModelLoadingHelp: '关闭后，DreamLand 不会自动连接或调用本地模型；不会删除模型文件。',
         localModelLoadingDisabled: '本地模型加载已关闭，请先打开开关。',
         localModelLoadingEnabledStatus: '本地模型加载已开启。',
         localModelLoadingDisabledStatus: '本地模型加载已关闭；项目不会连接本地模型。',
         desktopServicesTitle: '本地服务',
-        desktopServicesBody: '从 Leslie Heaven 内启动或停止可选桌面组件，不再需要单独的启动脚本。',
-        desktopServicesUnavailable: '请在 Leslie Heaven 桌面应用中管理这些服务。浏览器与局域网页面只能查看设置。',
+        desktopServicesBody: '从 DreamLand 内启动或停止可选桌面组件，不再需要单独的启动脚本。',
+        desktopServicesUnavailable: '请在 DreamLand 桌面应用中管理这些服务。浏览器与局域网页面只能查看设置。',
         desktopServiceAiri: 'AIRI 桌面陪伴',
         desktopServiceAiriBody: '连接当前角色、聊天、记忆与语音。首次启动可能需要构建。',
         desktopServiceModel: '已管理的本地模型',
@@ -329,16 +330,16 @@ const COPY = {
         close: 'Close settings',
         backToChat: 'Back to chats',
         settings: 'Settings',
-        subtitle: 'Leslie simple mode',
+        subtitle: 'DreamLand settings',
         introEyebrow: 'Everyday settings',
         introTitle: 'Keep the essentials in sight',
         introBody: 'This page reorganizes access without removing or rewriting SillyTavern features. Common options stay close at hand, while complex tools remain available under Advanced.',
         safeNote: 'This interface does not change chats, character cards, or prompt order.',
         quickTitle: 'Appearance & comfort',
-        quickBody: 'The base theme uses SillyTavern settings; Leslie palettes are saved in this browser.',
+        quickBody: 'Interface styles and appearance preferences are saved in this browser. The base theme uses SillyTavern settings.',
         theme: 'Theme',
         themeHelp: 'Choose the base SillyTavern theme',
-        palette: 'Leslie palette',
+        palette: 'Original interface palette',
         paletteHelp: 'Each palette includes light and dark colors',
         language: 'Language',
         languageHelp: 'The page reloads after a change',
@@ -376,7 +377,7 @@ const COPY = {
         spacesSetupHelp: 'Set a password for the default space on this computer; enter its current password if one exists. Activation encrypts existing data and retains an encrypted backup. A lost password cannot decrypt the vault.',
         spacesPasswordRequired: 'Enter a password; it cannot be empty.',
         spacesPasswordTip: 'There is no length requirement; shorter passwords are easier to guess.',
-        spacesLocalOnly: 'Initial setup is available only on the LeslieTavern computer.',
+        spacesLocalOnly: 'Initial setup is available only on the DreamLand computer.',
         spacesPassword: 'Password',
         spacesConfirm: 'Confirm password',
         spacesEnable: 'Enable user spaces',
@@ -424,7 +425,7 @@ const COPY = {
         lockedBody: 'Every feature is still available. Reveal these controls only when you need precise customization.',
         unlock: 'Show advanced settings',
         relock: 'Hide advanced settings',
-        footer: 'Leslie appearance preferences can be changed at any time; other settings remain available in their original panels.',
+        footer: 'DreamLand appearance preferences can be changed at any time; other settings remain available in their original panels.',
         back: 'Back to settings',
         simpleDetail: 'Common settings',
         navigation: 'Settings categories',
@@ -489,18 +490,18 @@ const COPY = {
         localModelAdvanced: 'Show advanced connection settings',
         localModelAdvancedHelp: 'Ollama, llama.cpp, other runtimes, manual addresses and ports',
         localModelDetect: 'Detect and configure automatically',
-        localModelDetectHelp: 'The LeslieTavern computer checks for a running model, then starts the selected GGUF model if none is running.',
+        localModelDetectHelp: 'The DreamLand computer checks for a running model, then starts the selected GGUF model if none is running.',
         localModelDetectChecking: 'Finding or starting the local model…',
         localModelDetectSuccess: 'Detected and configured:',
         localModelDetectFailure: 'No compatible model is running and no managed GGUF model is available. Check the models folder or runtime.',
         localModelLoading: 'Enable local model loading',
-        localModelLoadingHelp: 'When disabled, LeslieTavern will not connect to or call the local model. Model files are not deleted.',
+        localModelLoadingHelp: 'When disabled, DreamLand will not connect to or call the local model. Model files are not deleted.',
         localModelLoadingDisabled: 'Local model loading is disabled. Turn on the switch first.',
         localModelLoadingEnabledStatus: 'Local model loading is enabled.',
         localModelLoadingDisabledStatus: 'Local model loading is disabled; the project will not connect to a local model.',
         desktopServicesTitle: 'Local services',
-        desktopServicesBody: 'Start or stop optional desktop components from Leslie Heaven without separate launch scripts.',
-        desktopServicesUnavailable: 'Manage these services in the Leslie Heaven desktop app. Browser and LAN pages can only view settings.',
+        desktopServicesBody: 'Start or stop optional desktop components from DreamLand without separate launch scripts.',
+        desktopServicesUnavailable: 'Manage these services in the DreamLand desktop app. Browser and LAN pages can only view settings.',
         desktopServiceAiri: 'AIRI companion',
         desktopServiceAiriBody: 'Connects to the active character, chat, memory, and voice. The first start may build AIRI.',
         desktopServiceModel: 'Managed local model',
@@ -1808,6 +1809,24 @@ function createSettingsOverlay() {
                                 </div>
                             </div>
                             <div class="leslie-settings-quick-grid">
+                                <label class="leslie-quick-control" for="dreamland-style-select">
+                                    <span><strong>DreamLand · 界面风格</strong><small>四套完整风格，选择后即时生效</small></span>
+                                    <select id="dreamland-style-select" data-dreamland-preference="style">
+                                        ${Object.entries(DREAMLAND_STYLES).map(([value, meta]) => `<option value="${value}">${meta.label} · ${meta.english}</option>`).join('')}
+                                    </select>
+                                </label>
+                                <label class="leslie-quick-control" for="dreamland-language-select">
+                                    <span><strong>界面版本</strong><small>可随时恢复原界面</small></span>
+                                    <select id="dreamland-language-select"><option value="dreamland">DreamLand</option><option value="cupertino">Cupertino</option><option value="classic">经典</option></select>
+                                </label>
+                                <label class="leslie-quick-control" for="dreamland-decoration-select">
+                                    <span><strong>氛围装饰</strong><small>控制首页插画与几何纹理</small></span>
+                                    <select id="dreamland-decoration-select" data-dreamland-preference="decoration"><option value="subtle">适中</option><option value="full">丰富</option><option value="off">关闭</option></select>
+                                </label>
+                                <label class="leslie-quick-control" for="dreamland-background-select">
+                                    <span><strong>场景背景</strong><small>使用“背景”中导入的图片；角色图沿用角色卡</small></span>
+                                    <select id="dreamland-background-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰氛围</option></select>
+                                </label>
                                 <label class="leslie-quick-control" for="leslie-theme-select">
                                     <span>
                                         <strong>${copy.theme}</strong>
@@ -2859,7 +2878,7 @@ async function connectSelectedModelService() {
 /**
  * Keep the application-side connection state honest when local usage is
  * disabled. The external runtime is intentionally not managed here: users
- * may run KoboldCpp or llama.cpp independently of LeslieTavern.
+ * may run KoboldCpp or llama.cpp independently of DreamLand.
  */
 function disconnectLocalModelInApp() {
     const service = MODEL_SERVICES[getActiveModelService()];
@@ -3012,6 +3031,7 @@ function initLeslieSettings() {
 
     settingsOverlay = createSettingsOverlay();
     document.body.append(settingsOverlay);
+    document.dispatchEvent(new CustomEvent('dreamland:appearance-ready'));
     demoModeBanner = createDemoModeBanner();
     document.body.append(demoModeBanner);
     demoModeBanner.addEventListener('click', (event) => {

@@ -1,5 +1,15 @@
 # Roadmap
 
+## DreamLand appearance refresh (2026-10-01)
+
+- Public branding now uses DreamLand. Internal module names, Bridge v1 and user-data paths stay stable.
+- Clear, Moon, Paper and Blue styles support light/dark mode, responsive navigation and shared tool surfaces.
+- Cupertino and Classic remain available. Existing explicit preferences are preserved; new users start with Clear.
+- Original product art and icons are included. The Blue Archive-inspired theme includes an attribution notice and source inventory.
+- Appearance preferences are browser-only. No chat, character, memory or identity schema migration is required.
+- See [appearance and branding](dreamland-appearance.md) for switching, background import and rollback.
+- [Actual screenshot preview](dreamland-preview.html) is available. Repository/lint checks, 636 unit tests and 24 browser checks passed; complete portable rebuild and live desktop/audio acceptance remain release checks.
+
 ## Available in the current prototype
 
 - SillyTavern-compatible chat and character workflows.
@@ -27,10 +37,10 @@
 - Character-card and chat-record export from the Leslie chat menu, including a combined ZIP that preserves CCV3 PNG and SillyTavern JSONL files.
 - Windows portable-package builder with empty distributable user data.
 - Disabled-by-default Leslie Bridge v1 foundation with bearer authentication, capability discovery, and an OpenAI-compatible Volcengine speech route.
-- Authoritative AIRI companion turns through the active LeslieTavern character, chat, prompt pipeline, memory, and model.
-- Automatic AIRI binding to the visible LeslieTavern character and its Volcengine voice.
+- Authoritative AIRI companion turns through the active DreamLand character, chat, prompt pipeline, memory, and model.
+- Automatic AIRI binding to the visible DreamLand character and its Volcengine voice.
 - Dedicated AIRI mode with automatic provider selection, no onboarding window, and a reduced settings surface.
-- One `Leslie Heaven` desktop launcher, with AIRI and tracked local-model stop controls in Electron settings. Same-subnet mobile clients can select a cataloged GGUF model and request managed KoboldCpp startup through authenticated, CSRF-protected HTTP endpoints.
+- One `DreamLand` desktop launcher, with AIRI and tracked local-model stop controls in Electron settings. Same-subnet mobile clients can select a cataloged GGUF model and request managed KoboldCpp startup through authenticated, CSRF-protected HTTP endpoints.
 - Optional interactive-guidance input mode with three AI-generated replies anchored to the current user Persona, automatic collapse for free-form typing, and the existing model, character-card, World Info, Persona, memory, and chat pipeline as its source of truth.
 - A story-line plot compass for solo chats, with three structured multi-stage arcs that state their in-world horizon and lasting impact, optional 12–80-turn estimates, versioned chat-metadata persistence with v1 migration, a compact desktop header pin, a non-overlapping mobile dock and bottom sheet, and active-plan guidance for existing reply choices without automatic character steering.
 - One-click local Qwen3.5 9B RP and Peach 2.0 9B RP GGUF detection and API configuration through the existing KoboldCpp or llama.cpp adapters, plus desktop settings start/stop controls; model weights remain outside Git.
@@ -50,8 +60,8 @@
 2. Add long-response cancellation and swipe coverage for automatic voice playback.
 3. Split the largest frontend modules into smaller maintainable units.
 4. Add schema migration and recovery fixtures for identity, memory, and moments stores.
-5. Add AIRI controls for LeslieTavern retry, regenerate, swipe, edit, and branch operations.
-6. Add an optional per-character AIRI display-model mapping without mixing it into LeslieTavern character data.
+5. Add AIRI controls for DreamLand retry, regenerate, swipe, edit, and branch operations.
+6. Add an optional per-character AIRI display-model mapping without mixing it into DreamLand character data.
 7. Extend reality-line switching to group chats after group identity, membership, and cross-line privacy rules are specified and tested.
 
 ## Later work

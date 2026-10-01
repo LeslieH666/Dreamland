@@ -1,0 +1,24 @@
+/* Original geometry informed by BA system screens; no game images are bundled. */
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .dreamland-navigation { background: #123d58; border-color: #26769e; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .dreamland-navigation button { color: #d6eeff; border-radius: 4px; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .dreamland-navigation button:hover,
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"].leslie-home-open .dreamland-navigation [data-action="home"] { background: #91e6ff; color: #13384c; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslie-sidebar-header { border-bottom: 3px solid var(--dl-accent); }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslieHomeEyebrow::after { content: " / ARCHIVE"; font-size: 10px; letter-spacing: .2em; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslieHomeIntro { border-top: 4px solid var(--dl-accent); }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] :where(.leslieHomeSectionKicker, .leslie-settings-eyebrow) { font-family: ui-monospace, Consolas, monospace; letter-spacing: .16em; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslie-conversation-filters button { border-radius: 4px; transform: skewX(-6deg); }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] :where(.leslie-settings-section, .leslie-workshop-section, .leslie-moments-post) { border-top: 3px solid var(--dl-accent); }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header { border-bottom: 3px solid #59c5e8; background: #123d58; color: #e5f7ff; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header :where(.leslie-chat-heading strong, .leslie-chat-name, .leslie-icon-button, .leslie-chat-avatar, .leslie-header-memory-button) { color: #e5f7ff; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header :where(.leslie-chat-heading small, .leslie-chat-status, .leslie-chat-world-line button) { color: #bce7fa; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header .leslie-icon-button,
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-actions #leslie-memory-launcher { color: #e5f7ff; background: #24516c; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header .leslie-icon-button:hover,
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-actions #leslie-memory-launcher:hover { color: #13384c; background: #91e6ff; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"]:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { border-left: 3px solid var(--dl-accent); border-radius: 4px 12px 12px; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-dreamland-decoration]:not([data-dreamland-decoration="off"]) .leslieHomeIntro {
+    background-image: linear-gradient(120deg, transparent 75%, var(--cu-blue-soft) 75%), linear-gradient(var(--cu-blue-soft) 1px, transparent 1px), linear-gradient(90deg, var(--cu-blue-soft) 1px, transparent 1px);
+    background-size: auto, 32px 32px, 32px 32px;
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-dreamland-decoration="full"] .leslieHomeIntro::after { content: "DREAMLAND / CONNECT YOUR STORY"; position: absolute; bottom: 18px; right: 20px; color: var(--dl-muted); font: 9px ui-monospace, monospace; letter-spacing: .16em; }

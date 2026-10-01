@@ -1,5 +1,5 @@
 /**
- * Pure configuration for LeslieTavern's small local-model setup helper.
+ * Pure configuration for DreamLand's small local-model setup helper.
  * Keep this separate from DOM and SillyTavern imports so it can be tested.
  */
 
@@ -13,13 +13,13 @@ export const LESLIE_LOCAL_MODEL = Object.freeze({
             apiType: 'koboldcpp',
             endpoint: 'http://127.0.0.1:5001',
             label: 'KoboldCpp',
-            startupHint: '在 KoboldCpp 中加载 models\\Qwen3.5-text-9B-NSFW-RP-RolePlay\\Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf，选择 CUDA，端口设为 5001，然后回到 LeslieTavern 点击“应用并连接”。',
+            startupHint: '在 KoboldCpp 中加载 models\\Qwen3.5-text-9B-NSFW-RP-RolePlay\\Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf，选择 CUDA，端口设为 5001，然后回到 DreamLand 点击“应用并连接”。',
         }),
         llamacpp: Object.freeze({
             apiType: 'llamacpp',
             endpoint: 'http://127.0.0.1:8080',
             label: 'llama.cpp',
-            startupHint: '在 llama-server 中加载 models\\Qwen3.5-text-9B-NSFW-RP-RolePlay\\Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf，监听 127.0.0.1:8080，然后回到 LeslieTavern 点击“应用并连接”。',
+            startupHint: '在 llama-server 中加载 models\\Qwen3.5-text-9B-NSFW-RP-RolePlay\\Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf，监听 127.0.0.1:8080，然后回到 DreamLand 点击“应用并连接”。',
         }),
     }),
     generation: Object.freeze({
@@ -236,7 +236,7 @@ export function cleanLeslieLocalRoleplayOutput(text, { model = '' } = {}) {
 }
 
 /**
- * Whether LeslieTavern is allowed to use the configured local model service.
+ * Whether DreamLand is allowed to use the configured local model service.
  * This is intentionally a browser-local preference and does not touch model
  * files or the external runtime process.
  * @param {Storage | undefined} [storage] Storage implementation for testing.

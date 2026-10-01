@@ -4,7 +4,7 @@ $ExpectedExecutable = [IO.Path]::GetFullPath((Join-Path $ProjectRoot 'Runtime\el
 $PidPath = Join-Path $ProjectRoot 'Run\LeslieTavern.pid'
 
 if (-not (Test-Path -LiteralPath $PidPath)) {
-    Write-Host 'LeslieTavern is not running.' -ForegroundColor Yellow
+    Write-Host 'DreamLand is not running.' -ForegroundColor Yellow
     exit 0
 }
 
@@ -16,7 +16,7 @@ if (-not [int]::TryParse((Get-Content -LiteralPath $PidPath -Raw).Trim(), [ref]$
 $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
 if (-not $process) {
     Remove-Item -LiteralPath $PidPath -Force
-    Write-Host 'LeslieTavern is already stopped.' -ForegroundColor Green
+    Write-Host 'DreamLand is already stopped.' -ForegroundColor Green
     exit 0
 }
 
@@ -34,7 +34,7 @@ for ($attempt = 0; $attempt -lt 120; $attempt++) {
 }
 
 if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
-    throw 'LeslieTavern did not complete a safe exit. The process was left running so its user space remains protected.'
+    throw 'DreamLand did not complete a safe exit. The process was left running so its user space remains protected.'
 }
 Remove-Item -LiteralPath $PidPath -Force -ErrorAction SilentlyContinue
-Write-Host 'LeslieTavern stopped.' -ForegroundColor Green
+Write-Host 'DreamLand stopped.' -ForegroundColor Green

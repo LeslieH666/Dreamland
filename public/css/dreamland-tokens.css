@@ -1,0 +1,152 @@
+/* Shared surfaces for chat, Leslie extensions and upstream controls. */
+body.leslie-modern[data-leslie-design-language="dreamland"][data-leslie-color-scheme] {
+    --dl-accent: #315f82;
+    --dl-accent-strong: #244b68;
+    --dl-canvas: #edf2f5;
+    --dl-surface: #fcfdfe;
+    --dl-soft: #f2f6f8;
+    --dl-text: #203342;
+    --dl-muted: #637985;
+    --dl-border: #d5e1e7;
+    --dl-outgoing: #dcebf2;
+    --dl-radius: 16px;
+    --dl-reading-font: system-ui, "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    --cu-blue: var(--dl-accent);
+    --cu-blue-pressed: var(--dl-accent-strong);
+    --cu-blue-soft: color-mix(in srgb, var(--dl-accent) 12%, transparent);
+    --cu-label: var(--dl-text);
+    --cu-secondary-label: var(--dl-muted);
+    --cu-tertiary-label: var(--dl-muted);
+    --cu-system-background: var(--dl-canvas);
+    --cu-secondary-background: var(--dl-surface);
+    --cu-tertiary-background: var(--dl-soft);
+    --cu-fill: color-mix(in srgb, var(--dl-accent) 7%, var(--dl-surface));
+    --cu-fill-strong: color-mix(in srgb, var(--dl-accent) 14%, var(--dl-surface));
+    --cu-separator: var(--dl-border);
+    --cu-separator-soft: color-mix(in srgb, var(--dl-border) 70%, transparent);
+    --cu-glass: var(--dl-surface);
+    --cu-glass-strong: var(--dl-surface);
+    --cu-incoming-bubble: var(--dl-surface);
+    --cu-outgoing-bubble: var(--dl-outgoing);
+    --cu-shadow-menu: 0 16px 44px color-mix(in srgb, var(--dl-text) 14%, transparent);
+    --leslie-surface-soft: var(--dl-soft);
+    --leslie-panel: var(--dl-surface);
+    --leslie-panel-glass: var(--dl-surface);
+    --leslie-panel-muted: var(--dl-soft);
+    --leslie-panel-strong: var(--cu-fill);
+    --leslie-input: var(--dl-surface);
+    --leslie-control: var(--dl-soft);
+    --leslie-control-hover: var(--cu-fill-strong);
+    --leslie-control-active: var(--cu-blue-soft);
+    --leslie-divider: var(--dl-border);
+    --leslie-track: var(--dl-border);
+    --leslie-thumb-ring: var(--dl-surface);
+    --leslie-disabled: var(--dl-soft);
+    --leslie-disabled-text: var(--dl-muted);
+    --leslie-code: var(--dl-soft);
+    --leslie-menu-shadow: var(--cu-shadow-menu);
+    --leslie-scrollbar: var(--dl-border);
+    --tg-layer-strong: var(--dl-soft);
+    --tg-canvas: var(--dl-canvas);
+    --SmartThemeBodyColor: var(--dl-text);
+    --SmartThemeEmColor: var(--dl-muted);
+    --SmartThemeQuoteColor: var(--dl-accent);
+    --SmartThemeBlurTintColor: var(--dl-surface);
+    --SmartThemeBorderColor: var(--dl-border);
+    --SmartThemeShadowColor: transparent;
+    --SmartThemeChatTintColor: var(--dl-canvas);
+    --SmartThemeUserMesBlurTintColor: var(--dl-outgoing);
+    --SmartThemeBotMesBlurTintColor: var(--dl-surface);
+    --leslie-sidebar-width: clamp(360px, 29vw, 410px);
+    color: var(--dl-text);
+    font-family: var(--dl-reading-font);
+    text-shadow: none;
+}
+
+body.leslie-modern[data-leslie-design-language="dreamland"][data-leslie-color-scheme="dark"] {
+    color-scheme: dark;
+    --dl-accent: #9bc9df;
+    --dl-accent-strong: #c3e4f2;
+    --dl-canvas: #111b24;
+    --dl-surface: #1b2933;
+    --dl-soft: #22343f;
+    --dl-text: #e5eef2;
+    --dl-muted: #a1b6c2;
+    --dl-border: #354953;
+    --dl-outgoing: #284756;
+}
+
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"] {
+    --dl-accent: #947132;
+    --dl-accent-strong: #72541f;
+    --dl-canvas: #e8ecf3;
+    --dl-surface: #f7f8fc;
+    --dl-soft: #eef0f7;
+    --dl-text: #27354c;
+    --dl-muted: #64728b;
+    --dl-border: #d1d7e5;
+    --dl-outgoing: #e5decb;
+    --dl-radius: 20px;
+    --leslie-sidebar-width: clamp(300px, 26vw, 360px);
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"][data-leslie-color-scheme="dark"] {
+    --dl-accent: #e1c185;
+    --dl-accent-strong: #f5dbab;
+    --dl-canvas: #101827;
+    --dl-surface: #192438;
+    --dl-soft: #222e43;
+    --dl-text: #edf0f7;
+    --dl-muted: #aab6cc;
+    --dl-border: #354158;
+    --dl-outgoing: #3c3540;
+}
+
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"] {
+    --dl-accent: #316353;
+    --dl-accent-strong: #21493c;
+    --dl-canvas: #f4f0e7;
+    --dl-surface: #fffdf7;
+    --dl-soft: #eee9de;
+    --dl-text: #343c34;
+    --dl-muted: #716f61;
+    --dl-border: #dbd5c6;
+    --dl-outgoing: #e6ebe0;
+    --dl-radius: 5px;
+    --dl-reading-font: "Noto Serif SC", "Songti SC", SimSun, Georgia, serif;
+    --leslie-sidebar-width: clamp(300px, 25vw, 360px);
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"][data-leslie-color-scheme="dark"] {
+    --dl-accent: #b0c9a3;
+    --dl-accent-strong: #d0e2bf;
+    --dl-canvas: #22251f;
+    --dl-surface: #2b2f26;
+    --dl-soft: #35392f;
+    --dl-text: #e9e5d8;
+    --dl-muted: #b7b7a6;
+    --dl-border: #4b5040;
+    --dl-outgoing: #394334;
+}
+
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
+    --dl-accent: #086b9c;
+    --dl-accent-strong: #005779;
+    --dl-canvas: #e8f3fb;
+    --dl-surface: #fcfeff;
+    --dl-soft: #eaf5fc;
+    --dl-text: #183953;
+    --dl-muted: #52758b;
+    --dl-border: #bedcea;
+    --dl-outgoing: #d6f1fc;
+    --dl-radius: 8px;
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-leslie-color-scheme="dark"] {
+    --dl-accent: #71daf7;
+    --dl-accent-strong: #b0eeff;
+    --dl-canvas: #0c2031;
+    --dl-surface: #163449;
+    --dl-soft: #1e4259;
+    --dl-text: #e5f7ff;
+    --dl-muted: #a0c7dc;
+    --dl-border: #356079;
+    --dl-outgoing: #17516b;
+}

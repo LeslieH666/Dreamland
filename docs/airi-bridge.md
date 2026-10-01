@@ -2,9 +2,9 @@
 
 ## Product boundary
 
-AIRI is the visible body and interaction surface for the character selected in LeslieTavern.
+AIRI is the visible body and interaction surface for the character selected in DreamLand.
 
-LeslieTavern owns:
+DreamLand owns:
 
 - the active character card;
 - Persona, World Info, extension prompts, and Leslie memory;
@@ -24,26 +24,26 @@ AIRI does not build a second character prompt and does not select a second model
 
 ## Turn flow
 
-1. The visible LeslieTavern page reports its current character, chat, Persona name, and voice binding through a narrow Electron IPC channel.
+1. The visible DreamLand page reports its current character, chat, Persona name, and voice binding through a narrow Electron IPC channel.
 2. AIRI sends microphone audio to `POST /companion/audio/transcriptions` when voice input is active.
-3. LeslieTavern uses its configured local speech-recognition model and returns text to AIRI.
+3. DreamLand uses its configured local speech-recognition model and returns text to AIRI.
 4. AIRI sends only the newest user message to `POST /chat/completions`.
-5. The LeslieTavern page calls its normal `sendMessageAsUser` and `Generate('normal')` flow.
-6. The normal LeslieTavern pipeline applies the character card, World Info, memory, model settings, extensions, and chat persistence.
+5. The DreamLand page calls its normal `sendMessageAsUser` and `Generate('normal')` flow.
+6. The normal DreamLand pipeline applies the character card, World Info, memory, model settings, extensions, and chat persistence.
 7. Generated text streams back to AIRI.
-8. AIRI requests speech from `POST /companion/audio/speech`. The server ignores AIRI voice choices and uses the voice assigned to the current LeslieTavern character.
+8. AIRI requests speech from `POST /companion/audio/speech`. The server ignores AIRI voice choices and uses the voice assigned to the current DreamLand character.
 
-Changing the selected character or chat in LeslieTavern changes the AIRI binding automatically.
+Changing the selected character or chat in DreamLand changes the AIRI binding automatically.
 
 ## Security boundary
 
 - The bridge is disabled unless `LESLIE_BRIDGE_TOKEN` contains 32 to 512 UTF-8 bytes.
-- The Leslie Heaven launcher creates a new random token for each desktop session; AIRI inherits it only when started from that desktop window's settings.
+- The DreamLand launcher creates a new random token for each desktop session; AIRI inherits it only when started from that desktop window's settings.
 - The token stays in process environments. It is not stored in settings, user data, logs, renderer storage, or source control.
 - AIRI renderer requests pass through its Electron main process. The renderer never receives the token.
-- The LeslieTavern browser host uses Electron IPC and accepts commands only from the visible LeslieTavern window.
+- The DreamLand browser host uses Electron IPC and accepts commands only from the visible DreamLand window.
 - AIRI connects only to a loopback bridge URL.
-- Ordinary LeslieTavern routes keep their existing CSRF and access controls.
+- Ordinary DreamLand routes keep their existing CSRF and access controls.
 
 ## Companion endpoints
 
@@ -53,9 +53,9 @@ All paths are below `/api/leslie/bridge/v1` and require bearer authentication.
 | --- | --- | --- |
 | `GET` | `/health` | Protocol health check |
 | `GET` | `/capabilities` | Machine-readable feature contract |
-| `GET` | `/companion/state` | Current LeslieTavern page, character, chat, and voice status |
-| `POST` | `/chat/completions` | Authoritative LeslieTavern turn with SSE output |
-| `POST` | `/companion/audio/transcriptions` | Local WAV transcription with the LeslieTavern speech-recognition model |
+| `GET` | `/companion/state` | Current DreamLand page, character, chat, and voice status |
+| `POST` | `/chat/completions` | Authoritative DreamLand turn with SSE output |
+| `POST` | `/companion/audio/transcriptions` | Local WAV transcription with the DreamLand speech-recognition model |
 | `POST` | `/companion/audio/speech` | MP3 speech using the bound character voice |
 
 Older model-gateway and generic speech routes remain internal compatibility endpoints. The dedicated AIRI frontend does not use or display them.
@@ -64,9 +64,9 @@ The machine-readable contract is in [`contracts/leslie-bridge-v1.openapi.yaml`](
 
 ## Current limits
 
-- The bridge follows one visible LeslieTavern page and one active character at a time.
-- AIRI text input creates a normal new LeslieTavern turn. AIRI does not yet expose LeslieTavern swipe, edit, branch, or regenerate controls.
+- The bridge follows one visible DreamLand page and one active character at a time.
+- AIRI text input creates a normal new DreamLand turn. AIRI does not yet expose DreamLand swipe, edit, branch, or regenerate controls.
 - The display model remains an AIRI choice. Automatic per-character display-model mapping can be added later.
 - Multi-user account selection is not part of Bridge v1.
-- Local transcription needs no API key. The first request can take longer while LeslieTavern downloads its configured model.
+- Local transcription needs no API key. The first request can take longer while DreamLand downloads its configured model.
 - Local transcription uses the CPU when no compatible accelerator is available.

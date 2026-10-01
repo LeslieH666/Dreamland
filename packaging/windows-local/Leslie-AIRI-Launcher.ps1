@@ -335,7 +335,7 @@ function Stop-LocalModelOnly {
 function Start-All([bool]$ForceBuild) {
     Write-Section 'Starting LeslieTavern + AIRI'
     if (Get-TrackedProcess $LesliePidPath) {
-        throw 'LeslieTavern is already running without this launch session. Stop it, then start both applications together.'
+        throw 'DreamLand is already running without this launch session. Stop it, then start both applications together.'
     }
     if (Get-AiriTrackedProcess) {
         throw 'AIRI is already running. Stop both applications before starting a new combined session.'

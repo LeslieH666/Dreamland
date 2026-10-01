@@ -20,7 +20,7 @@ function textFromContent(content) {
 
 /**
  * Read only the latest user input from an OpenAI-compatible AIRI request.
- * LeslieTavern owns the authoritative prompt and ignores the AIRI history.
+ * DreamLand owns the authoritative prompt and ignores the AIRI history.
  * @param {Record<string, unknown>} [body] AIRI chat request.
  * @returns {string} Latest user input.
  */
@@ -39,7 +39,7 @@ export function getCompanionTurnInput(body = {}) {
 }
 
 /**
- * Use the voice that LeslieTavern assigned to the active character.
+ * Use the voice that DreamLand assigned to the active character.
  * @param {Record<string, unknown>} [body] AIRI speech request.
  * @param {Record<string, unknown>} state Current companion state.
  * @returns {Record<string, unknown>} Leslie Volcengine request.
@@ -54,7 +54,7 @@ export function toCompanionSpeechRequest(body = {}, state = {}) {
     if (!state.connected || !voice?.available || !voice.speakerId || !voice.resourceId) {
         throw new LeslieBridgeRequestError(
             'CHARACTER_VOICE_NOT_READY',
-            'Configure a voice for the active character in LeslieTavern.',
+            'Configure a voice for the active character in DreamLand.',
             409,
         );
     }
@@ -70,8 +70,8 @@ export function toCompanionSpeechRequest(body = {}, state = {}) {
 }
 
 /**
- * Map a private Bridge request to LeslieTavern's local speech recognizer.
- * The public model id selects the model that LeslieTavern already configures.
+ * Map a private Bridge request to DreamLand's local speech recognizer.
+ * The public model id selects the model that DreamLand already configures.
  * @param {Record<string, unknown>} [body] AIRI transcription request.
  * @returns {{audio: string, lang: string, model: string}} Local recognizer request.
  */

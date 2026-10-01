@@ -7,7 +7,7 @@ const DEFAULT_POLL_TIMEOUT_MS = 10_000;
 const TERMINAL_EVENT_TYPES = new Set(['complete', 'error', 'canceled']);
 
 /**
- * Owns the process-local command channel between AIRI and one LeslieTavern page.
+ * Owns the process-local command channel between AIRI and one DreamLand page.
  * The page supplies the active character snapshot and executes each turn through
  * the normal browser generation pipeline.
  */
@@ -87,7 +87,7 @@ class CompanionSession {
         if (!this.#isHostConnected()) {
             throw new LeslieBridgeRequestError(
                 'COMPANION_HOST_OFFLINE',
-                'Open LeslieTavern and select a character before you use AIRI.',
+                'Open DreamLand and select a character before you use AIRI.',
                 503,
             );
         }
@@ -96,7 +96,7 @@ class CompanionSession {
         if (!binding?.characterId) {
             throw new LeslieBridgeRequestError(
                 'CHARACTER_NOT_SELECTED',
-                'Select a character in LeslieTavern before you use AIRI.',
+                'Select a character in DreamLand before you use AIRI.',
                 409,
             );
         }
@@ -104,7 +104,7 @@ class CompanionSession {
         if (this.#host.snapshot?.generating || this.#turns.size > 0) {
             throw new LeslieBridgeRequestError(
                 'COMPANION_BUSY',
-                'Wait for the current LeslieTavern reply to finish.',
+                'Wait for the current DreamLand reply to finish.',
                 409,
             );
         }
@@ -228,7 +228,7 @@ class CompanionSession {
             const event = {
                 type: 'error',
                 code: 'COMPANION_HOST_REPLACED',
-                message: 'The LeslieTavern page reloaded during the AIRI request.',
+                message: 'The DreamLand page reloaded during the AIRI request.',
             };
             for (const listener of turn.listeners) {
                 listener(event);

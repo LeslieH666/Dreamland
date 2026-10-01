@@ -65,11 +65,22 @@ async function readCharacterChatFileNames(page, characterId) {
 }
 
 test('contact click restores the latest real chat without creating a new file', async ({ page }) => {
+    // Synthetic history exercises restoration without relying on private user chats.
+    await page.route('**/api/characters/chats', route => route.fulfill({ json: [
+        { file_name: 'synthetic-older.jsonl', last_mes: '2026-09-30T10:00:00.000Z', chat_items: 3 },
+        { file_name: 'synthetic-latest.jsonl', last_mes: '2026-10-01T10:00:00.000Z', chat_items: 3 },
+    ] }));
+    await page.route('**/api/chats/get', route => route.fulfill({ json: [
+        { user_name: 'Synthetic User', character_name: 'Synthetic Guide', chat_metadata: {} },
+        { name: 'Synthetic User', is_user: true, mes: 'A synthetic history entry.', send_date: '2026-10-01T09:59:00.000Z' },
+        { name: 'Synthetic Guide', is_user: false, mes: 'The latest synthetic reply.', send_date: '2026-10-01T10:00:00.000Z' },
+    ] }));
+    await page.route('**/api/chats/save', route => route.fulfill({ json: { result: 'ok' } }));
     await page.setViewportSize({ width: 1280, height: 900 });
     await preparePage(page);
 
     const candidate = await findCharacterWithTransientChatPointer(page);
-    expect(candidate, 'Expected existing user data to contain a character with history and a transient current-chat pointer.').not.toBeNull();
+    expect(candidate, 'Expected a character with the synthetic history and a transient current-chat pointer.').not.toBeNull();
 
     const conversation = page.locator(`.leslie-conversation-item[data-entity-type="character"][data-entity-id="${candidate.id}"]`);
     const chatRequest = page.waitForRequest(request => request.url().endsWith('/api/chats/get') && request.method() === 'POST');

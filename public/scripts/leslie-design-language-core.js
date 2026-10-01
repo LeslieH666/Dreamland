@@ -6,13 +6,13 @@
  */
 
 export const DESIGN_LANGUAGE_PREFERENCE_KEY = 'leslie.design.language';
-export const DEFAULT_DESIGN_LANGUAGE = 'cupertino';
-export const DESIGN_LANGUAGES = Object.freeze(['cupertino', 'classic']);
+export const DEFAULT_DESIGN_LANGUAGE = 'dreamland';
+export const DESIGN_LANGUAGES = Object.freeze(['dreamland', 'cupertino', 'classic']);
 
 /**
  * Normalize an unknown stored value to a supported design language.
  * @param {unknown} value Stored preference.
- * @returns {'cupertino' | 'classic'} Supported design language.
+ * @returns {'dreamland' | 'cupertino' | 'classic'} Supported design language.
  */
 export function normalizeDesignLanguage(value) {
     return DESIGN_LANGUAGES.includes(value) ? value : DEFAULT_DESIGN_LANGUAGE;
@@ -21,7 +21,7 @@ export function normalizeDesignLanguage(value) {
 /**
  * Read a design language preference from a Storage-compatible object.
  * @param {{ getItem: (key: string) => string | null } | null | undefined} storage Storage provider.
- * @returns {'cupertino' | 'classic'} Stored or default design language.
+ * @returns {'dreamland' | 'cupertino' | 'classic'} Stored or default design language.
  */
 export function readDesignLanguagePreference(storage) {
     try {
@@ -35,7 +35,7 @@ export function readDesignLanguagePreference(storage) {
  * Persist a normalized design language preference.
  * @param {{ setItem: (key: string, value: string) => void } | null | undefined} storage Storage provider.
  * @param {unknown} value Requested design language.
- * @returns {'cupertino' | 'classic'} Persisted design language.
+ * @returns {'dreamland' | 'cupertino' | 'classic'} Persisted design language.
  */
 export function writeDesignLanguagePreference(storage, value) {
     const normalized = normalizeDesignLanguage(value);

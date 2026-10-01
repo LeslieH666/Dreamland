@@ -5,8 +5,8 @@ description: |
 date: 2025-08-04
 excerpt: 抱歉让大家久等了！<br/> v0.7 原本计划在七月初发布，但由于我们在 Windows 上发现了几个关键 bug，以及需要做更多适配工作，所以推迟到了现在。
 preview-cover:
-  light: "@assets('./assets/cover-light.avif')"
-  dark: "@assets('./assets/cover-dark.avif')"
+  light: "@assets('../../../en/blog/DevLog-2025.08.05/assets/cover-light.avif')"
+  dark: "@assets('../../../en/blog/DevLog-2025.08.05/assets/cover-dark.avif')"
 ---
 
 <script setup lang="ts">
@@ -84,7 +84,7 @@ Tamagotchi 是 AIRI 桌面版本的名称，你可以让它作为独立的、
 
 <br />
 
-<ThemedVideo autoplay src="./assets/airi-demo-fade-on-hover.mp4" />
+<ThemedVideo autoplay src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-fade-on-hover.mp4" />
 
 许多用户发现每次光标悬停在角色上时，整个窗口都会淡出，这让他们感到困惑。
 对于缺乏文档解释这个功能以及为什么我们认为它对 AI 伴侣很重要的道歉。
@@ -129,7 +129,7 @@ Tamagotchi 是 AIRI 桌面版本的名称，你可以让它作为独立的、
 
 <br />
 
-<ThemedVideo autoplay src="./assets/airi-demo-move.mp4" />
+<ThemedVideo autoplay src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-move.mp4" />
 
 进入移动模式时会显示一个可拖动区域，除了用鼠标移动位置外，
 使用托盘菜单中的位置 > 居中 / 左下 / 右下也是另一个选择。
@@ -148,7 +148,7 @@ Tamagotchi 是 AIRI 桌面版本的名称，你可以让它作为独立的、
 <br />
 
 <video autoplay controls muted loop playsinline>
-  <source src="./assets/airi-demo-resize.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-resize.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
@@ -164,7 +164,7 @@ Tamagotchi 是 AIRI 桌面版本的名称，你可以让它作为独立的、
 
 观看实际操作：
 
-<ThemedVideo autoplay src="./assets/airi-demo-resource-island.mp4" />
+<ThemedVideo autoplay src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-resource-island.mp4" />
 
 它确实包含一个指向准备模块的链接，因此你可以点击模块链接
 打开目标模块设置页面，了解为什么需要这个模型或文件。
@@ -176,7 +176,7 @@ Tamagotchi 是 AIRI 桌面版本的名称，你可以让它作为独立的、
 我们现在有了一个在 Windows、macOS 和 Linux 上工作的本地 ASR/STT 引擎。
 
 <video autoplay controls muted loop playsinline>
-  <source src="./assets/airi-demo-settings-hearing.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-settings-hearing.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
@@ -205,15 +205,15 @@ Tamagotchi 是 AIRI 桌面版本的名称，你可以让它作为独立的、
 他们在 Pull Request 合并后写了一篇博客来分享
 贡献 Project AIRI 的经验：[AIRIプロジェクトに参加した話 - YAMA-blog](https://yama-pro.blog/posts/airi/)
 
-<img class="light" src="./assets/airi-demo-onboarding-light.avif" alt="引导界面亮色模式" />
-<img class="dark" src="./assets/airi-demo-onboarding-dark.avif" alt="引导界面暗色模式" />
+<img class="light" src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-onboarding-light.avif" alt="引导界面亮色模式" />
+<img class="dark" src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-onboarding-dark.avif" alt="引导界面暗色模式" />
 
 观看实际操作：
 
 <ThemedVideo
   autoplay
-  light="./assets/airi-demo-onboarding-light.mp4"
-  dark="./assets/airi-demo-onboarding-dark.mp4"
+  light="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-onboarding-light.mp4"
+  dark="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-onboarding-dark.mp4"
 />
 
 #### VRM
@@ -221,8 +221,8 @@ Tamagotchi 是 AIRI 桌面版本的名称，你可以让它作为独立的、
 感谢 [Lilia-Chen (Lilia_Chen)](https://github.com/Lilia-Chen) 的辛勤工作，
 VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 
-<img class="light" src="./assets/airi-demo-vrm-light.avif" alt="VRM 亮色模式" />
-<img class="dark" src="./assets/airi-demo-vrm-dark.avif" alt="VRM 暗色模式" />
+<img class="light" src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-vrm-light.avif" alt="VRM 亮色模式" />
+<img class="dark" src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-vrm-dark.avif" alt="VRM 暗色模式" />
 
 ### 移动 Web
 
@@ -232,8 +232,8 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 
 <ThemedVideo
   autoplay
-  light="./assets/airi-demo-onboarding-mobile-light.mp4"
-  dark="./assets/airi-demo-onboarding-mobile-dark.mp4"
+  light="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-onboarding-mobile-light.mp4"
+  dark="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-onboarding-mobile-dark.mp4"
 />
 
 #### 场景
@@ -253,12 +253,12 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 <br />
 
 <video class="light" autoplay controls muted loop playsinline>
-  <source src="./assets/airi-demo-quick-editor-mobile-light.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-quick-editor-mobile-light.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
 <video class="dark" autoplay controls muted loop playsinline>
-  <source src="./assets/airi-demo-quick-editor-mobile-dark.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-quick-editor-mobile-dark.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
@@ -275,12 +275,12 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 观看实际操作：
 
 <video class="light" autoplay controls muted loop playsinline>
-  <source src="./assets/airi-demo-clustr-light.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-clustr-light.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
 <video class="dark" autoplay controls muted loop playsinline>
-  <source src="./assets/airi-demo-clustr-dark.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-demo-clustr-dark.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
@@ -290,8 +290,8 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 
 在希望显示检测到的音频输入电平或实时系统负载时很有用：
 
-<img class="light" src="./assets/airi-ui-level-meter-light.avif" alt="电平表亮色模式" />
-<img class="dark" src="./assets/airi-ui-level-meter-dark.avif" alt="电平表暗色模式" />
+<img class="light" src="../../../en/blog/DevLog-2025.08.05/assets/airi-ui-level-meter-light.avif" alt="电平表亮色模式" />
+<img class="dark" src="../../../en/blog/DevLog-2025.08.05/assets/airi-ui-level-meter-dark.avif" alt="电平表暗色模式" />
 
 #### 时间序列图表
 
@@ -299,8 +299,8 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 
 类似于用于变化值的电平表，但对于历史数据特别有用。
 
-<img class="light" src="./assets/airi-ui-time-series-chart-light.avif" alt="时间序列图表亮色模式" />
-<img class="dark" src="./assets/airi-ui-time-series-chart-dark.avif" alt="时间序列图表暗色模式" />
+<img class="light" src="../../../en/blog/DevLog-2025.08.05/assets/airi-ui-time-series-chart-light.avif" alt="时间序列图表亮色模式" />
+<img class="dark" src="../../../en/blog/DevLog-2025.08.05/assets/airi-ui-time-series-chart-dark.avif" alt="时间序列图表暗色模式" />
 
 我们还添加了许多更多组件...
 
@@ -319,12 +319,12 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 我们现在有了一个全新的文档站点：
 
 <video class="light" autoplay controls muted loop playsinline>
-  <source src="./assets/airi-docs-light.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-docs-light.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
 <video class="dark" autoplay controls muted loop playsinline>
-  <source src="./assets/airi-docs-dark.mp4" type="video/mp4">
+  <source src="../../../en/blog/DevLog-2025.08.05/assets/airi-docs-dark.mp4" type="video/mp4">
   您的浏览器不支持视频标签。
 </video>
 
@@ -336,8 +336,8 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 
 博客页面看起来也很好，更好的是，有由 [@lynzrand (Rynco Maekawa)](https://github.com/lynzrand) 设计的新封面
 
-<img class="light" src="./assets/airi-docs-blogs-light.avif" alt="博客页面亮色模式" />
-<img class="dark" src="./assets/airi-docs-blogs-dark.avif" alt="博客页面暗色模式" />
+<img class="light" src="../../../en/blog/DevLog-2025.08.05/assets/airi-docs-blogs-light.avif" alt="博客页面亮色模式" />
+<img class="dark" src="../../../en/blog/DevLog-2025.08.05/assets/airi-docs-blogs-dark.avif" alt="博客页面暗色模式" />
 
 ### 翻译工作流变更
 
@@ -346,8 +346,8 @@ VRM 模型现在通过精确的相机实现和渲染机制显示得更好。
 当贡献新的本地化、添加新翻译或修复现有翻译时，
 请先导航到 https://github.com/moeru-ai/airi/tree/main/packages/i18n/src/locales。
 
-<img class="light" src="./assets/airi-packages-i18n-light.avif" alt="i18n 包结构亮色模式" />
-<img class="dark" src="./assets/airi-packages-i18n-dark.avif" alt="i18n 包结构暗色模式" />
+<img class="light" src="../../../en/blog/DevLog-2025.08.05/assets/airi-packages-i18n-light.avif" alt="i18n 包结构亮色模式" />
+<img class="dark" src="../../../en/blog/DevLog-2025.08.05/assets/airi-packages-i18n-dark.avif" alt="i18n 包结构暗色模式" />
 
 你会在这里找到不同语言的不同目录。选择所需的语言并继续。
 
@@ -545,7 +545,7 @@ nix run --extra-experimental-features 'nix-command flakes' github:moeru-ai/airi
 我们的路线图上的 [Roadmap v0.7](https://github.com/moeru-ai/airi/issues/200)。
 
 <div class="w-full flex flex-col items-center justify-center gap-3 py-3">
-  <img src="./assets/relu-sticker-thinks.avif" alt="ReLU 贴纸思考" class="w-30!" />
+  <img src="../../../en/blog/DevLog-2025.08.05/assets/relu-sticker-thinks.avif" alt="ReLU 贴纸思考" class="w-30!" />
   <div class="text-center">
     <span class="block font-bold">感谢你一直读到这里！</span>
   </div>

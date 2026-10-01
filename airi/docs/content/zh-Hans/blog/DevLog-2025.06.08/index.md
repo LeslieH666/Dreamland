@@ -5,8 +5,8 @@ date: 2025-06-08
 excerpt: |
   如何让 Live2D 模型跟随鼠标位置，以及在多显示器环境下计算的挑战。
 preview-cover:
-  light: "@assets('./assets/250608-light.avif')"
-  dark: "@assets('./assets/250608-dark.avif')"
+  light: "@assets('../../../en/blog/DevLog-2025.06.08/assets/250608-light.avif')"
+  dark: "@assets('../../../en/blog/DevLog-2025.06.08/assets/250608-dark.avif')"
 ---
 
 大家好，我是 LemonNeko，AIRI 的维护者之一，由我来为大家带来今天的 DevLog：让 AIRI 桌宠的 Live2D 模型可以注视鼠标位置。
@@ -21,7 +21,7 @@ Hello everyone, here's LemonNeko, one of maintainer of AIRI. Today's DevLog is t
 
 First of all, we need to know, there are two basic interactions of Live2D: **Focus**, and **Tap**, when we create a Live2D canvas, model will auto focus the position of our cursor, head will look at it, like this:
 
-![](./assets/airi-tamagotchi-focus.gif)
+![](../../../en/blog/DevLog-2025.06.08/assets/airi-tamagotchi-focus.gif)
 
 但是当鼠标离开网页内容后，Live2D 就不再会知道鼠标的位置在哪了，所以我们需要手动告诉它鼠标在哪。
 
@@ -39,7 +39,7 @@ To tell the position of cursor to Live2D, we need to use native code calling abi
 
 For example, we have a screen like this:
 
-![](./assets/screen.avif)
+![](../../../en/blog/DevLog-2025.06.08/assets/screen.avif)
 
 蓝色框是屏幕，粉色是 AIRI 的窗口，紫色箭头是鼠标，我们定义：
 

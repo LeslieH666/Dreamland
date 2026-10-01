@@ -12,7 +12,7 @@ date: 2025-04-22
 
 在上个周末（2025.04.20），我花了点时间，做了一个能与 ADB 交互的 MCP 服务器 Demo [airi-android](https://github.com/LemonNekoGH/airi-android)，给 AIRI 提供了最基础的与手机交互的能力（事实上大部分 LLM 都可以通过它与手机交互），这是演示视频：
 
-<ThemedVideo controls muted src="./assets/cursor-open-settings.mp4" />
+<ThemedVideo controls muted src="../../../en/blog/DevLog-2025.04.22/assets/cursor-open-settings.mp4" />
 
 我也把它打包成了 Docker 镜像，提交到了 [MCP 服务器列表](https://mcp.so/server/airi-android/lemonnekogh)，有兴趣的可以试试。
 
@@ -58,7 +58,7 @@ def get_devices():
 
 这是我第一次和 AI 写代码的时候感受到像人类一起写代码一样，不知道是不是因为我的目的就是让 AI 来使用我的工具，所以它变成了我的客户，我需要不停地根据它给的反馈来调整我的代码，它也变成了我的同事，我需要和它一起思考，一起解决问题。看这个截屏，是不是确实很像？
 
-![](./assets/develop-with-cursor.avif)
+![](../../../en/blog/DevLog-2025.04.22/assets/develop-with-cursor.avif)
 
 在开发过程中还学了一些小技巧，比如我们可以使用命令行来启动 Android 模拟器，这样就不用打开 Android Studio 了，内存压力也小了很多。
 

@@ -387,7 +387,7 @@ function Start-AiriOnly {
         return
     }
     if (-not $env:LESLIE_BRIDGE_TOKEN) {
-        throw 'This LeslieTavern session has no companion token. Restart it with the Leslie Heaven launcher.'
+        throw 'This DreamLand session has no companion token. Restart it with the DreamLand launcher.'
     }
     $airiRoot = Resolve-AiriRoot
     $baseUrl = if ($env:LESLIE_BRIDGE_BASE_URL) { $env:LESLIE_BRIDGE_BASE_URL } else { "http://127.0.0.1:$(Get-LesliePort)/api/leslie/bridge/v1/" }

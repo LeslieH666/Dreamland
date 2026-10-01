@@ -19,7 +19,7 @@ date: 2025-03-06
 결과는 꽤 좋고, 이미
 [https://proj-airi-packages-ui-transitions.netlify.app/#/](https://proj-airi-packages-ui-transitions.netlify.app/#/) 에 배포되어 있습니다.
 
-![](/en/blog/DevLog-2025.03.06/assets/animation-transitions.gif)
+![](/en/blog/DevLog-2025.03.05/assets/animation-transitions.gif)
 
 > 그리고 앞으로 각 패키지의 플레이그라운드는 Netlify 배포 시
 > "proj-airi" + "${subDirectory}" + "$｛packageName}" 패턴을 사용합니다.

@@ -5,14 +5,14 @@ date: 2026-01-01
 excerpt: |
   和大家分享 AIRI 在 iOS 平台上的进展，遇到的问题与解决方案，以及柠猫在 FlowChat 实验记忆层的一些成果和一点点实现细节。
 preview-cover:
-  light: "@assets('./assets/cover-light.png')"
-  dark: "@assets('./assets/cover-dark.png')"
+  light: "@assets('../../../en/blog/DevLog-2026.01.01/assets/cover-light.png')"
+  dark: "@assets('../../../en/blog/DevLog-2026.01.01/assets/cover-dark.png')"
 ---
 
 新年快乐！这里是 [@LemonNekoGH](https://github.com/LemonNekoGH)，AIRI 的维护者之一，新年的第一篇 DevLog 是我的了，（按下 B 键选择了大笑表情）啊哈哈哈哈哈哈！
 
 <p style="display: flex; justify-content: center;">
-    <img src="./assets/helldiver-laughing.png" alt="Helldiver Laughing Emotion" />
+    <img src="../../../en/blog/DevLog-2026.01.01/assets/helldiver-laughing.png" alt="Helldiver Laughing Emotion" />
 </p>
 
 好的我们来到正题。
@@ -24,7 +24,7 @@ preview-cover:
 目前我们把 iOS 的部分点亮了，同时为它加入了通知能力，也就是说，如果她想，她可以主动通过通知来提醒你去陪她了。
 
 <p style="display: flex; justify-content: center;">
-    <video src="./assets/airi-notification-capability.mp4" alt="AIRI Pocket Notification" controls width="230" height="500"></video>
+    <video src="../../../en/blog/DevLog-2026.01.01/assets/airi-notification-capability.mp4" alt="AIRI Pocket Notification" controls width="230" height="500"></video>
 </p>
 
 别太在意那个 Capacitor 默认图标，之后会换的。
@@ -83,7 +83,7 @@ extension DevBridgeViewController: WKNavigationDelegate {
 
 先给大家看一下柠猫在 FlowChat 中实验的记忆层的效果：
 
-<video src="./assets/flow-chat-basic-memory.mp4" alt="FlowChat Basic Memory" controls></video>
+<video src="../../../en/blog/DevLog-2026.01.01/assets/flow-chat-basic-memory.mp4" alt="FlowChat Basic Memory" controls></video>
 
 在视频中，我要求 LLM 记住我的名字，它生成完回复之后，在设置界面就看到它记住了，即使开了新的对话，它也能想得起来。
 

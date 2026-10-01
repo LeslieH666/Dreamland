@@ -5,7 +5,7 @@ date: 2025-04-28
 ---
 
 <script setup>
-import airiMcpArch from './assets/airi-mcp-arch.avif'
+import airiMcpArch from '../../../en/blog/DevLog-2025.04.28/assets/airi-mcp-arch.avif'
 </script>
 
 大家好，这里是 [@LemonNeko](https://github.com/LemonNekoGH)，今天由我来和大家一起分享开发故事。
@@ -20,12 +20,12 @@ import airiMcpArch from './assets/airi-mcp-arch.avif'
 
 <details>
   <summary>AIRI 的 MCP 服务器设置</summary>
-  <ThemedVideo controls muted src="./assets/airi-mcp-settings.mp4" style="height: 640px;" />
+  <ThemedVideo controls muted src="../../../en/blog/DevLog-2025.04.28/assets/airi-mcp-settings.mp4" style="height: 640px;" />
 </details>
 
 <details>
   <summary>AIRI 在手机上输入 `Hello World`</summary>
-  <ThemedVideo controls muted src="./assets/airi-mcp-input-text.mp4" />
+  <ThemedVideo controls muted src="../../../en/blog/DevLog-2025.04.28/assets/airi-mcp-input-text.mp4" />
 </details>
 
 开发时，为了理清思路，我画了一张图，从 LLM 调用安卓手机：

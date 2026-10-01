@@ -133,9 +133,7 @@ Microsoft Speech 서비스(일명 Azure AI Speech 서비스, 또는 Cognitive Sp
 Neuro-sama의 아주 초기 버전에서 TTS 서비스를 담당한 게 Microsoft 였고, 목소리 이름은 `Ashley`,
 여기에 피치를 `+20%` 하면 Neuro-sama 첫 버전과 같은 목소리를 얻을 수 있기 때문입니다. 직접 들어 보세요:
 
-<audio controls style="width: 100%;">
-  <source src="/en/blog/DevLog-2025.03.20/assets/ashley-pitch-test.mp3" />
-</audio>
+> 이 소스에는 오디오 샘플이 포함되어 있지 않습니다.
 
 똑같지 않나요, 정말 대단합니다! 즉 새로운 **음성** 능력으로 마침내 Neuro-sama가 하는 일에
 가까이 다가갈 수 있다는 뜻입니다!

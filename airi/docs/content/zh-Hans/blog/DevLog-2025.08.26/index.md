@@ -20,7 +20,7 @@ import NmsIou from './components/nms-iou.vue'
 
 先给大家看一下成果：
 
-<video src="./assets/airi-factorio-yolo-v0-playground-vnc.mp4" controls />
+<video src="../../../en/blog/DevLog-2025.08.26/assets/airi-factorio-yolo-v0-playground-vnc.mp4" controls />
 
 视频中，我在网页里连接了 VNC 来游玩 Factorio，右侧的是目标检测的结果，几乎是实时的，我也部署到 [HuggingFace Space](https://huggingface.co/spaces/proj-airi/factorio-yolo-v0-playground) 了，欢迎来玩。
 
@@ -98,7 +98,7 @@ sudo apt install -y websockify novnc
 
 图片和标注数据都收集好后，我们需要按 [YOLO 官方的格式](https://docs.ultralytics.com/datasets/detect/) 来组织数据集，然后可以传到 [Ultralytics Hub](https://www.ultralytics.com/hub) 上来看看效果：
 
-![Ultralytics Hub](./assets/factorio-ultralytics-hub-preview.jpg)
+![Ultralytics Hub](../../../en/blog/DevLog-2025.08.26/assets/factorio-ultralytics-hub-preview.jpg)
 
 是不是看上去还行？那我们开始训练吧！
 

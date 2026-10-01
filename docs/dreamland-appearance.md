@@ -21,7 +21,7 @@ DreamLand 是原 LeslieTavern 的新公开名称。SillyTavern 是聊天权威�
 
 新偏好为 `dreamland.appearance.style`（clear/moon/paper/blue）、`dreamland.appearance.decoration`（subtle/full/off）、`dreamland.appearance.background`（off/soft/visible）。未知值经过验证回到默认，存储失败时仍可在当前会话使用。切换 Cupertino 或经典不会删除新偏好；重新选择 DreamLand 即可恢复。用户原来的 SillyTavern 主题与背景设置仍由原模块保存。
 
-公开窗口、托盘、登录、PWA 图标、介绍文案和友好启动入口统一为 DreamLand。新增 `启动 DreamLand.cmd`，便携包另提供 `关闭 DreamLand.cmd`。旧入口仍可用。`leslie-*` 模块、Bridge v1、事件、包名、PID/stop 文件和数据路径保持稳定。仓库目录与 GitHub 仓库 URL 保持原名，避免失效链接和数据重定位。
+公开窗口、托盘、登录、PWA 图标、介绍文案和友好启动入口统一为 DreamLand。Windows 日常启动只保留 `启动 DreamLand.cmd`，便携包另提供 `关闭 DreamLand.cmd`。旧品牌入口、重复启动脚本和上游更新入口已删除；开发环境使用 README 中的 npm 命令。`leslie-*` 模块、Bridge v1、事件、包名、PID/stop 文件和数据路径保持稳定。仓库目录与 GitHub 仓库 URL 保持原名，避免失效链接和数据重定位。
 
 本机数据继续使用项目 `data/`，便携包使用 `UserData/`，Electron 的指定数据根与 Cache 路径不变。便携监听仍为 `127.0.0.1:8127`。本地局域网设置、IP allowlist 与可信网络防火墙边界不因品牌改名改变。
 

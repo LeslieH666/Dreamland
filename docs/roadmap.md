@@ -1,5 +1,13 @@
 # Roadmap
 
+## Workspace cleanup (2026-10-02)
+
+- Windows startup uses one DreamLand entry in each source or portable workspace.
+- Old brand launchers, duplicate batch launchers, upstream update scripts, and unused Colab/Replit setup files are removed.
+- AIRI blog translations share identical media files. Documentation links point to the retained copies.
+- The repository check rejects unexpected Windows entry scripts.
+- User data, local runtimes, and the retained historical source snapshot remain local.
+
 ## DreamLand appearance refresh (2026-10-01)
 
 - Public branding now uses DreamLand. Internal module names, Bridge v1 and user-data paths stay stable.

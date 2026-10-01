@@ -42,6 +42,9 @@ const requiredFiles = [
     'airi/LICENSE',
     'airi/package.json',
     'airi/pnpm-lock.yaml',
+    '启动 DreamLand.cmd',
+    'packaging/windows-portable/assets/启动 DreamLand.cmd',
+    'packaging/windows-portable/assets/关闭 DreamLand.cmd',
 ];
 
 const tracked = trackedFiles();
@@ -61,6 +64,19 @@ const violations = tracked.filter(file => {
 for (const required of requiredFiles) {
     if (!fs.existsSync(path.join(repositoryRoot, required))) {
         violations.push(`missing required file: ${required}`);
+    }
+}
+
+// Each Windows workspace has one startup entry and explicit maintenance tools.
+// Old aliases otherwise survive rebranding and appear beside the current launcher.
+for (const [directory, allowedEntries] of [
+    ['', new Set(['启动 DreamLand.cmd', '备份用户数据.cmd', '打开用户数据目录.cmd', '查看运行日志.cmd'])],
+    ['packaging/windows-portable/assets', new Set(['启动 DreamLand.cmd', '关闭 DreamLand.cmd', '备份用户数据.cmd', '打开用户数据目录.cmd', '查看运行日志.cmd'])],
+]) {
+    for (const entry of fs.readdirSync(path.join(repositoryRoot, directory))) {
+        if (/\.(cmd|bat)$/i.test(entry) && !allowedEntries.has(entry)) {
+            violations.push(`unexpected Windows entry: ${path.posix.join(directory, entry)}`);
+        }
     }
 }
 

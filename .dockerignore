@@ -22,7 +22,6 @@
 # --- The Folders ---
 /backups
 /cache
-/colab
 /data
 /dist
 /node_modules
@@ -36,7 +35,6 @@
 # --- Documentation ---
 readme*
 *.md
-Update-Instructions.txt
 
 # --- OS & System Junk ---
 **/.DS_Store
@@ -53,8 +51,6 @@ start.sh
 **/jsconfig.json
 .npmignore
 .gemini
-replit.nix
-.replit
 .nomedia
 
 # -- Logs & Temp ---

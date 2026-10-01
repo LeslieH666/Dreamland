@@ -17,7 +17,7 @@ date: 2025-03-06
 最终的移植效果相当不错，已经部署到
 [https://proj-airi-packages-ui-transitions.netlify.app/#/](https://proj-airi-packages-ui-transitions.netlify.app/#/)。
 
-![](./assets/animation-transitions.gif)
+![](../../../en/blog/DevLog-2025.03.05/assets/animation-transitions.gif)
 
 > 另外，从现在开始，每个包的所有演示场都将使用
 > "proj-airi" + "${subDirectory}" + "${packageName}" 模式进行 Netlify
@@ -48,7 +48,7 @@ date: 2025-03-06
 
 直播的布局和设置已更新 😻 这是几乎一年前我自己设计的，但看起来仍然很棒，观看时感觉也很平静。请在聊天中留下评论提出任何建议，非常感谢。
 
-![](./assets/live-stream-layout-update.avif)
+![](../../../en/blog/DevLog-2025.03.06/assets/live-stream-layout-update.avif)
 
 在今天的开发直播中，我尝试将舞台过渡动画组件集成到 AIRI 网站的主舞台中，过程并不那么顺利，我在之前的动画组件设计中发现了几个问题，不过好消息是我已经修复了这些问题，新的动画过渡效果现在已经在我们的官方部署 [https://airi.moeru.ai](https://airi.moeru.ai) 上可用了。
 

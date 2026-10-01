@@ -5,24 +5,24 @@ date: 2025-05-16
 ---
 
 <script setup>
-import VelinLight from './assets/velin-light.avif'
-import VelinDark from './assets/velin-dark.avif'
+import VelinLight from '../../../en/blog/DevLog-2025.05.16/assets/velin-light.avif'
+import VelinDark from '../../../en/blog/DevLog-2025.05.16/assets/velin-dark.avif'
 
-import CharacterCardMenuLight from './assets/character-card-menu-light.avif'
-import CharacterCardMenuDark from './assets/character-card-menu-dark.avif'
+import CharacterCardMenuLight from '../../../en/blog/DevLog-2025.05.16/assets/character-card-menu-light.avif'
+import CharacterCardMenuDark from '../../../en/blog/DevLog-2025.05.16/assets/character-card-menu-dark.avif'
 
-import CharacterCardSettingsLight from './assets/character-card-settings-light.avif'
-import CharacterCardSettingsDark from './assets/character-card-settings-dark.avif'
+import CharacterCardSettingsLight from '../../../en/blog/DevLog-2025.05.16/assets/character-card-settings-light.avif'
+import CharacterCardSettingsDark from '../../../en/blog/DevLog-2025.05.16/assets/character-card-settings-dark.avif'
 
-import CharacterCardShowcaseLight from './assets/character-card-showcase-light.avif'
-import CharacterCardShowcaseDark from './assets/character-card-showcase-dark.avif'
+import CharacterCardShowcaseLight from '../../../en/blog/DevLog-2025.05.16/assets/character-card-showcase-light.avif'
+import CharacterCardShowcaseDark from '../../../en/blog/DevLog-2025.05.16/assets/character-card-showcase-dark.avif'
 
-import VelinPlaygroundLight from './assets/velin-playground-light.avif'
-import VelinPlaygroundDark from './assets/velin-playground-dark.avif'
+import VelinPlaygroundLight from '../../../en/blog/DevLog-2025.05.16/assets/velin-playground-light.avif'
+import VelinPlaygroundDark from '../../../en/blog/DevLog-2025.05.16/assets/velin-playground-dark.avif'
 
-import DemoDayHangzhou1 from './assets/demo-day-hangzhou-1.avif'
-import DemoDayHangzhou2 from './assets/demo-day-hangzhou-2.avif'
-import DemoDayHangzhou3 from './assets/demo-day-hangzhou-3.avif'
+import DemoDayHangzhou1 from '../../../en/blog/DevLog-2025.05.16/assets/demo-day-hangzhou-1.avif'
+import DemoDayHangzhou2 from '../../../en/blog/DevLog-2025.05.16/assets/demo-day-hangzhou-2.avif'
+import DemoDayHangzhou3 from '../../../en/blog/DevLog-2025.05.16/assets/demo-day-hangzhou-3.avif'
 </script>
 
 大家好！我是 [Neko](https://github.com/nekomeowww)，[Project AIRI](https://github.com/moeru-ai/airi) 的发起者！
@@ -97,7 +97,7 @@ import DemoDayHangzhou3 from './assets/demo-day-hangzhou-3.avif'
 
 最终，我得到了这个：[WebAI 实时语音聊天示例](https://github.com/proj-airi/webai-example-realtime-voice-chat)，我设法证明了这项工作可以在 Web 浏览器中用一个 300 ~ 500 行的 TypeScript 代码来实现 ChatGPT 语音聊天系统。
 
-<ThemedVideo controls muted src="./assets/webai-examples-demo.MP4" style="height: 640px;" />
+<ThemedVideo controls muted src="../../../en/blog/DevLog-2025.05.16/assets/webai-examples-demo.MP4" style="height: 640px;" />
 
 我尽力将所有可能的步骤分解为小的可重用片段，以帮助演示如何从头开始构建实时语音聊天系统：
 

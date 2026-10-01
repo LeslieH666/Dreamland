@@ -60,7 +60,6 @@ $excludedDirectories = @(
     (Join-Path $ProjectRoot 'cache'),
     (Join-Path $ProjectRoot 'Cache'),
     (Join-Path $ProjectRoot 'character-card-sources'),
-    (Join-Path $ProjectRoot 'colab'),
     (Join-Path $ProjectRoot 'Config'),
     (Join-Path $ProjectRoot 'data'),
     (Join-Path $ProjectRoot 'dist'),
@@ -86,9 +85,9 @@ $sourceArguments = @(
     '/XD'
 ) + $excludedDirectories + @(
     '/XF', '*.log', '.env', '.env.*', 'config.yaml', 'AGENTS.md', 'PROJECT_BRIEF.md', 'PROJECT_STATUS.md', 'design.md',
-    '.dockerignore', '.editorconfig', '.eslintrc.cjs', '.gitignore', '.nomedia', '.npmignore', '.npmrc', '.replit',
-    'CHARACTER_CARD_WORKFLOW.md', 'CONTRIBUTING.md', 'Dockerfile', 'index.d.ts', 'jsconfig.json', 'Remote-Link.cmd',
-    'replit.nix', 'Start.bat', 'start.sh', 'UpdateAndStart.bat', 'UpdateForkAndStart.bat', 'Update-Instructions.txt',
+    '.dockerignore', '.editorconfig', '.eslintrc.cjs', '.gitignore', '.nomedia', '.npmignore', '.npmrc',
+    'CHARACTER_CARD_WORKFLOW.md', 'CONTRIBUTING.md', 'Dockerfile', 'index.d.ts', 'jsconfig.json',
+    'start.sh', '*.bat',
     'UNIFIED_WORKSPACE.md', 'merge-user-data.cjs', '*.cmd'
 )
 Invoke-RobocopyChecked -Arguments $sourceArguments

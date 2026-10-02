@@ -11,19 +11,22 @@ export const BA_ASSETS = Object.freeze({
     popupDark: 'Common_Popup_Bg_Dark.png',
     title: 'Common_Title_Bg.png',
     titleDark: 'Common_Title_Bg_Dark.png',
-    button: 'Common_Btn_BG.png',
-    bluePattern: 'Common_Btn_Normal_B_S_Pt.png',
-    bluePatternDark: 'Common_Btn_Normal_B_S_Pt_Dark.png',
-    yellowPattern: 'Common_Btn_Normal_Y_S_Pt.png',
-    yellowPatternDark: 'Common_Btn_Normal_Y_S_Pt_Dark.png',
+    primaryPattern: 'Common_Btn_Rose_Primary.png',
+    primaryPatternDark: 'Common_Btn_Rose_Primary_Dark.png',
+    softPattern: 'Common_Btn_Rose_Soft.png',
+    softPatternDark: 'Common_Btn_Rose_Soft_Dark.png',
     back: 'Common_Icon_Back.png',
     close: 'Common_Icon_Close.png',
-    settings: 'Common_Icon_Setting_Game.png',
-    moments: 'School_Icon_Chat.png',
-    workshop: 'Common_Icon_StudentRecord.png',
-    background: 'Common_Icon_SpecialLobby.png',
-    home: 'Common_Icon_ToLobby.png',
-    about: 'Common_Icon_Notice.png',
+    settings: 'Nav_Settings.png',
+    moments: 'Nav_Moments.png',
+    workshop: 'Nav_Workshop.png',
+    background: 'Nav_Background.png',
+    home: 'Nav_Chat.png',
+    about: 'Nav_About.png',
+    search: 'Common_Icon_Search.png',
+    plus: 'Common_Icon_Plus.png',
+    copy: 'Common_Icon_Copy.png',
+    heart: 'Common_Icon_Heart.png',
     pin: 'Common_Btn_Pin_01.png',
     scene: 'BG_SchaleOperationRoom.jpg',
     sceneDark: 'BG_MainOffice_Night.jpg',
@@ -117,13 +120,14 @@ function applyImages() {
         heading: dark ? 'titleDark' : 'title',
         scenery: dark ? 'sceneDark' : 'scene',
         outgoing: dark ? 'outgoingDark' : 'outgoing',
-        bluePattern: dark ? 'bluePatternDark' : 'bluePattern',
-        yellowPattern: dark ? 'yellowPatternDark' : 'yellowPattern',
+        primaryPattern: dark ? 'primaryPatternDark' : 'primaryPattern',
+        softPattern: dark ? 'softPatternDark' : 'softPattern',
     })) {
         document.body.style.setProperty('--ba-' + alias, loaded[key] ? 'url("' + loaded[key] + '")' : 'none');
     }
     document.body.toggleAttribute('data-ba-bubbles', Boolean(loaded[dark ? 'incomingDark' : 'incoming'] && loaded[dark ? 'outgoingDark' : 'outgoing']));
     document.body.toggleAttribute('data-ba-panels', Boolean(loaded[dark ? 'popupDark' : 'popup']));
+    for (const key of ['search', 'plus', 'copy', 'heart', 'home', 'workshop']) document.body.toggleAttribute('data-ba-' + key, Boolean(loaded[key]));
     // Each available icon can be used even when an unrelated picture fails.
     for (const [action, key] of Object.entries({ home: 'home', moments: 'moments', workshop: 'workshop', background: 'background', settings: 'settings', about: 'about' })) {
         for (const icon of document.querySelectorAll('.dreamland-navigation [data-action="' + action + '"] i')) icon.toggleAttribute('data-ba-icon', Boolean(loaded[key]));

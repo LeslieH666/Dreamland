@@ -6,7 +6,7 @@
 
 ![DreamLand 功能介绍](public/img/dreamland/features.svg)
 
-界面统一采用 **MomoTalk · 蔚蓝档案** 的布局和控件规范。配色、亮暗、首页场景与聊天背景独立设置，按用户空间保存并同步到登录页。其他布局入口已移除，旧偏好自动迁移。功能页使用完整主区域，手机保留双线聊天入口。37 张游戏素材直接随项目保存在 `public/img/blue-archive/bundled/`，无需额外安装；便携构建会校验并携带完整素材。修复工具见[素材说明](public/img/blue-archive/ASSETS.md)，详见[界面与素材说明](docs/dreamland-appearance.md)。
+界面统一采用 **MomoTalk · 蔚蓝档案** 的布局和控件规范，固定默认红色强调，按钮与导航使用统一游戏 UI 部件。亮暗、首页场景与聊天背景按用户空间保存并同步到登录页，旧偏好自动迁移。功能页使用完整主区域，手机保留双线聊天入口。57 张运行图片直接随项目保存在 `public/img/blue-archive/bundled/`，无需额外安装；便携构建会校验并携带完整素材。修复工具见[素材说明](public/img/blue-archive/ASSETS.md)，后续开发素材见[UI 素材库](resources/blue-archive/README.md)，详见[界面与素材说明](docs/dreamland-appearance.md)。
 
 [English](README.en.md) | 简体中文
 

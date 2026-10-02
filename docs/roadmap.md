@@ -1,5 +1,13 @@
 # Roadmap
 
+## Consistent rose buttons and game UI controls (2026-10-02)
+
+- MomoTalk keeps the default rose accent; other palette selectors and quick-menu choices are removed. Valid legacy palettes migrate to rose with an exact, one-time `.before-rose` backup, without changing the v1 preference schema or the saved display/background settings.
+- Continue, quick actions, settings, workshop, Moments, memory and confirmation buttons share the same border/corners and contrast-controlled adaptations of the game's red texture. Blue/yellow button and header accents no longer mix with the rose theme.
+- Six navigation icons use original game glyph contours at one size and inherit neutral/selected colors. Search, new-chat, import and liked-post controls also use small game sprites; missing images retain the original fallback behavior.
+- Twenty additional original/declared-adaptation images are now in the runtime allowlist (57 files total). Offline restoration, all 57 HTTP hashes, inherited Windows ACLs and portable allowlist copying passed. The complete future-development library remains a separate 901 MiB asset Release.
+- Validation: 19 relevant unit checks and six browser scenarios passed, including legacy preference migration/rollback, two-account/demo/login display settings, artwork failures/recovery and desktop/mobile layouts. Light/dark button previews were visually reviewed; repository and source/test lint have no errors. A full portable rebuild and live Electron acceptance remain release checks.
+
 ## Interface asset library and login avatar fallback (2026-10-02)
 
 - Archived 420 verified interface/dependency bundles from pinned Global Android 1.93.454564, excluding 1,333 game-content bundle families. Exported 7,212 PNG entries and 21 NGUI atlases with crop/border metadata; 14 empty dynamic font atlases are recorded separately and preserved in the source bundles.

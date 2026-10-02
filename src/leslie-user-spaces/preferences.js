@@ -13,10 +13,11 @@ export function readPreferences(root) {
     if (record?.schemaVersion !== 1 || !record.values || typeof record.values !== 'object' || Array.isArray(record.values)) throw new Error('Unsupported preference record.');
     const entries = Object.entries(record.values).filter(([key, value]) => value !== null && validPreference(key, value));
     const values = Object.fromEntries(entries.map(([key, value]) => [key, normalizePreference(key, value)]));
-    if (entries.some(([key, value]) => values[key] !== value)) {
+    const changed = entries.filter(([key, value]) => values[key] !== value);
+    if (changed.length) {
         // Preserve the exact v1 record inside this account for code/data rollback.
-        const backup = `${file}.before-momotalk`;
-        if (!fs.existsSync(backup)) writeFileAtomicSync(backup, original, 'utf8');
+        const backups = new Set(changed.map(([key]) => key === 'leslie.color.palette' ? `${file}.before-rose` : `${file}.before-momotalk`));
+        for (const backup of backups) if (!fs.existsSync(backup)) writeFileAtomicSync(backup, original, 'utf8');
         writeFileAtomicSync(file, JSON.stringify({ ...record, values: { ...record.values, ...values } }), 'utf8');
     }
     return { schemaVersion: 1, saved: true, values };

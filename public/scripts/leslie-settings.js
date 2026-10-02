@@ -34,7 +34,6 @@ import {
     syncLesliePrivacyModeControls,
 } from './leslie-privacy-mode.js';
 import './leslie-voice-settings.js';
-import { COLOR_PALETTE_META } from './dreamland-palette.js';
 import { presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from './dreamland-pages.js';
 
 let settingsPageVisited = false;
@@ -62,11 +61,9 @@ const COPY = {
         introBody: '这里只整理入口，不会删除或改写 SillyTavern 的原功能。常用选项可以直接调整，复杂功能仍保留在高级设置中。',
         safeNote: '聊天记录、角色卡和提示词顺序不会因这个界面而改变。',
         quickTitle: '外观与使用习惯',
-        quickBody: '统一使用 MomoTalk 界面；配色和外观偏好按用户空间自动保存，登录页同步使用。',
+        quickBody: '统一使用 MomoTalk 界面和默认红色；明暗与外观偏好按用户空间保存，登录页同步使用。',
         theme: '界面主题',
         themeHelp: '选择 SillyTavern 基础主题',
-        palette: '界面配色',
-        paletteHelp: '亮色和暗色会自动使用成套配色',
         language: '界面语言',
         languageHelp: '更改后页面会重新载入',
         reducedMotion: '减少动态效果',
@@ -340,11 +337,9 @@ const COPY = {
         introBody: 'This page reorganizes access without removing or rewriting SillyTavern features. Common options stay close at hand, while complex tools remain available under Advanced.',
         safeNote: 'This interface does not change chats, character cards, or prompt order.',
         quickTitle: 'Appearance & comfort',
-        quickBody: 'MomoTalk is the shared layout. Appearance is saved per user space and reflected on the login page.',
+        quickBody: 'MomoTalk uses the default rose accent. Display mode and appearance are saved per user space and reflected on the login page.',
         theme: 'Theme',
         themeHelp: 'Choose the base SillyTavern theme',
-        palette: 'Interface colors',
-        paletteHelp: 'Each palette includes light and dark colors',
         language: 'Language',
         languageHelp: 'The page reloads after a change',
         reducedMotion: 'Reduce motion',
@@ -1825,15 +1820,6 @@ function createSettingsOverlay() {
                                 <label class="leslie-quick-control" for="leslie-display-mode-select">
                                     <span><strong>明暗模式</strong><small>亮色、暗色或跟随系统；与登录页同步</small></span>
                                     <select id="leslie-display-mode-select"><option value="auto">跟随系统</option><option value="light">亮色</option><option value="dark">暗色</option></select>
-                                </label>
-                                <label class="leslie-quick-control" for="leslie-palette-select">
-                                    <span>
-                                        <strong>${copy.palette}</strong>
-                                        <small>${copy.paletteHelp}</small>
-                                    </span>
-                                    <select id="leslie-palette-select" aria-label="${copy.palette}">
-                                        ${Object.entries(COLOR_PALETTE_META).map(([value, meta]) => `<option value="${value}">${meta.label}</option>`).join('')}
-                                    </select>
                                 </label>
                                 <label class="leslie-quick-control" for="leslie-language-select">
                                     <span>

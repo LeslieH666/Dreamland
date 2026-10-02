@@ -78,7 +78,7 @@ test('restores saved preferences from an existing-format encrypted vault', async
     } finally { await sealActiveUserSpace(root); }
 });
 
-test('migrates v1 layouts once, preserves color/settings and retains the exact rollback record', () => {
+test('migrates v1 layouts and old palettes once, preserves settings and retains exact rollback records', () => {
     const file = path.join(root, 'leslie', 'browser-preferences.json');
     fs.mkdirSync(path.dirname(file));
     const original = JSON.stringify({ schemaVersion: 1, values: {
@@ -89,12 +89,14 @@ test('migrates v1 layouts once, preserves color/settings and retains the exact r
     fs.writeFileSync(file, original);
     const migrated = readPreferences(root).values;
     expect(migrated).toEqual({ 'dreamland.appearance.style': 'blue', 'leslie.design.language': 'dreamland',
-        'dreamland.appearance.decoration': 'subtle', 'leslie.color.palette': 'clay', 'leslie.theme.preference': 'dark', language: 'zh-cn' });
+        'dreamland.appearance.decoration': 'subtle', 'leslie.color.palette': 'rose', 'leslie.theme.preference': 'dark', language: 'zh-cn' });
     expect(fs.readFileSync(`${file}.before-momotalk`, 'utf8')).toBe(original);
+    expect(fs.readFileSync(`${file}.before-rose`, 'utf8')).toBe(original);
     patchPreferences(root, { 'leslie.color.palette': 'rose' });
     readPreferences(root);
     expect(fs.readFileSync(`${file}.before-momotalk`, 'utf8')).toBe(original);
+    expect(fs.readFileSync(`${file}.before-rose`, 'utf8')).toBe(original);
     fs.copyFileSync(`${file}.before-momotalk`, file);
     expect(JSON.parse(fs.readFileSync(file, 'utf8')).values['dreamland.appearance.style']).toBe('paper');
-    expect(readPreferences(root).values['leslie.color.palette']).toBe('clay');
+    expect(readPreferences(root).values['leslie.color.palette']).toBe('rose');
 });

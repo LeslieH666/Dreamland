@@ -1,6 +1,6 @@
-/** One MomoTalk layout with independent colors, scenery and display mode. */
+/** One MomoTalk layout with rose controls, scenery and display mode. */
 import { APPEARANCE_KEYS, readAppearance, writeAppearance } from './dreamland-appearance-core.js';
-import { COLOR_PALETTES, COLOR_PALETTE_META, normalizePalette, applyDreamlandPalette } from './dreamland-palette.js';
+import { normalizePalette, applyDreamlandPalette } from './dreamland-palette.js';
 import { syncBaAppearance } from './dreamland-ba-assets.js';
 import { syncDreamlandPages } from './dreamland-pages.js';
 
@@ -45,12 +45,6 @@ function chooseMode(mode) {
     document.body.dataset.leslieThemePreference = mode;
     applyAppearance();
 }
-function choosePalette(value) {
-    const palette = normalizePalette(value);
-    try { storage()?.setItem(PALETTE_KEY, palette); } catch { /* session-only appearance */ }
-    document.body.dataset.leslieColorPalette = palette;
-    applyAppearance();
-}
 function heading(text) {
     const node = document.createElement('div');
     node.className = 'leslie-theme-menu-heading';
@@ -75,17 +69,6 @@ function ensureMenu() {
         button.setAttribute('role', 'menuitemradio');
         button.innerHTML = '<i class="fa-solid ' + meta.icon + '" aria-hidden="true"></i><span>' + meta.label + '</span>';
         button.addEventListener('click', () => { chooseMode(mode); closeMenu(); });
-        menu.append(button);
-    }
-    menu.append(heading('界面配色'));
-    for (const palette of COLOR_PALETTES) {
-        const meta = COLOR_PALETTE_META[palette];
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.leslieColorPalette = palette;
-        button.setAttribute('role', 'menuitemradio');
-        button.innerHTML = '<span class="leslie-palette-preview" aria-hidden="true"><i style="background:' + meta.light + '"></i><i style="background:' + meta.dark + '"></i></span><span><strong>' + meta.label + '</strong><small>' + meta.description + '</small></span>';
-        button.addEventListener('click', () => { choosePalette(palette); closeMenu(); });
         menu.append(button);
     }
     document.body.append(menu);
@@ -113,17 +96,16 @@ function syncControls() {
     syncBaAppearance();
     syncDreamlandPages();
     const mode = document.body.dataset.leslieThemePreference || readMode();
-    const palette = document.body.dataset.leslieColorPalette || readPalette();
     for (const button of document.querySelectorAll('.leslie-theme-toggle')) {
-        button.title = 'MomoTalk 外观：' + COLOR_PALETTE_META[palette].label + ' · ' + MODES[mode].label;
+        button.title = 'MomoTalk 外观：' + MODES[mode].label;
         button.setAttribute('aria-label', button.title);
     }
     for (const choice of document.querySelectorAll('#leslie-theme-menu [role="menuitemradio"]')) {
-        const selected = choice.dataset.leslieThemeMode === mode || choice.dataset.leslieColorPalette === palette;
+        const selected = choice.dataset.leslieThemeMode === mode;
         choice.classList.toggle('is-active', selected);
         choice.setAttribute('aria-checked', String(selected));
     }
-    for (const [id, value] of [['leslie-palette-select', palette], ['leslie-display-mode-select', mode]]) {
+    for (const [id, value] of [['leslie-display-mode-select', mode]]) {
         const select = document.getElementById(id);
         if (select) select.value = value;
     }
@@ -152,7 +134,6 @@ document.addEventListener('change', event => {
     const target = event.target;
     if (!(target instanceof HTMLSelectElement)) return;
     if (target.id === 'leslie-display-mode-select') chooseMode(target.value);
-    else if (target.id === 'leslie-palette-select') choosePalette(target.value);
     else if (['decoration', 'background'].includes(target.dataset.dreamlandPreference)) {
         const key = target.dataset.dreamlandPreference;
         document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] = writeAppearance(storage(), key, target.value);

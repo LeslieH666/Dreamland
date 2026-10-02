@@ -670,6 +670,304 @@
       "tint": "#b7a779",
       "operation": "desaturate-tint-preserve-alpha",
       "purpose": "Warm rose / muted gold dark-theme adaptation; not an unmodified game sprite"
+    },
+    {
+      "file": "Common_Btn_Normal_R_S_Pt.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Btn_Normal_R_S_Pt",
+        "x": 252,
+        "y": 57,
+        "width": 251,
+        "height": 140,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "4440ba666f5531e1efe36a579363301e1d100bfc0be49387ba0d1ce4288e3547"
+    },
+    {
+      "file": "Cafe_Icon_Photo.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Cafe_Icon_Photo",
+        "x": 1344,
+        "y": 599,
+        "width": 120,
+        "height": 104,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "9fbb3e4320095682f6d4fd188315b71b7bb42531aa75cf55644a8479d72072fc"
+    },
+    {
+      "file": "Cafe_Icon_NameEdit.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Cafe_Icon_NameEdit",
+        "x": 1934,
+        "y": 1457,
+        "width": 50,
+        "height": 50,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "6505d79dfc146e80dfaaccf641b1a07fe5871747438754cc0c18c51ea7343e34"
+    },
+    {
+      "file": "Common_Icon_Outdoor.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Outdoor",
+        "x": 1669,
+        "y": 1300,
+        "width": 86,
+        "height": 86,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "65596fa338248931855217c8bb33b83bc238e19612bc080cdd0d105bd1e0941c"
+    },
+    {
+      "file": "Common_Icon_Option.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Option",
+        "x": 1675,
+        "y": 815,
+        "width": 80,
+        "height": 80,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "a2c823756e285ad69de0faaf3623cfd6f70926bf32a432762792f5d14dece966"
+    },
+    {
+      "file": "Cafe_Icon_Info.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Cafe_Icon_Info",
+        "x": 1729,
+        "y": 1695,
+        "width": 90,
+        "height": 90,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "044c29e42d1d6f9e4e4b6617d746c1a367781a7eeeb3c14e37a37236d6e2b36b"
+    },
+    {
+      "file": "Common_Icon_Search.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Search",
+        "x": 1552,
+        "y": 1149,
+        "width": 87,
+        "height": 88,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "c97181c9175ded63b4caf51229fe796fe0d43ace2252a2872c0e430e5f6d7dcb"
+    },
+    {
+      "file": "Common_Icon_Plus.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Plus",
+        "x": 1923,
+        "y": 1405,
+        "width": 50,
+        "height": 50,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "c16f90ba3fca434238bc2dccb13992f3c3fb00dc48db10ad739a891e7ef2d93f"
+    },
+    {
+      "file": "Common_Icon_Copy.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Copy",
+        "x": 1920,
+        "y": 1705,
+        "width": 49,
+        "height": 59,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "49d52bac2cace16b343a97d874e35e108def0e5d349fdee4802675aca4c70b63"
+    },
+    {
+      "file": "Common_Icon_Heart.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Heart",
+        "x": 1648,
+        "y": 1387,
+        "width": 90,
+        "height": 83,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "8d6583d1af5a6be48702491ef51fd1721b728b4e337ec62102f977b82532299e"
+    },
+    {
+      "file": "Nav_Chat.png",
+      "kind": "adaptation",
+      "source": "School_Icon_Chat.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "fbb054553aaf86a9da59f1fe45013778e14416ff15e83464d0d19fc79f5c7579"
+    },
+    {
+      "file": "Nav_Moments.png",
+      "kind": "adaptation",
+      "source": "Cafe_Icon_Photo.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "0078c4560dc7264bb81ab036353527bfd6b076f9ac64ae906d475a14ea049e73"
+    },
+    {
+      "file": "Nav_Workshop.png",
+      "kind": "adaptation",
+      "source": "Cafe_Icon_NameEdit.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "4ba744477c8df67df9e14a3540a405970821aaf7004124912a94c33229e24820"
+    },
+    {
+      "file": "Nav_Background.png",
+      "kind": "adaptation",
+      "source": "Common_Icon_Outdoor.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "5609bed1b4b416d7c0334b579e64434df09f744bc43b06994c578fa410cd3587"
+    },
+    {
+      "file": "Nav_Settings.png",
+      "kind": "adaptation",
+      "source": "Common_Icon_Option.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "cfa7989e5cffd3d73f3ed8d65d379962494d88551d3d3f4d77b7a4264e02da8e"
+    },
+    {
+      "file": "Nav_About.png",
+      "kind": "adaptation",
+      "source": "Cafe_Icon_Info.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "3464a88675b3d59a1f640e84ce1a95e7d832c24f1d318d3ec37fa832725b1b3f"
+    },
+    {
+      "file": "Common_Btn_Rose_Primary.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "423fb75e7cb3ab28ba642c031e29e1b83137aad81290c9711488ad2b17de5c4f",
+      "shadow": "#8e2e49",
+      "highlight": "#ae4964"
+    },
+    {
+      "file": "Common_Btn_Rose_Soft.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "d703a2cda446293dd9bd9a81153d7d4e12e23af96013d9017c0701c54ea9efb7",
+      "shadow": "#eed2dc",
+      "highlight": "#fff8fb"
+    },
+    {
+      "file": "Common_Btn_Rose_Primary_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "3dba20a345db07e0fa2fa6aecd3caa136eb57498d2acc89cee7ace81e4ed5342",
+      "shadow": "#593540",
+      "highlight": "#754957"
+    },
+    {
+      "file": "Common_Btn_Rose_Soft_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "db36b7c3e8a26ba752967feca75e7e553f973ee5eae88f841b70505221ae7c46",
+      "shadow": "#342930",
+      "highlight": "#4d3843"
     }
   ]
 }

@@ -21,6 +21,7 @@ export function normalizePreference(key, value) {
     if (value === null || !validPreference(key, value)) return value;
     if (key === 'dreamland.appearance.style') return 'blue';
     if (key === 'leslie.design.language') return 'dreamland';
+    if (key === 'leslie.color.palette') return 'rose';
     if (key === 'dreamland.appearance.decoration' && value === 'full') return 'subtle';
     return value;
 }

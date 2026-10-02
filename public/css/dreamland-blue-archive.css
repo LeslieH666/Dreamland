@@ -5,7 +5,7 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     --dl-accent: #b94362; --dl-accent-strong: #96304c;
     --dl-canvas: #e9eaec; --dl-surface: #fff; --dl-soft: #f3f4f5;
     --dl-text: #354252; --dl-muted: #687584; --dl-border: #d7dce2;
-    --dl-outgoing: #4b6887; --dl-radius: 8px; --ba-header: #f28ca2;
+    --dl-outgoing: #b94362; --dl-radius: 8px; --ba-header: #f28ca2; --ba-primary-bg: #b94362;
     --leslie-sidebar-width: clamp(326px, 28vw, 390px);
 
     & #leslie-conversation-sidebar { padding: 0 0 78px; background: var(--dl-soft); }
@@ -23,19 +23,33 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     & .leslie-sidebar-actions > button:hover, & #leslie-chat-actions > button:hover { background: #ffffff3d; }
     & .dreamland-navigation { inset: auto 0 0; width: auto; height: 78px; padding: 8px 4px; flex-direction: row; justify-content: space-around; gap: 0; background: var(--dl-surface); border: 0; border-top: 1px solid var(--dl-border); }
     & .dreamland-navigation button { width: 50px; min-height: 56px; border-radius: 5px; gap: 4px; }
-    & .dreamland-navigation i { display: grid; width: 32px; height: 30px; place-items: center; background-position: center; background-size: contain; background-repeat: no-repeat; }
-    & .dreamland-navigation [data-action="home"] i { background-image: var(--ba-home, none); }
-    & .dreamland-navigation [data-action="moments"] i { background-image: var(--ba-moments, none); }
-    & .dreamland-navigation [data-action="workshop"] i { background-image: var(--ba-workshop, none); }
-    & .dreamland-navigation [data-action="background"] i { background-image: var(--ba-background, none); }
-    & .dreamland-navigation [data-action="background"] i[data-ba-icon] { background-color: var(--dl-accent); background-size: 24px; border-radius: 5px; }
-    & .dreamland-navigation [data-action="settings"] i { background-image: var(--ba-settings, none); }
-    & .dreamland-navigation [data-action="about"] i { background-image: var(--ba-about, none); }
-    & .dreamland-navigation :is([data-action="home"], [data-action="moments"]) i[data-ba-icon] { background-color: var(--dl-accent); background-size: 24px; border-radius: 5px; }
-    & .dreamland-navigation i:not([data-ba-icon]) { background-image: none; background-color: transparent; color: inherit; }
+    & .dreamland-navigation i { display: grid; width: 28px; height: 28px; place-items: center; }
+    & .dreamland-navigation [data-action="home"] i { --ba-nav-icon: var(--ba-home, none); }
+    & .dreamland-navigation [data-action="moments"] i { --ba-nav-icon: var(--ba-moments, none); }
+    & .dreamland-navigation [data-action="workshop"] i { --ba-nav-icon: var(--ba-workshop, none); }
+    & .dreamland-navigation [data-action="background"] i { --ba-nav-icon: var(--ba-background, none); }
+    & .dreamland-navigation [data-action="settings"] i { --ba-nav-icon: var(--ba-settings, none); }
+    & .dreamland-navigation [data-action="about"] i { --ba-nav-icon: var(--ba-about, none); }
+    & .dreamland-navigation i[data-ba-icon] { background: currentColor; mask: var(--ba-nav-icon) center / 24px 24px no-repeat; }
+    & .dreamland-navigation i:not([data-ba-icon]) { background: transparent; color: inherit; }
     & .dreamland-navigation i[data-ba-icon]::before { visibility: hidden; }
     & .leslie-sidebar-tools { padding: 14px 16px 10px; background: var(--dl-surface); border-bottom: 1px solid var(--dl-border); }
     & .leslie-conversation-search { border-radius: 4px; background: var(--dl-soft); }
+    &[data-ba-search] .leslie-conversation-search > i,
+    &[data-ba-plus] #leslie-chat-actions [data-action="new-chat"] > i,
+    &[data-ba-copy] .leslieHomeQuickActions .external_import_button > i,
+    &[data-ba-home] .leslieHomeQuickActions :is([data-home-action="focus-characters"], [data-home-action="temporary-chat"]) > i,
+    &[data-ba-workshop] .leslieHomeQuickActions [data-home-action="open-workshop"] > i,
+    &[data-ba-heart] .leslie-moments-like-button.is-liked > i {
+        font-size: 0; width: 20px; height: 20px; display: inline-block; background: currentColor;
+        mask: var(--ba-control-icon) center / contain no-repeat; border-radius: 0;
+    }
+    &[data-ba-search] .leslie-conversation-search > i { --ba-control-icon: var(--ba-search); }
+    &[data-ba-plus] #leslie-chat-actions [data-action="new-chat"] > i { --ba-control-icon: var(--ba-plus); }
+    &[data-ba-copy] .leslieHomeQuickActions .external_import_button > i { --ba-control-icon: var(--ba-copy); margin-inline: 7px; }
+    &[data-ba-home] .leslieHomeQuickActions :is([data-home-action="focus-characters"], [data-home-action="temporary-chat"]) > i { --ba-control-icon: var(--ba-home); margin-inline: 7px; }
+    &[data-ba-workshop] .leslieHomeQuickActions [data-home-action="open-workshop"] > i { --ba-control-icon: var(--ba-workshop); margin-inline: 7px; }
+    &[data-ba-heart] .leslie-moments-like-button.is-liked > i { --ba-control-icon: var(--ba-heart); width: 16px; height: 16px; }
     & .leslie-conversation-filters { gap: 4px; padding-top: 10px; }
     & .leslie-conversation-filters button { flex: 1; min-height: 38px; border-radius: 4px; font-size: 12px; }
     & .leslie-conversation-filters button.is-active { background: var(--cu-blue-soft); color: var(--dl-accent); box-shadow: none; }
@@ -67,15 +81,25 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     & .leslieHomeIntro h1 { font-size: clamp(22px, 2.7vw, 30px); }
     & .leslieHomeIntro > :not(.dreamland-home-art) { max-width: 68%; }
     & .leslieHomeCharacter { border-radius: 5px; }
-    & :is(.leslieHomeQuickActions button, .leslieHomePrimaryActions button, .leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .leslie-moments-primary-button, .popup-button) { background-image: var(--ba-bluePattern, none); background-position: right bottom; background-size: auto 100%; background-repeat: no-repeat; border-radius: 5px; }
-    & :is(.leslieHomePrimaryActions .is-primary, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .popup-button-ok) { background-color: #f8f1cc; background-image: var(--ba-yellowPattern, none); color: #354252; }
-    & :is(.leslie-settings-header, .leslie-memory-header, .leslie-moments-header, .leslie-character-workshop-header) { background-image: var(--ba-bluePattern, none); background-position: right bottom; background-repeat: no-repeat; background-size: auto 100%; border-bottom: 3px solid #f4d462; }
+    & :is(.leslieHomeQuickActions button, .leslieHomePrimaryActions button, .leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .leslie-moments-button, .leslie-memory-button, .popup-button) {
+        min-height: 44px; padding: 10px 16px; gap: 8px; border: 1px solid var(--dl-border); border-image: none;
+        border-radius: 5px 5px 14px 5px; background-color: var(--dl-surface); color: var(--dl-text);
+        background-image: var(--ba-softPattern, none); background-position: right bottom; background-size: auto 100%; background-repeat: no-repeat;
+        box-shadow: 0 2px 0 color-mix(in srgb, var(--dl-text) 10%, transparent); text-shadow: none;
+    }
+    & :is(.leslieHomeContinueButton, .leslieHomePrimaryActions .is-primary, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .leslie-moments-button.primary, .leslie-memory-button.primary, .popup-button-ok) {
+        background-color: var(--ba-primary-bg); border-color: var(--ba-primary-bg); background-image: var(--ba-primaryPattern, none); color: #fff;
+    }
+    & :is(.leslieHomeQuickActions button, .leslieHomePrimaryActions button, .leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .leslie-moments-button, .leslie-memory-button, .popup-button):hover:not(:disabled) { filter: brightness(.96); }
+    & :is(.leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .leslie-moments-button.primary, .leslie-memory-button.primary, .popup-button-ok):hover:not(:disabled) { color: #fff; background-color: var(--ba-primary-bg); }
+    & .leslie-memory-button.danger { color: var(--dl-accent); }
+    & :is(.leslie-settings-header, .leslie-memory-header, .leslie-moments-header, .leslie-character-workshop-header) { background-image: var(--ba-softPattern, none); background-position: right bottom; background-repeat: no-repeat; background-size: auto 100%; border-bottom: 3px solid var(--dl-accent); }
     & :is(.leslie-settings-heading, .leslie-memory-title-wrap, .leslie-workshop-title) { color: var(--dl-text); }
     & :is(.leslie-settings-panel, .leslie-character-workshop-panel, #leslie-memory-panel, .popup) { border-radius: 8px; }
     & .leslie-settings-overlay { background: transparent; }
     & .leslie-settings-backdrop { backdrop-filter: none; background: #26394770; }
-    & .leslie-settings-nav-item.active { background: #d6ecf8; color: #2d526f; }
-    & :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) { background-color: #526b84; background-image: var(--ba-close, none); background-position: center; background-size: 18px; background-repeat: no-repeat; border-radius: 5px; }
+    & .leslie-settings-nav-item.active { background: var(--cu-blue-soft); color: var(--dl-accent); }
+    & :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) { background-color: var(--ba-primary-bg); background-image: var(--ba-close, none); background-position: center; background-size: 18px; background-repeat: no-repeat; border-radius: 5px; }
     &[data-ba-assets="ready"] :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) > i { visibility: hidden; }
     &[data-dreamland-decoration="off"] .leslieHomeIntro { background: var(--dl-surface); }
 }
@@ -94,20 +118,14 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     border-image: var(--ba-panel) 145 48 65 48 fill / 48px 16px 22px 16px / 0 stretch;
     background: transparent; box-shadow: none;
 }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-ba-assets="ready"] :is(.leslieHomePrimaryActions button, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .popup-button) {
-    border: 8px solid transparent;
-    border-image: var(--ba-button) 30 30 35 30 / 8px 8px 10px 8px / 0 stretch;
-    padding: 6px 12px;
-}
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-leslie-color-scheme="dark"] {
     --dl-accent: #f2b2c5; --dl-accent-strong: #ffd2de;
     --dl-canvas: #211f23; --dl-surface: #2d292f; --dl-soft: #28242a; --dl-outgoing: #6e4858;
-    --dl-text: #f4edf0; --dl-muted: #c8bcc3; --dl-border: #4c424a; --ba-header: #5d3d4a;
+    --dl-text: #f4edf0; --dl-muted: #c8bcc3; --dl-border: #4c424a; --ba-header: #5d3d4a; --ba-primary-bg: #6e4858;
     & .leslie-conversation-filters button.is-active, & .leslie-settings-nav-item.active { color: #f4edf0; background: var(--dl-outgoing); }
     & .leslie-world-line-switch button.is-active { background: #6e4858; color: #f4edf0; }
-    & #send_but, & .dreamland-navigation :is([data-action="home"], [data-action="moments"]) i[data-ba-icon] { background-color: var(--dl-outgoing); }
+    & #send_but { background-color: var(--dl-outgoing); }
     & :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) { background-color: #6e4858; }
-    & :is(.leslieHomePrimaryActions .is-primary, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .popup-button-ok) { background-color: #443b31; color: #f4edf0; }
 }
 @media (max-width: 1000px) and (min-width: 701px) {
     body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {

@@ -67,13 +67,27 @@ def install(bundle_path=None, originals=None):
             elif asset['kind'] == 'adaptation':
                 original = Image.open(stage / asset['source']).convert('RGBA')
                 color = original.convert('RGB')
-                if asset['operation'] == 'desaturate-tint-preserve-alpha':
+                if asset['operation'] == 'white-glyph-preserve-alpha':
+                    # Keep the game's white glyph and remove colored tile/dot
+                    # pixels, retaining its original contour and transparency.
+                    mask = color.point(lambda value: round(max(0, min(255, (value - 245) * 25.5))))
+                    red, green, blue = mask.split()
+                    alpha = ImageChops.multiply(ImageChops.darker(ImageChops.darker(red, green), blue), original.getchannel('A'))
+                    rgb = Image.new('RGBA', original.size, '#ffffff')
+                    rgb.putalpha(alpha)
+                    rgb.save(destination)
+                elif asset['operation'] == 'colorize-range-preserve-alpha':
+                    rgb = ImageOps.colorize(ImageOps.grayscale(color), asset['shadow'], asset['highlight']).convert('RGBA')
+                    rgb.putalpha(original.getchannel('A'))
+                    rgb.save(destination)
+                elif asset['operation'] == 'desaturate-tint-preserve-alpha':
                     color = ImageOps.grayscale(color).convert('RGB')
                 elif asset['operation'] != 'multiply-rgb-preserve-alpha':
                     raise ValueError(f'Unknown adaptation operation: {file}')
-                rgb = ImageChops.multiply(color, Image.new('RGB', original.size, asset['tint']))
-                rgb.putalpha(original.getchannel('A'))
-                rgb.save(destination)
+                if asset['operation'] not in ('white-glyph-preserve-alpha', 'colorize-range-preserve-alpha'):
+                    rgb = ImageChops.multiply(color, Image.new('RGB', original.size, asset['tint']))
+                    rgb.putalpha(original.getchannel('A'))
+                    rgb.save(destination)
             else:
                 raise ValueError(f'Unknown asset kind: {file}')
             if asset.get('sha256') and digest(destination.read_bytes()) != asset['sha256']:

@@ -57,7 +57,7 @@ test('synthetic spaces retain preferences, isolate demo content and theme the lo
     }
     await login(page, 'default-user');
     await settings(page);
-    await page.locator('#leslie-palette-select').selectOption('rose');
+    await expect(page.locator('#leslie-palette-select')).toHaveCount(0);
     await page.locator('#leslie-display-mode-select').selectOption('dark');
     await page.locator('.leslie-settings-nav-item[data-leslie-detail="model"]').click();
     await page.locator('[data-leslie-api-kind="local"]').click();
@@ -86,7 +86,7 @@ test('synthetic spaces retain preferences, isolate demo content and theme the lo
     await expect(page.locator('.leslie-moments-page')).toContainText('下次也一起去吧');
     await page.locator('.dreamland-navigation [data-action="home"]').click();
     await settings(page);
-    await page.locator('#leslie-palette-select').selectOption('clay');
+    await expect(page.locator('#leslie-palette-select')).toHaveCount(0);
     await page.locator('#leslie-display-mode-select').selectOption('light');
     await Promise.all([page.waitForEvent('domcontentloaded'), page.locator('#leslie-settings-overlay [data-leslie-demo-toggle]').click()]);
     await ready(page);
@@ -100,10 +100,10 @@ test('synthetic spaces retain preferences, isolate demo content and theme the lo
     expect(await page.evaluate(() => localStorage.getItem('synthetic-private-draft'))).toBeNull();
     await login(page, 'synthetic-guest');
     await settings(page);
-    await page.locator('#leslie-palette-select').selectOption('slate');
+    await expect(page.locator('#leslie-palette-select')).toHaveCount(0);
     await page.locator('#leslie-display-mode-select').selectOption('light');
     await switchUser(page);
-    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-palette', 'slate');
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-palette', 'rose');
     await page.locator('.userSelect').filter({ has: page.locator('.userHandle', { hasText: 'default-user' }) }).click();
     await expect(page.locator('body')).toHaveAttribute('data-leslie-color-palette', 'rose');
     await expect(page.locator('body')).toHaveAttribute('data-dreamland-style', 'blue');

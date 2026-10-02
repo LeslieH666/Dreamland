@@ -535,7 +535,7 @@ for (const missing of ['all', 'bubble']) {
         for (const action of ['home', 'moments']) {
             const icon = page.locator('.dreamland-navigation [data-action="' + action + '"] i');
             await expect(icon).toHaveAttribute('data-ba-icon');
-            await expect(icon).toHaveCSS('background-image', /blue-archive\/bundled\//);
+            await expect(icon).toHaveCSS('mask-image', /blue-archive\/bundled\/Nav_/);
         }
         await expect(page.locator('[data-ba-asset-status]')).toContainText('已就绪');
         await leaveSettings(page);
@@ -543,7 +543,8 @@ for (const missing of ['all', 'bubble']) {
     });
 }
 
-test('single layout keeps colors independent and follows the system on desktop and mobile', async ({ page }) => {
+test('single rose layout follows the system and removes old palette controls on desktop and mobile', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('leslie.color.palette', 'jade'));
     await page.emulateMedia({ colorScheme: 'light' });
     await prepare(page);
     await openAppearance(page);
@@ -552,13 +553,9 @@ test('single layout keeps colors independent and follows the system on desktop a
     await expect(page.locator('body')).toHaveAttribute('data-leslie-color-scheme', 'light');
     await page.emulateMedia({ colorScheme: 'dark' });
     await expect(page.locator('body')).toHaveAttribute('data-leslie-color-scheme', 'dark');
-    const mode = await page.locator('body').getAttribute('data-dreamland-style');
-    for (const palette of ['rose', 'jade', 'iris', 'clay', 'slate']) {
-        await page.locator('#leslie-palette-select').selectOption(palette);
-        await expect(page.locator('body')).toHaveAttribute('data-leslie-color-palette', palette);
-        await expect(page.locator('body')).toHaveAttribute('data-dreamland-style', mode);
-    }
-    await page.locator('#leslie-palette-select').selectOption('rose');
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-palette', 'rose');
+    await expect(page.locator('body')).toHaveAttribute('data-dreamland-style', 'blue');
+    await expect(page.locator('#leslie-palette-select, #leslie-theme-menu [data-leslie-color-palette]')).toHaveCount(0);
     await page.locator('#leslie-display-mode-select').selectOption('light');
     await capture(page, 'momotalk-clean-appearance-desktop');
     await page.reload();
@@ -568,7 +565,7 @@ test('single layout keeps colors independent and follows the system on desktop a
     for (const width of [700, 390, 320]) {
         await page.setViewportSize({ width, height: 844 });
         await openAppearance(page);
-        await expect(page.locator('#leslie-palette-select')).toBeVisible();
+        await expect(page.locator('#leslie-display-mode-select')).toBeVisible();
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         await capture(page, 'momotalk-clean-appearance-' + width);
     }

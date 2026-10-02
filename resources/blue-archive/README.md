@@ -25,7 +25,7 @@ $libraryIndex = Get-Content resources/blue-archive/ui-library-index.json -Raw | 
 $libraryIndex.images | Where-Object { $_.name -match 'MomoTalk|Chat_BG|Btn_|Popup' } | Select-Object name, type, file, size
 ```
 
-这里的图片库不会在启动应用时整体加载，也不默认加入便携应用。实际运行所需的 37 张图片继续使用 `public/img/blue-archive/bundled/`，随源码和便携包分发，详见[运行素材说明](../../public/img/blue-archive/ASSETS.md)。本次未追加新的聊天或登录场景背景。
+这里的图片库不会在启动应用时整体加载，也不默认加入便携应用。实际运行的小型素材包继续使用 `public/img/blue-archive/bundled/`；界面按钮与导航优化后共保留 57 张图片，随源码和便携包分发，详见[运行素材说明](../../public/img/blue-archive/ASSETS.md)。本次未追加新的聊天或登录场景背景。
 
 ## 校验与重建
 

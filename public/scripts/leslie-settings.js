@@ -8,6 +8,7 @@
 
 import { eventSource, event_types, getRequestHeaders, saveSettingsDebounced, setGenerationParamsFromPreset, setOnlineStatus, stopStatusLoading } from '../script.js';
 import { clearUserSpaceBrowserState } from './leslie-user-space-browser.js';
+import { flushUserSpacePreferences } from './leslie-user-preferences.js';
 import { extension_settings } from './extensions.js';
 import { getLeslieConnectionState } from './leslie-connection-state.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
@@ -33,7 +34,7 @@ import {
     syncLesliePrivacyModeControls,
 } from './leslie-privacy-mode.js';
 import './leslie-voice-settings.js';
-import { DREAMLAND_STYLES } from './dreamland-appearance-core.js';
+import { COLOR_PALETTE_META } from './dreamland-palette.js';
 import { presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from './dreamland-pages.js';
 
 let settingsPageVisited = false;
@@ -61,10 +62,10 @@ const COPY = {
         introBody: '这里只整理入口，不会删除或改写 SillyTavern 的原功能。常用选项可以直接调整，复杂功能仍保留在高级设置中。',
         safeNote: '聊天记录、角色卡和提示词顺序不会因这个界面而改变。',
         quickTitle: '外观与使用习惯',
-        quickBody: '四套界面风格与外观偏好保存在当前浏览器；基础主题沿用原设置。',
+        quickBody: '统一使用 MomoTalk 界面；配色和外观偏好按用户空间自动保存，登录页同步使用。',
         theme: '界面主题',
         themeHelp: '选择 SillyTavern 基础主题',
-        palette: '原界面主题色',
+        palette: '界面配色',
         paletteHelp: '亮色和暗色会自动使用成套配色',
         language: '界面语言',
         languageHelp: '更改后页面会重新载入',
@@ -339,10 +340,10 @@ const COPY = {
         introBody: 'This page reorganizes access without removing or rewriting SillyTavern features. Common options stay close at hand, while complex tools remain available under Advanced.',
         safeNote: 'This interface does not change chats, character cards, or prompt order.',
         quickTitle: 'Appearance & comfort',
-        quickBody: 'Interface styles and appearance preferences are saved in this browser. The base theme uses SillyTavern settings.',
+        quickBody: 'MomoTalk is the shared layout. Appearance is saved per user space and reflected on the login page.',
         theme: 'Theme',
         themeHelp: 'Choose the base SillyTavern theme',
-        palette: 'Original interface palette',
+        palette: 'Interface colors',
         paletteHelp: 'Each palette includes light and dark colors',
         language: 'Language',
         languageHelp: 'The page reloads after a change',
@@ -653,6 +654,7 @@ async function changeUserSpace(action) {
     const root = settingsOverlay?.querySelector('#leslie-settings-detail');
     const field = selector => root?.querySelector(selector)?.value || '';
     try {
+        if (!await flushUserSpacePreferences()) throw new Error('设置尚未保存，请稍后重试。');
         if (action === 'switch') {
             userSpacesBusy = true;
             const button = root?.querySelector('[data-leslie-space-switch]');
@@ -1812,35 +1814,17 @@ function createSettingsOverlay() {
                                 </div>
                             </div>
                             <div class="leslie-settings-quick-grid">
-                                <label class="leslie-quick-control" for="dreamland-style-select">
-                                    <span><strong>DreamLand · 界面风格</strong><small>四套完整风格，选择后即时生效</small></span>
-                                    <select id="dreamland-style-select" data-dreamland-preference="style">
-                                        ${Object.entries(DREAMLAND_STYLES).map(([value, meta]) => `<option value="${value}">${meta.label} · ${meta.english}</option>`).join('')}
-                                    </select>
-                                </label>
-                                <label class="leslie-quick-control" for="dreamland-language-select">
-                                    <span><strong>界面版本</strong><small>可随时恢复原界面</small></span>
-                                    <select id="dreamland-language-select"><option value="dreamland">DreamLand</option><option value="cupertino">Cupertino</option><option value="classic">经典</option></select>
-                                </label>
                                 <label class="leslie-quick-control" for="dreamland-decoration-select">
-                                    <span><strong>氛围装饰</strong><small>控制首页插画或 BA 游戏场景</small></span>
-                                    <select id="dreamland-decoration-select" data-dreamland-preference="decoration"><option value="subtle">适中</option><option value="full">丰富</option><option value="off">关闭</option></select>
+                                    <span><strong>首页场景装饰</strong><small>显示或关闭首页 BA 游戏场景</small></span>
+                                    <select id="dreamland-decoration-select" data-dreamland-preference="decoration"><option value="subtle">显示</option><option value="off">关闭</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="dreamland-background-select">
-                                    <span><strong>场景背景</strong><small>使用“背景”中导入的图片；角色图沿用角色卡</small></span>
-                                    <select id="dreamland-background-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰氛围</option></select>
+                                    <span><strong>聊天背景显示</strong><small>使用“背景”中导入的图片；角色图沿用角色卡</small></span>
+                                    <select id="dreamland-background-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰背景</option></select>
                                 </label>
-                                <p class="dreamland-ba-status" data-ba-asset-status aria-live="polite"></p>
                                 <label class="leslie-quick-control" for="leslie-display-mode-select">
-                                    <span><strong>明暗模式</strong><small>选择亮色、暗色或跟随应用主题</small></span>
-                                    <select id="leslie-display-mode-select"><option value="auto">自动</option><option value="light">亮色</option><option value="dark">暗色</option></select>
-                                </label>
-                                <label class="leslie-quick-control" for="leslie-theme-select">
-                                    <span>
-                                        <strong>${copy.theme}</strong>
-                                        <small>${copy.themeHelp}</small>
-                                    </span>
-                                    <select id="leslie-theme-select" aria-label="${copy.theme}"></select>
+                                    <span><strong>明暗模式</strong><small>亮色、暗色或跟随系统；与登录页同步</small></span>
+                                    <select id="leslie-display-mode-select"><option value="auto">跟随系统</option><option value="light">亮色</option><option value="dark">暗色</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="leslie-palette-select">
                                     <span>
@@ -1848,10 +1832,7 @@ function createSettingsOverlay() {
                                         <small>${copy.paletteHelp}</small>
                                     </span>
                                     <select id="leslie-palette-select" aria-label="${copy.palette}">
-                                        <option value="jade">青瓷 · Jade</option>
-                                        <option value="iris">鸢尾 · Iris</option>
-                                        <option value="clay">暖砂 · Clay</option>
-                                        <option value="slate">石墨 · Slate</option>
+                                        ${Object.entries(COLOR_PALETTE_META).map(([value, meta]) => `<option value="${value}">${meta.label}</option>`).join('')}
                                     </select>
                                 </label>
                                 <label class="leslie-quick-control" for="leslie-language-select">
@@ -1876,6 +1857,7 @@ function createSettingsOverlay() {
                                     <input id="leslie-fast-ui" type="checkbox" role="switch">
                                 </label>
                             </div>
+                            <div class="dreamland-asset-health"><strong>BA 游戏素材</strong><p class="dreamland-ba-status" data-ba-asset-status aria-live="polite">正在检测本机素材…</p><button type="button" class="leslie-settings-secondary-button" data-ba-asset-retry>重新检测</button></div>
                         </section>
 
                         <section class="leslie-settings-section leslie-demo-mode-card" data-leslie-demo-card>
@@ -2011,7 +1993,10 @@ function updateDemoModeUi() {
         }
     });
     if (demoModeBanner) {
+        const footer = document.querySelector('#leslie-conversation-sidebar .leslie-sidebar-footer');
+        if (footer && demoModeBanner.parentElement !== footer) footer.prepend(demoModeBanner);
         demoModeBanner.hidden = !active;
+        demoModeBanner.querySelector('button').setAttribute('aria-label', copy.demoExit);
     }
 }
 
@@ -2046,6 +2031,7 @@ async function toggleDemoMode() {
     updateDemoModeUi();
     try {
         await Promise.resolve(saveSettingsDebounced.flush?.());
+        if (!await flushUserSpacePreferences()) throw new Error('设置尚未保存，请稍后重试。');
         const response = await fetch('/api/leslie/demo-mode/switch', {
             method: 'POST',
             headers: getRequestHeaders(),
@@ -3247,7 +3233,6 @@ function initLeslieSettings() {
     });
     document.addEventListener('keydown', handleSettingsKeydown);
 
-    mirrorSelect('themes', 'leslie-theme-select');
     mirrorSelect('ui_language_select', 'leslie-language-select');
     mirrorCheckbox('reduced_motion', 'leslie-reduced-motion', 'input');
     mirrorCheckbox('fast_ui_mode', 'leslie-fast-ui', 'change');

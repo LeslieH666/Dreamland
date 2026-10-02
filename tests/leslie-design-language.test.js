@@ -15,13 +15,13 @@ describe('Leslie design language preference', () => {
         expect(normalizeDesignLanguage('future-theme')).toBe(DEFAULT_DESIGN_LANGUAGE);
     });
 
-    test('preserves the explicit classic rollback preference', () => {
-        expect(normalizeDesignLanguage('classic')).toBe('classic');
-        expect(readDesignLanguagePreference({ getItem: () => 'classic' })).toBe('classic');
+    test('migrates the classic preference to the single MomoTalk layout', () => {
+        expect(normalizeDesignLanguage('classic')).toBe('dreamland');
+        expect(readDesignLanguagePreference({ getItem: () => 'classic' })).toBe('dreamland');
     });
 
-    test('preserves existing Cupertino installations without forcing a migration', () => {
-        expect(readDesignLanguagePreference({ getItem: () => 'cupertino' })).toBe('cupertino');
+    test('migrates existing Cupertino installations', () => {
+        expect(readDesignLanguagePreference({ getItem: () => 'cupertino' })).toBe('dreamland');
     });
 
     test('fails open when browser storage is unavailable', () => {
@@ -31,8 +31,8 @@ describe('Leslie design language preference', () => {
 
     test('persists only normalized values', () => {
         const setItem = jest.fn();
-        expect(writeDesignLanguagePreference({ setItem }, 'classic')).toBe('classic');
-        expect(setItem).toHaveBeenCalledWith(DESIGN_LANGUAGE_PREFERENCE_KEY, 'classic');
+        expect(writeDesignLanguagePreference({ setItem }, 'classic')).toBe('dreamland');
+        expect(setItem).toHaveBeenCalledWith(DESIGN_LANGUAGE_PREFERENCE_KEY, 'dreamland');
 
         expect(writeDesignLanguagePreference({ setItem }, 'unsupported')).toBe(DEFAULT_DESIGN_LANGUAGE);
         expect(setItem).toHaveBeenLastCalledWith(DESIGN_LANGUAGE_PREFERENCE_KEY, DEFAULT_DESIGN_LANGUAGE);

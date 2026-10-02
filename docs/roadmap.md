@@ -1,5 +1,38 @@
 # Roadmap
 
+## Interface asset library and login avatar fallback (2026-10-02)
+
+- Archived 420 verified interface/dependency bundles from pinned Global Android 1.93.454564, excluding 1,333 game-content bundle families. Exported 7,212 PNG entries and 21 NGUI atlases with crop/border metadata; 14 empty dynamic font atlases are recorded separately and preserved in the source bundles.
+- Source URLs, original MD5/size, SHA-256, exclusions and image lookup metadata are retained. The 901 MiB archive is distributed through this repository's asset Release; its local project directory is excluded from ordinary Git and portable builds. Runtime continues using the small bundled artwork allowlist.
+- Encrypted-space account selection now uses the shipped public DreamLand icon instead of a missing legacy default image. Personal account avatars remain inside the decrypted account boundary.
+- Validation: all 420 original hashes and all indexed PNG hashes passed; export has no errors. Repository/source/test lint have no errors and 669 unit checks across 55 suites passed. Archive paths and CRCs are verified before publication.
+
+## Bundled artwork and readable light navigation (2026-10-02)
+
+- All 37 verified game images and their checksum ledger now live in the project-owned `public/img/blue-archive/bundled/` directory. Runtime and portable preparation use this directory; no separate local pack install is needed.
+- The previous extraction preserved private temporary-directory ACLs on Windows, preventing the ordinary desktop process from reading the images. Bundled copies inherit the public directory's permissions; the restoration script now creates replacement files there as well.
+- Chat and Moments navigation only use a colored icon tile once their game sprite is ready. Missing-image fallback icons retain a transparent background and readable inherited color in light and dark mode.
+- Validation: all 37 same-origin artwork URLs returned images with matching SHA-256 checksums, and all 38 bundled files (images plus ledger) inherit the public directory ACL. The host image reader can open the copied icons. Ten artwork/packaging unit checks and five desktop/mobile artwork/recovery browser scenarios passed; repository and source/test lint have no errors. Portable allowlist copying and both restoration/build script syntax checks passed.
+
+## Unified MomoTalk UI and resilient local artwork (2026-10-02)
+
+- MomoTalk / BA is the only layout. Alternate layout selectors, stylesheets and motion modules were removed; extension/native-control foundations now serve the same page system.
+- Appearance exposes independent colors, system/light/dark mode, home scenery, chat backgrounds, language and accessibility/performance controls. Login uses the same palette. Legacy per-space layout values migrate with an exact, one-time rollback backup; the v1 storage format is unchanged.
+- Artwork loads with four concurrent requests, immediate partial success, bounded retries and fresh retry URLs. Failed requests can recover from settings, network reconnection or return to the foreground. Status distinguishes missing installation records from resource read failures.
+- Local portable builds validate and copy the 37-image allowlist, excluding previews and user state; missing/corrupt source artwork fails before output cleanup. Runtime/data-root/listener boundaries remain unchanged.
+- Space sealing now flushes and retires trailing ordinary/demo chat backup timers before encryption, preventing closed demo directories from being recreated during a later login.
+- Validation: repository and source/test lint passed (no errors), 667 unit checks across 54 suites passed, and 22 browser scenarios passed across artwork recovery, single-layout desktop/mobile navigation and isolated two-account/demo preferences. The 37-image source/copy validation and portable data-root/listener configuration checks passed; a full portable rebuild and live Electron acceptance remain release checks.
+
+## Demo content, account preferences and responsive space login (2026-10-02)
+
+- Isolated demo spaces now seed three fictional characters, six native story/reality JSONL chats (96 messages), 12 Moments posts with comments/likes, and six memory profiles with A/B/C events, growth and calculated relationship dimensions. Seeding is idempotent and preserves edited demo content.
+- Browser presentation and interaction preferences now persist per account and demo namespace in a validated v1 sidecar. Existing default-account preferences migrate on first load; native SillyTavern settings retain their existing save path. Logout and space changes flush pending saves. The previous preference record is retained for rollback.
+- Login uses the last saved appearance and each selected account's theme. Only allowlisted appearance values are available before decryption; account preferences remain inside the encrypted space.
+- Password derivation and file encryption/decryption are asynchronous, with four concurrent file jobs and streaming for large files. Login displays phase and file progress while the server stays responsive. The encrypted vault format remains v1.
+- Sealing waits for outstanding account requests, thumbnail work and deferred chat backups; authentication is checked again after asynchronous account lookup. Complete working folders can recover after interruption. Late fragments are preserved in separate encrypted snapshots instead of replacing the complete vault; directory/file changes abort sealing before working data is removed.
+- Desktop exit waits for sealing and permits retry after a disk failure. Portable data-root and localhost listener boundaries are unchanged.
+- Validation: 657 unit checks across 52 suites passed, along with repository/source/test lint, the synthetic two-account/demo browser flow (including mobile login), and portable configuration boundary checks. Verification uses only isolated synthetic data; a full portable rebuild and live Electron acceptance remain release checks.
+
 ## MomoTalk and local Blue Archive artwork (2026-10-02)
 
 - Blue now uses MomoTalk as the main conversation interface, replacing the earlier geometric approximation.

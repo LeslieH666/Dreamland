@@ -25,7 +25,7 @@ router.post('/logout', async (request, response) => {
 
         if (areLeslieUserSpacesEnabled()) {
             await flushUserStats();
-            sealActiveUserSpace(globalThis.DATA_ROOT);
+            await sealActiveUserSpace(globalThis.DATA_ROOT);
         }
         request.session.handle = null;
         request.session.csrfToken = null;
@@ -147,7 +147,7 @@ router.post('/change-password', async (request, response) => {
         }
 
         if (areLeslieUserSpacesEnabled()) {
-            rewrapUserSpace(globalThis.DATA_ROOT, user.handle, request.body.oldPassword, request.body.newPassword);
+            await rewrapUserSpace(globalThis.DATA_ROOT, user.handle, request.body.oldPassword, request.body.newPassword);
         }
 
         if (request.body.newPassword) {
@@ -162,7 +162,7 @@ router.post('/change-password', async (request, response) => {
         try {
             await storage.setItem(toKey(request.body.handle), user);
         } catch (error) {
-            if (areLeslieUserSpacesEnabled()) rewrapUserSpace(globalThis.DATA_ROOT, user.handle, request.body.newPassword, request.body.oldPassword);
+            if (areLeslieUserSpacesEnabled()) await rewrapUserSpace(globalThis.DATA_ROOT, user.handle, request.body.newPassword, request.body.oldPassword);
             throw error;
         }
 

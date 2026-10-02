@@ -1,8 +1,5 @@
-/** Browser-only appearance preferences. Chat and account schemas stay untouched. */
+/** One MomoTalk layout; colors and scenery remain independent preferences. */
 export const DREAMLAND_STYLES = Object.freeze({
-    clear: { label: '澄光', english: 'Clear', description: '轻盈蓝灰 · 连续会话', icon: 'fa-cloud-sun' },
-    moon: { label: '月幕', english: 'Moon', description: '静谧夜色 · 顶部导航', icon: 'fa-moon' },
-    paper: { label: '梦境手帖', english: 'Paper', description: '暖纸墨绿 · 书页阅读', icon: 'fa-book-open' },
     blue: { label: 'MomoTalk · 蔚蓝', english: 'Blue', description: 'MomoTalk 主界面 · BA 游戏素材', icon: 'fa-comment-dots' },
 });
 
@@ -13,10 +10,10 @@ export const APPEARANCE_KEYS = Object.freeze({
 });
 const OPTIONS = Object.freeze({
     style: Object.keys(DREAMLAND_STYLES),
-    decoration: ['full', 'subtle', 'off'],
+    decoration: ['subtle', 'off'],
     background: ['off', 'soft', 'visible'],
 });
-const DEFAULTS = Object.freeze({ style: 'clear', decoration: 'subtle', background: 'off' });
+const DEFAULTS = Object.freeze({ style: 'blue', decoration: 'subtle', background: 'off' });
 
 /** Validate preferences before applying them to DOM attributes or saving them. */
 export function normalizeAppearance(key, value) {

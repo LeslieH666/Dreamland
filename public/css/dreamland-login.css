@@ -1,4 +1,6 @@
-body.login[data-leslie-design-language="dreamland"] { background: var(--dl-canvas); color: var(--dl-text); }
+body.login { background: var(--dl-canvas); color: var(--dl-text); }
+.dreamland-login-progress { display: grid; gap: 8px; width: min(320px, 100%); margin-top: 12px; color: var(--dl-text); font-size: 13px; }
+.dreamland-login-progress progress { width: 100%; height: 6px; accent-color: var(--dl-accent); }
 body.login[data-leslie-design-language="dreamland"] #dialogue_popup { background: var(--dl-surface); color: var(--dl-text); border: 1px solid var(--dl-border); border-radius: var(--dl-radius); box-shadow: var(--cu-shadow-menu); }
 body.login[data-leslie-design-language="dreamland"] :where(.text_pole, .userSelectButton, .menu_button) { color: var(--dl-text); background: var(--dl-soft); border-color: var(--dl-border); border-radius: var(--dl-radius); }
 body.login[data-leslie-design-language="dreamland"] #logoBlock { color: var(--dl-text); }

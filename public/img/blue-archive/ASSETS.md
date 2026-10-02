@@ -2,7 +2,7 @@
 
 获取日期：2026-10-02。固定版本：Global Android **1.93.454564**。
 
-当前 Blue 风格使用 MomoTalk 的粉色标题、会话列表与左右消息布局，并直接加载游戏图片。暗色采用暖炭灰与玫瑰色。已安装 **27 个原始图集部件、3 张原始场景图和 7 个明确登记的着色适配**，图片合计约 1012 KiB。完整逐项信息在 [sources.json](sources.json)：包含下载地址、原图 SHA-256、图集名称、裁切坐标、NGUI 边框和透明边距；安装结果的哈希写入本机 `local/installed.json`。
+当前 Blue 风格使用 MomoTalk 的粉色标题、会话列表与左右消息布局，并直接加载游戏图片。暗色采用暖炭灰与玫瑰色。项目随附 **27 个原始图集部件、3 张原始场景图和 7 个明确登记的着色适配**，图片合计约 1012 KiB，位于 `bundled/`。完整逐项信息在 [sources.json](sources.json)：包含下载地址、原图 SHA-256、图集名称、裁切坐标、NGUI 边框和透明边距；完整文件哈希保存在 `bundled/installed.json`。
 
 ## 来源与提取
 
@@ -26,13 +26,13 @@
 | 首页亮/暗场景 | 夏莱工作室、夜间办公室 | 原始背景配阅读遮罩；“装饰关闭”隐藏场景 |
 | 登录背景 | 基沃托斯城市 | 原始背景按窗口比例裁切显示 |
 
-其余已提取部件是同一清单中的备用圆角、标题、搜索、返回、日程、朋友、表情和纹理。当前运行时只预加载实际映射的 28 张图。备用图片不代表已实现游戏的相应功能。
+其余已提取部件是同一清单中的备用圆角、标题、搜索、返回、日程、朋友、表情和纹理。当前运行时按最多四个并发请求读取实际映射的 28 张图。备用图片不代表已实现游戏的相应功能。
 
 七个适配文件为 `School_Chat_BG_Outgoing.png`、`School_Chat_BG_Dark.png`、`School_Chat_BG_Outgoing_Dark.png`、`Common_Popup_Bg_Dark.png`、`Common_Title_Bg_Dark.png`、`Common_Btn_Normal_B_S_Pt_Dark.png`、`Common_Btn_Normal_Y_S_Pt_Dark.png`。气泡和窗体使用 RGB multiply；暗色按钮纹理先去饱和再着色，全部保留原 alpha。暗色面板为 `#2d292f`，用户气泡为 `#6e4858`，两种按钮纹理为 `#a48494` / `#b7a779`。颜色与用途均登记在清单，不能视为未经修改的游戏原图。没有使用生成式重绘或 AI 超分。
 
-## 在新工作区恢复
+## 校验与修复
 
-此工作区已经安装素材。其他工作区可运行 [导入脚本](../../../scripts/import-blue-archive-assets.py)，其默认操作只下载上面的一个固定 bundle 和三张背景。需要 Python、UnityPy 1.25.3、Pillow 12.3.0。依赖可安装到项目的忽略目录，PowerShell 示例：
+素材直接保存在项目文件夹，正常使用无需下载或安装。`node scripts/prepare-blue-archive-assets.cjs --check` 可校验全部 37 张图片。文件损坏时可运行 [导入脚本](../../../scripts/import-blue-archive-assets.py)，其默认操作只下载上面的一个固定 bundle 和三张背景，验证后恢复到 `bundled/`。恢复工具需要 Python、UnityPy 1.25.3、Pillow 12.3.0。依赖可安装到项目的忽略目录，PowerShell 示例：
 
 ```powershell
 python -m pip install --target Cache/ba-theme-python UnityPy==1.25.3 Pillow==12.3.0
@@ -42,10 +42,12 @@ python scripts/import-blue-archive-assets.py
 
 也可通过 `--bundle <本地 bundle 路径>`、`--originals <三个原始 JPEG 所在目录>` 离线恢复。脚本校验整个包、图片解码及原始哈希后才替换文件；版本不匹配会报错，不会静默更新到其他游戏版本。固定 CDN 文件失效时，需要先重新核实版本与清单。
 
-刷新页面，选择 **MomoTalk · 蔚蓝**。切换后仅请求同源本机 `/img/blue-archive/local/`，运行时不联网拉取游戏素材。整包缺失时使用基础界面，单个资源失败时其余图片仍可使用；不会阻止聊天或清空草稿。安装后须刷新以重新检测素材。
+应用固定使用 **MomoTalk · 蔚蓝** 布局，仅请求同源本机 `/img/blue-archive/bundled/`，运行时不联网拉取游戏素材。每张图片失败后最多重试两次，并使用新 URL 避免失败缓存；成功图片立即使用。可在外观设置点击“重新检测”，网络恢复或返回前台也会重试失败项。状态区分图片读取失败与安装账目缺失，并显示失败文件；不会阻止聊天或清空草稿。恢复时在公开资源目录创建最终文件，再替换目标，避免把临时提取目录的私有 ACL 带入应用资源。
 
 ## 本地保存与分发
 
-`local/` 是忽略目录，原图、适配、安装账目及含原图的本机预览均不进入 Git；便携打包脚本也明确排除此目录。代码、来源清单和导入脚本可以随项目提供。这与游戏图片的再分发权是不同事项，资源公开可下载不等于获得再分发许可。
+后续界面开发使用的完整 UI 素材库另存于项目 `resources/blue-archive/ui-library/1.93.454564/`，含 420 个原始 UI/依赖 bundle、7,212 张 PNG 和 21 个图集的裁切信息。该库排除剧情背景、立绘等内容资源，不参与应用启动加载；大体积归档通过同一仓库 GitHub Release 分发。检索、下载、重建及校验见[界面素材库说明](../../../resources/blue-archive/README.md)。
+
+`bundled/` 中的 37 张固定图片及账目作为项目静态资源随项目保留。`local/` 仍是忽略目录，只保留历史提取结果和本机预览，不再作为加载路径。本机便携构建先校验全部图片，再单独复制固定清单中的图片和账目；不复制预览或其他本机文件。缺失、损坏或版本不符会在创建/清理输出目录前阻止构建，避免交付缺图包。资源来源与权利声明继续保留，不代表官方授权。
 
 Blue Archive／蔚蓝档案及相关图像、标识归各自权利人所有。此主题为非官方、非商业的界面交流学习用途，DreamLand 与相关权利人不存在官方合作或授权关系。涉及权利问题可通过 [项目反馈](https://github.com/LeslieH666/LeslieTavern/issues) 联系处理。

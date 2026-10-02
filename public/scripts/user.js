@@ -1,9 +1,10 @@
-import { getRequestHeaders } from '../script.js';
+import { getRequestHeaders, saveSettingsDebounced } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { canViewSecrets } from './secrets.js';
 import { renderTemplateAsync } from './templates.js';
 import { ensureImageFormatSupported, getBase64Async, humanFileSize } from './utils.js';
 import { clearUserSpaceBrowserState, watchUserSpaceChanges } from './leslie-user-space-browser.js';
+import { flushUserSpacePreferences } from './leslie-user-preferences.js';
 
 watchUserSpaceChanges();
 
@@ -862,6 +863,11 @@ async function openAdminPanel() {
  * @returns {Promise<void>}
  */
 async function logout() {
+    await Promise.resolve(saveSettingsDebounced.flush?.());
+    if (!await flushUserSpacePreferences()) {
+        toastr.error('设置尚未保存，请稍后重试。');
+        return;
+    }
     const response = await fetch('/api/users/logout', {
         method: 'POST',
         headers: getRequestHeaders({ omitContentType: true }),

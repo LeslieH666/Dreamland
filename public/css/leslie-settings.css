@@ -1997,6 +1997,21 @@ body.leslie-modern .leslie-demo-mode-banner button:focus-visible {
     outline-offset: 2px;
 }
 
+/* Keep demo controls in the contact column instead of covering chat tools. */
+body.leslie-modern #leslie-conversation-sidebar .leslie-demo-mode-banner {
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    width: 100%;
+    max-width: none;
+    margin-bottom: 8px;
+    grid-template-columns: 34px minmax(0, 1fr) 44px;
+    box-shadow: none;
+}
+body.leslie-modern #leslie-conversation-sidebar .leslie-demo-mode-banner button { min-height: 44px; justify-content: center; padding: 0; }
+body.leslie-modern #leslie-conversation-sidebar .leslie-demo-mode-banner :is(small, button span) { display: none; }
+body.leslie-modern.leslie-demo-mode .leslie-chat-heading::after { content: 'DEMO'; color: var(--leslie-accent); font-size: 9px; margin-top: 3px; }
+
 @media (max-width: 700px) {
     body.leslie-modern .leslie-demo-mode-heading {
         grid-template-columns: 42px minmax(0, 1fr);

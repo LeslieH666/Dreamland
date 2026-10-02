@@ -1,9 +1,15 @@
+import { LOGIN_APPEARANCE_KEY, loginAppearance } from './leslie-preferences-core.js';
 const SWITCH_KEY = 'leslie:user-space-changed';
 
 /** Drop browser-only drafts and notify other open LeslieTavern tabs. */
 export function clearUserSpaceBrowserState() {
     try { localStorage.setItem(SWITCH_KEY, `${Date.now()}-${Math.random()}`); } catch { /* storage may be disabled */ }
-    try { localStorage.clear(); } catch { /* storage may be disabled */ }
+    let appearance = {};
+    try { appearance = loginAppearance(JSON.parse(localStorage.getItem(LOGIN_APPEARANCE_KEY) || '{}')); } catch { /* malformed hint */ }
+    try {
+        localStorage.clear();
+        localStorage.setItem(LOGIN_APPEARANCE_KEY, JSON.stringify(appearance));
+    } catch { /* storage may be disabled */ }
     try { sessionStorage.clear(); } catch { /* storage may be disabled */ }
 }
 

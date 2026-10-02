@@ -7,6 +7,7 @@ import { serverEvents, EVENT_NAMES } from '../server-events.js';
 import { companionSession } from '../leslie-bridge/companion-session.js';
 import { getLocalServiceStatus, runLocalServiceAction, startManagedLocalModel } from './local-services.js';
 import { sealActiveUserSpace } from '../leslie-user-spaces/vault.js';
+import { createSealedExitHandler } from './sealed-exit.js';
 
 const cliArguments = yargs(process.argv)
     .usage('Usage: <your-start-script> [options]')
@@ -314,15 +315,16 @@ if (!hasSingleInstanceLock) {
         startServer();
     });
 
+    const allowExit = createSealedExitHandler(async () => {
+        const { flushUserStats } = await import('../endpoints/stats.js');
+        await flushUserStats();
+        await sealActiveUserSpace(globalThis.DATA_ROOT);
+    }, () => app.quit(), error => {
+        console.error('Could not encrypt the active user space before desktop exit:', error);
+        isQuitting = false;
+    });
     app.on('before-quit', (event) => {
-        try {
-            sealActiveUserSpace(globalThis.DATA_ROOT);
-        } catch (error) {
-            console.error('Could not encrypt the active user space before desktop exit:', error);
-            event.preventDefault();
-            isQuitting = false;
-            return;
-        }
+        if (!allowExit(event)) return;
         isQuitting = true;
         clearInterval(backgroundTickTimer);
         clearInterval(stopRequestTimer);

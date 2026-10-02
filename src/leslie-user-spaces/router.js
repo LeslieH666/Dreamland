@@ -106,7 +106,7 @@ router.post('/activate', async (request, response) => {
             }
             if (legacyAvatar) await storage.removeItem(avatarKey);
             await activateLeslieUserSpaces();
-            sealUserSpace(globalThis.DATA_ROOT, primary.handle, password);
+            await sealUserSpace(globalThis.DATA_ROOT, primary.handle, password);
         } catch (error) {
             if (!areLeslieUserSpacesEnabled()) {
                 if (legacyAvatar) await storage.setItem(avatarKey, legacyAvatar);

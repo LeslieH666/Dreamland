@@ -1,4 +1,4 @@
-"""Install the pinned BA artwork as a local-only, offline theme pack.
+"""Restore the pinned BA artwork shipped with the project for offline use.
 
 Requires Pillow and UnityPy. No client executable, account or chat data is used.
 """
@@ -29,7 +29,7 @@ def install(bundle_path=None, originals=None):
     import UnityPy
 
     manifest = json.loads((ASSETS / 'sources.json').read_text(encoding='utf-8'))
-    target = ASSETS / 'local'
+    target = ASSETS / 'bundled'
     target.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='ba-theme-', dir=ROOT / 'Cache') as directory:
         stage = Path(directory)
@@ -86,7 +86,15 @@ def install(bundle_path=None, originals=None):
         }
         (stage / 'installed.json').write_text(json.dumps(installed, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
         for file in stage.iterdir():
-            os.replace(file, target / file.name)
+            # Create the final file in the public directory so it inherits that
+            # directory's ACL, rather than the private tempfile directory's ACL.
+            destination = target / file.name
+            temporary = target / (file.name + '.restoring')
+            try:
+                temporary.write_bytes(file.read_bytes())
+                os.replace(temporary, destination)
+            finally:
+                temporary.unlink(missing_ok=True)
     print(f'Installed {len(installed["assets"])} local BA theme images into {target}')
 
 

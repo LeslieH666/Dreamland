@@ -327,7 +327,7 @@ async function preSetupTasks() {
         isExiting = true;
         try {
             await statsOnExit();
-            sealActiveUserSpace(globalThis.DATA_ROOT);
+            await sealActiveUserSpace(globalThis.DATA_ROOT);
         } catch (error) {
             console.error('Could not encrypt the active user space before exit:', error);
             isExiting = false;

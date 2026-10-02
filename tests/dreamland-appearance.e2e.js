@@ -45,7 +45,7 @@ test('synthetic showcase covers home, chat, memory, moments, workshop and model 
     // This screenshot scenario must never run against a real user's data root.
     test.skip(!process.env.LESLIE_SYNTHETIC_SHOWCASE, 'Run only against an isolated synthetic data root.'); // eslint-disable-line playwright/no-skipped-test
     await prepare(page);
-    await chooseStyle(page, process.env.LESLIE_SHOWCASE_STYLE || 'clear');
+    await chooseStyle(page, 'blue');
     if (process.env.LESLIE_SHOWCASE_STYLE === 'blue') await expect(page.locator('body')).toHaveAttribute('data-ba-assets', 'ready');
     await chooseMode(page, 'light');
     await page.locator('.dreamland-navigation [data-action="home"]').click();
@@ -87,7 +87,7 @@ test('synthetic showcase covers home, chat, memory, moments, workshop and model 
 });
 
 test('login branding uses local style with synthetic user list', async ({ page }) => {
-    const style = process.env.LESLIE_SHOWCASE_STYLE === 'blue' ? 'blue' : 'paper';
+    const style = 'blue';
     await page.addInitScript(style => {
         localStorage.setItem('dreamland.appearance.style', style);
         localStorage.setItem('leslie.theme.preference', 'light');
@@ -138,16 +138,8 @@ async function finishInitialization(page) {
     await expect(page.locator('#leslie-conversation-sidebar')).toBeVisible();
 }
 
-async function chooseStyle(page, style) {
-    if (await isBa(page)) {
-        await openAppearance(page);
-        await page.locator('#dreamland-style-select').selectOption(style);
-        await leaveSettings(page);
-    } else {
-        await page.locator('.leslie-theme-toggle').click();
-        await page.locator(`#leslie-theme-menu [data-dreamland-style="${style}"]`).click();
-    }
-    await expect(page.locator('body')).toHaveAttribute('data-dreamland-style', style);
+async function chooseStyle(page) {
+    await expect(page.locator('body')).toHaveAttribute('data-dreamland-style', 'blue');
     await expect(page.locator('body')).toHaveAttribute('data-leslie-design-language', 'dreamland');
 }
 
@@ -180,15 +172,6 @@ async function chooseMode(page, mode) {
     }
 }
 
-async function chooseLanguage(page, language) {
-    if (await isBa(page)) {
-        await openAppearance(page);
-        await page.locator('#dreamland-language-select').selectOption(language);
-    } else {
-        await page.locator('.leslie-theme-toggle').click();
-        await page.locator(`#leslie-theme-menu [data-leslie-design-language="${language}"]`).click();
-    }
-}
 
 test('BA pages keep chat and form drafts, occupy the main area and support back navigation', async ({ page }) => {
     test.skip(!process.env.LESLIE_SYNTHETIC_SHOWCASE, 'Requires an isolated synthetic data root.'); // eslint-disable-line playwright/no-skipped-test
@@ -222,11 +205,65 @@ test('BA pages keep chat and form drafts, occupy the main area and support back 
     await page.locator('.dreamland-navigation [data-action="home"]').click();
     await expect(page.locator('#send_textarea')).toHaveValue('页面切换保留的合成草稿');
     expect(await message.evaluate(node => node === document.querySelector('#chat > .mes'))).toBe(true);
-    await chooseStyle(page, 'clear');
-    await expect(page.locator('.leslie-sidebar-actions')).toBeVisible();
-    await expect(page.locator('#Backgrounds')).not.toHaveAttribute('data-dreamland-page-view');
-    await page.locator('.dreamland-navigation [data-action="moments"]').click();
-    await expect(page.locator('.leslie-moments-page')).toHaveAttribute('aria-modal', 'true');
+
+});
+
+for (const width of [1280, 390]) {
+    test(`BA backgrounds leave no overlay or layout space after navigation at ${width}px`, async ({ page }) => {
+        test.skip(!process.env.LESLIE_SYNTHETIC_SHOWCASE, 'Requires an isolated synthetic data root.'); // eslint-disable-line playwright/no-skipped-test
+        await prepare(page);
+        await chooseStyle(page, 'blue');
+        await page.setViewportSize({ width, height: 844 });
+        const background = page.locator('#Backgrounds');
+        const host = page.locator('#dreamland-page-host');
+        for (const name of ['moments', 'workshop', 'settings', 'about']) {
+            await page.locator('.dreamland-navigation [data-action="background"]').click();
+            await expect(background).toBeVisible();
+            await page.locator(`.dreamland-navigation [data-action="${name}"]`).click();
+            await expect(background).toBeHidden();
+            const visibleView = host.locator(':scope > [data-dreamland-page-view]:visible');
+            await expect(visibleView).toHaveCount(1);
+            const bounds = await visibleView.boundingBox();
+            const area = await host.boundingBox();
+            expect(Math.abs(bounds.y - area.y)).toBeLessThan(1);
+            expect(Math.abs(bounds.height - area.height)).toBeLessThan(1);
+        }
+        await page.locator('.dreamland-navigation [data-action="background"]').click();
+        await page.locator('.dreamland-navigation [data-action="home"]').click();
+        await expect(background).toBeHidden();
+        await expect(host).toBeHidden();
+        await page.locator('.dreamland-navigation [data-action="background"]').click();
+        await page.locator('.dreamland-navigation [data-action="workshop"]').click();
+        await page.goBack();
+        await expect(background).toBeVisible();
+        await page.goForward();
+        await expect(background).toBeHidden();
+        await expect(page.locator('[data-workshop-field="name"]')).toBeVisible();
+    });
+}
+
+test('BA memory drawer has room for desktop details and fits the mobile viewport', async ({ page }) => {
+    test.skip(!process.env.LESLIE_SYNTHETIC_SHOWCASE, 'Requires an isolated synthetic data root.'); // eslint-disable-line playwright/no-skipped-test
+    await prepare(page);
+    await chooseStyle(page, 'blue');
+    await page.locator('.leslie-conversation-item').first().click();
+    await expect(page.locator('#chat > .mes')).not.toHaveCount(0);
+    await page.locator('#leslie-memory-launcher').click();
+    const panel = page.locator('#leslie-memory-panel');
+    await expect(panel).toBeVisible();
+    await expect(page.locator('#leslie-memory-status')).not.toContainText('正在读取');
+    const desktop = await panel.boundingBox();
+    expect(desktop.width).toBeGreaterThanOrEqual(800);
+    expect(desktop.x + desktop.width).toBe(1280);
+    const details = await panel.locator('.leslie-memory-main').boundingBox();
+    expect(details.width).toBeGreaterThanOrEqual(550);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobile = await panel.boundingBox();
+    expect(mobile.x).toBeGreaterThanOrEqual(0);
+    expect(mobile.x + mobile.width).toBeLessThanOrEqual(390);
+    expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await panel.locator('[data-action="close"]').click();
+    await expect(panel).toBeHidden();
 });
 
 test('BA manual editor preserves fields across navigation and saves through the original form', async ({ page }) => {
@@ -240,6 +277,7 @@ test('BA manual editor preserves fields across navigation and saves through the 
     await page.locator('#character_name_pole').fill(name);
     await page.locator('#description_textarea').fill('只用于整页编辑器验收的合成角色。');
     await page.locator('.dreamland-navigation [data-action="about"]').click();
+    await expect(page.locator('#rm_ch_create_block')).toBeHidden();
     await page.locator('.dreamland-navigation [data-action="workshop"]').click();
     await expect(page.locator('#character_name_pole')).toHaveValue(name);
     await page.setViewportSize({ width: 390, height: 844 });
@@ -383,8 +421,10 @@ test('BA mobile keyboard viewport leaves the composer reachable and restores nav
     });
     await expect(page.locator('body')).toHaveAttribute('data-dreamland-keyboard', '');
     await expect(page.locator('.dreamland-navigation')).toBeHidden();
-    const composer = await page.locator('#send_textarea').boundingBox();
-    expect(composer.y + composer.height).toBeLessThanOrEqual(500);
+    await expect.poll(async () => {
+        const composer = await page.locator('#send_textarea').boundingBox();
+        return composer.y + composer.height;
+    }).toBeLessThanOrEqual(500);
     await page.evaluate(() => {
         delete window.visualViewport.height;
         window.visualViewport.dispatchEvent(new Event('resize'));
@@ -465,79 +505,87 @@ test('MomoTalk uses local game sprites in chat, home and settings', async ({ pag
 for (const missing of ['all', 'bubble']) {
     test(`MomoTalk keeps chat usable when ${missing} artwork is unavailable`, async ({ page }) => {
         test.skip(missing === 'bubble' && !process.env.LESLIE_BA_ASSET_PACK, 'Partial recovery requires a local pack.'); // eslint-disable-line playwright/no-skipped-test
-        await page.route(missing === 'all' ? '**/img/blue-archive/local/**' : '**/img/blue-archive/local/School_Chat_BG.png', route => route.abort());
+        await page.route(missing === 'all' ? '**/img/blue-archive/bundled/**' : '**/img/blue-archive/bundled/School_Chat_BG.png*', route => route.abort());
         await prepare(page);
         await chooseStyle(page, 'blue');
-        await expect(page.locator('body')).toHaveAttribute('data-ba-assets', missing === 'all' ? 'missing' : 'partial');
+        await expect(page.locator('body')).toHaveAttribute('data-ba-assets', missing === 'all' ? 'missing' : 'partial', { timeout: 15000 });
+        if (missing === 'all') {
+            await chooseMode(page, 'light');
+            for (const action of ['home', 'moments']) {
+                const icon = page.locator('.dreamland-navigation [data-action="' + action + '"] i');
+                await expect(icon).not.toHaveAttribute('data-ba-icon');
+                await expect(icon).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+                expect(await icon.evaluate(element => getComputedStyle(element, '::before').visibility)).toBe('visible');
+            }
+            await capture(page, 'momotalk-readable-fallback-navigation');
+        }
         await page.locator('.leslie-conversation-item').first().click();
         await expect(page.locator('#chat > .mes')).not.toHaveCount(0);
         await page.locator('#send_textarea').fill('素材不可用时的合成草稿');
         await page.locator('.dreamland-navigation [data-action="settings"]').click();
-        await expect(page.locator('#dreamland-style-select')).toHaveValue('blue');
+        await expect(page.locator('#dreamland-style-select')).toHaveCount(0);
         await leaveSettings(page);
-        await chooseStyle(page, 'clear');
+
+
         await expect(page.locator('#send_textarea')).toHaveValue('素材不可用时的合成草稿');
-        await expect(page.locator('.leslie-brand-copy')).toBeVisible();
-        await expect(page.locator('.dreamland-momotalk-brand')).toBeHidden();
-    });
-}
-
-for (const style of ['clear', 'moon', 'paper', 'blue']) {
-    test(`${style}: switch preserves chat controls, drafts and saved appearance`, async ({ page }) => {
-        await prepare(page);
-        await page.locator('.leslie-conversation-item').first().click();
-        await expect(page.locator('#chat > .mes')).not.toHaveCount(0);
-        await page.locator('#send_textarea').fill('合成草稿：今晚去看流星吧。');
-        const before = await page.locator('#chat > .mes').allTextContents();
-        await chooseStyle(page, style);
-        await chooseMode(page, style === 'moon' ? 'dark' : 'light');
-        await expect(page.locator('#send_textarea')).toHaveValue('合成草稿：今晚去看流星吧。');
-        expect(await page.locator('#chat > .mes').allTextContents()).toEqual(before);
-        await expect(page.locator('#leslie-chat-actions [data-action="chat-more"]')).toBeVisible();
-        await page.locator('#leslie-chat-actions [data-action="chat-more"]').click();
-        await expect(page.locator('.leslie-chat-more-menu [data-action="world-info"]')).toBeVisible();
-        await page.locator('#leslie-chat-actions [data-action="chat-more"]').click();
-        await capture(page, `dreamland-${style}-chat`);
-        await page.reload();
-        await finishInitialization(page);
-        await expect(page.locator('body')).toHaveAttribute('data-dreamland-style', style);
-        await chooseLanguage(page, 'classic');
-        await expect(page.locator('body')).toHaveAttribute('data-leslie-design-language', 'classic');
-        await expect(page.locator('.dreamland-navigation')).toBeHidden();
-        await chooseStyle(page, style);
-        expect(await page.evaluate(() => localStorage.getItem('dreamland.appearance.style'))).toBe(style);
-    });
-
-    test(`${style}: desktop and mobile appearance is readable and reachable`, async ({ page }) => {
-        await prepare(page);
-        await chooseStyle(page, style);
-        await chooseMode(page, 'light');
-        await page.locator('.dreamland-navigation [data-action="home"]').click();
-        await expect(page.locator('.leslieHomePanel')).toBeVisible();
-        await capture(page, `dreamland-${style}-home`);
-        await page.locator('.dreamland-navigation [data-action="settings"]').click();
-        await expect(page.locator('#dreamland-style-select')).toHaveValue(style);
-        await page.locator('#dreamland-decoration-select').selectOption('off');
-        await expect(page.locator('body')).toHaveAttribute('data-dreamland-decoration', 'off');
-        for (const background of ['soft', 'visible', 'off']) {
-            await page.locator('#dreamland-background-select').selectOption(background);
-            await expect(page.locator('body')).toHaveAttribute('data-dreamland-background', background);
+        await page.unroute(missing === 'all' ? '**/img/blue-archive/bundled/**' : '**/img/blue-archive/bundled/School_Chat_BG.png*');
+        await openAppearance(page);
+        await page.locator('[data-ba-asset-retry]').click();
+        await expect(page.locator('body')).toHaveAttribute('data-ba-assets', 'ready', { timeout: 15000 });
+        for (const action of ['home', 'moments']) {
+            const icon = page.locator('.dreamland-navigation [data-action="' + action + '"] i');
+            await expect(icon).toHaveAttribute('data-ba-icon');
+            await expect(icon).toHaveCSS('background-image', /blue-archive\/bundled\//);
         }
-        await capture(page, `dreamland-${style}-settings`);
+        await expect(page.locator('[data-ba-asset-status]')).toContainText('已就绪');
         await leaveSettings(page);
-        await page.locator('.dreamland-navigation [data-action="about"]').click();
-        await expect(page.locator('.dreamland-about:visible')).toContainText('非商业');
-        await expect(page.locator('.dreamland-about:visible')).toContainText('Blue Archive');
-        if (await isBa(page)) await page.locator('.dreamland-navigation [data-action="home"]').click();
-        else await page.locator('.popup[open] .popup-button-ok').click();
-        await chooseMode(page, 'dark');
-        await capture(page, `dreamland-${style}-dark`);
-        for (const width of [700, 390, 320]) {
-            await page.setViewportSize({ width, height: 844 });
-            await expect(page.locator('.dreamland-navigation [data-action="about"]')).toBeVisible();
-            expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-            await chooseMode(page, 'dark');
-            await capture(page, `dreamland-${style}-${width}`);
-        }
+        await expect(page.locator('#send_textarea')).toHaveValue('素材不可用时的合成草稿');
     });
 }
+
+test('single layout keeps colors independent and follows the system on desktop and mobile', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await prepare(page);
+    await openAppearance(page);
+    await expect(page.locator('#dreamland-style-select, #dreamland-language-select, #leslie-theme-select')).toHaveCount(0);
+    await page.locator('#leslie-display-mode-select').selectOption('auto');
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-scheme', 'light');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-scheme', 'dark');
+    const mode = await page.locator('body').getAttribute('data-dreamland-style');
+    for (const palette of ['rose', 'jade', 'iris', 'clay', 'slate']) {
+        await page.locator('#leslie-palette-select').selectOption(palette);
+        await expect(page.locator('body')).toHaveAttribute('data-leslie-color-palette', palette);
+        await expect(page.locator('body')).toHaveAttribute('data-dreamland-style', mode);
+    }
+    await page.locator('#leslie-palette-select').selectOption('rose');
+    await page.locator('#leslie-display-mode-select').selectOption('light');
+    await capture(page, 'momotalk-clean-appearance-desktop');
+    await page.reload();
+    await finishInitialization(page);
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-palette', 'rose');
+    await openAppearance(page);
+    for (const width of [700, 390, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        await openAppearance(page);
+        await expect(page.locator('#leslie-palette-select')).toBeVisible();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+        await capture(page, 'momotalk-clean-appearance-' + width);
+    }
+});
+
+test('first-request image failure automatically recovers without refreshing the page', async ({ page }) => {
+    let failed = false;
+    await page.route('**/img/blue-archive/bundled/School_Chat_BG.png*', async route => {
+        if (!failed) { failed = true; await route.abort(); }
+        else await route.continue();
+    });
+    await prepare(page);
+    await expect(page.locator('body')).toHaveAttribute('data-ba-assets', 'ready', { timeout: 15000 });
+    expect(failed).toBe(true);
+    const bubble = await page.locator('body').evaluate(element => element.style.getPropertyValue('--ba-bubble'));
+    expect(bubble).toContain('retry=1');
+    await openAppearance(page);
+    await expect(page.locator('[data-ba-asset-status]')).toContainText('已就绪');
+    await expect(page.locator('[data-ba-asset-retry]')).toBeEnabled();
+});

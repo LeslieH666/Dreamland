@@ -1,10 +1,4 @@
-/*
- * Leslie Telegram material layer
- *
- * Presentation-only overrides based on docs/design.md. This file intentionally
- * loads last so the original SillyTavern behavior and Leslie feature code can
- * stay untouched. Light/dark selection is provided by leslie-theme.js.
- */
+/* Shared extension and native-control foundation for the MomoTalk UI. */
 
 /* --------------------------------------------------------------------------
  * 1. Semantic material tokens

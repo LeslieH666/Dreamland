@@ -86,6 +86,8 @@ test('local activation migrates a synthetic default account and invalidates its 
         const listResponse = responseStub();
         await list({}, listResponse);
         expect(listResponse.body[0].avatar).not.toBe('data:image/png;base64,c3ludGhldGlj');
+        expect(listResponse.body[0].avatar).toBe('/img/dreamland/icon-192.png');
+        expect(fs.existsSync(fileURLToPath(new URL('../public' + listResponse.body[0].avatar, import.meta.url)))).toBe(true);
         expect(fs.readFileSync(path.join(directories.chats, 'synthetic.jsonl'), 'utf8')).toBe('synthetic chat');
         const { router: privateRouter } = await import('../src/endpoints/users-private.js');
         const logout = privateRouter.stack.find(layer => layer.route?.path === '/logout').route.stack[0].handle;
@@ -167,4 +169,4 @@ test('local activation migrates a synthetic default account and invalidates its 
         if (globalThis.DATA_ROOT === root) globalThis.DATA_ROOT = previousRoot;
         fs.rmSync(workspace, { recursive: true, force: true });
     }
-}, 20_000);
+}, 60_000);

@@ -3,6 +3,7 @@
 .dreamland-native-editor-header { display: none; }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
     --ba-nav-height: 78px;
+    & #UI-presets-block, & #UI-Theme-Block > [name="themeElements"] { display: none; }
     & .leslie-sidebar-actions, & #leslie-moments-launcher { display: none; }
     & .dreamland-navigation { position: fixed; inset: auto auto 0 0; width: var(--leslie-sidebar-width); z-index: 150; }
     & .dreamland-navigation [aria-current="page"] { color: var(--dl-accent); background: var(--cu-blue-soft); }
@@ -34,16 +35,32 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     & .dreamland-content-page > header, & .dreamland-native-editor-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px; background: var(--ba-header); color: white; }
     & .dreamland-content-page h1, & .dreamland-native-editor-header h1 { margin: 0; font-size: 22px; }
     & .dreamland-content-page article { padding: 28px; overflow-y: auto; line-height: 1.8; color: var(--dl-text); }
-    & #dreamland-page-host #Backgrounds { display: flex !important; flex-direction: column; color: var(--dl-text); }
+    & #dreamland-page-host #Backgrounds:not([hidden]) { display: flex !important; flex-direction: column; color: var(--dl-text); }
     & #dreamland-page-host #Backgrounds #bg-header-fixed { position: static; padding: 16px; background: var(--dl-surface); }
     & #dreamland-page-host #Backgrounds :is(#bg_menu_content, #bg_custom_content) { padding: 16px; }
-    & #dreamland-page-host #rm_ch_create_block { display: flex !important; opacity: 1 !important; overflow-y: auto; color: var(--dl-text); }
+    & #dreamland-page-host #rm_ch_create_block:not([hidden]) { display: flex !important; opacity: 1 !important; overflow-y: auto; color: var(--dl-text); }
     & #dreamland-page-host #form_create { padding: 16px 24px; width: 100%; box-sizing: border-box; }
     & #dreamland-page-host .leslie-character-workshop { display: grid; }
     & .dreamland-native-editor-header button { color: var(--dl-text); background: var(--dl-surface); border: 1px solid var(--dl-border); padding: 10px 14px; border-radius: 5px; }
 }
 
 /* Common modern chat header: both lines stay reachable even at 320px. */
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
+    & :is(.leslie-settings-header, .leslie-character-workshop-header, .leslie-moments-header, .leslie-memory-header) {
+        min-height: 72px; padding: 14px 20px; gap: 12px; background: var(--dl-surface);
+        border-bottom: 2px solid #e8c568; box-shadow: none; backdrop-filter: none;
+    }
+    & :is(.leslie-settings-section, .leslie-detail-card, .leslie-memory-card, .leslie-moments-post, .leslie-workshop-card) {
+        border: 1px solid var(--dl-border); border-radius: 8px; background: var(--dl-surface); box-shadow: none;
+    }
+    & :is(.leslie-quick-control, .leslie-settings-nav-item, .leslie-character-workshop-steps li, .leslie-memory-tab) { border-radius: 6px; }
+    & :is(.leslie-quick-control select, .leslie-settings-select, .leslie-detail-input, .leslie-detail-select) { min-height: 44px; border-radius: 5px; }
+    & :is(.leslie-settings-nav-item.active, .leslie-memory-tab.active) { background: var(--cu-blue-soft); color: var(--dl-accent); }
+    & .dreamland-asset-health { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 16px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--dl-border); }
+    & .dreamland-asset-health > strong { grid-column: 1 / -1; font-size: 14px; }
+    & .dreamland-asset-health .dreamland-ba-status { padding: 0; background: none; overflow-wrap: anywhere; }
+    & .dreamland-asset-health button { min-height: 44px; white-space: nowrap; }
+}
 @media (max-width: 700px) {
     body.leslie-modern:not(.leslie-chat-layout-disabled) #leslie-chat-header {
         display: grid !important; grid-template-columns: 44px minmax(0, 1fr) 44px 44px !important;
@@ -64,6 +81,9 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     body.leslie-modern .leslie-world-line-switch button { min-width: 0; min-height: 40px; padding: 0 4px; font-size: 12px; }
     body.leslie-modern .leslie-world-line-switch button:disabled { opacity: .6; }
     body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
+        & :is(.leslie-settings-header, .leslie-character-workshop-header, .leslie-moments-header, .leslie-memory-header) { min-height: 64px; padding: 12px; }
+        & .dreamland-asset-health { grid-template-columns: 1fr; }
+        & .dreamland-asset-health button { justify-self: start; }
         --ba-nav-height: max(76px, calc(70px + env(safe-area-inset-bottom)));
         & .dreamland-navigation { inset: auto 0 0; width: 100%; height: var(--ba-nav-height); }
         & #dreamland-page-host { inset: 0 0 var(--ba-nav-height); }

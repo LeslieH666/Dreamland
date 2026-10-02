@@ -10,6 +10,7 @@ import {
     getLeslieDemoStorageHandle,
 } from '../leslie-demo-mode.js';
 import { ensureUserDirectoriesExist, getUserDirectories } from '../users.js';
+import { seedDemoContent } from './seed.js';
 
 export const router = express.Router();
 
@@ -40,6 +41,8 @@ router.post('/switch', async (request, response) => {
             if (!fs.existsSync(settingsPath)) {
                 throw new Error('Demo storage initialization did not produce a settings file.');
             }
+
+            seedDemoContent(directories, request.user.profile.handle);
 
             request.session[LESLIE_DEMO_SESSION_KEY] = true;
         } else {

@@ -9,6 +9,25 @@ $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $OutputPath = [IO.Path]::GetFullPath($OutputPath)
 $MarkerPath = Join-Path $OutputPath '.leslie-portable-package'
 
+# A MomoTalk build must not silently ship without its required artwork.
+$assetPrepareScript = Join-Path $ProjectRoot 'scripts\prepare-blue-archive-assets.cjs'
+$nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
+$assetRuntime = if ($nodeCommand) { $nodeCommand.Source } else {
+    @((Join-Path $ProjectRoot 'Runtime\electron.exe'), (Join-Path $ProjectRoot 'src\electron\node_modules\electron\dist\electron.exe')) |
+        Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
+if (-not $assetRuntime) { throw 'A Node or Electron runtime is required to verify the BA artwork.' }
+function Invoke-BaAssetPreparation {
+    param([string]$Destination)
+    $previousRunAsNode = $env:ELECTRON_RUN_AS_NODE
+    try {
+        if (-not $nodeCommand) { $env:ELECTRON_RUN_AS_NODE = '1' }
+        & $assetRuntime $assetPrepareScript $Destination
+        if ($LASTEXITCODE -ne 0) { throw 'Restore the local BA artwork before building this package.' }
+    } finally { $env:ELECTRON_RUN_AS_NODE = $previousRunAsNode }
+}
+Invoke-BaAssetPreparation -Destination '--check'
+
 if ([IO.Path]::GetPathRoot($OutputPath) -eq $OutputPath -or $OutputPath.Length -lt 10) {
     throw "Refusing to build into an unsafe output path: $OutputPath"
 }
@@ -69,6 +88,7 @@ $excludedDirectories = @(
     (Join-Path $ProjectRoot 'logs'),
     (Join-Path $ProjectRoot 'node_modules'),
     (Join-Path $ProjectRoot 'notes'),
+    (Join-Path $ProjectRoot 'resources\blue-archive\ui-library'),
     (Join-Path $ProjectRoot 'packaging'),
     (Join-Path $ProjectRoot 'Run'),
     (Join-Path $ProjectRoot 'Runtime'),
@@ -76,7 +96,8 @@ $excludedDirectories = @(
     (Join-Path $ProjectRoot 'tests'),
     (Join-Path $ProjectRoot 'src\electron\node_modules'),
     (Join-Path $ProjectRoot 'public\scripts\extensions\third-party'),
-    (Join-Path $ProjectRoot 'public\img\blue-archive\local')
+    (Join-Path $ProjectRoot 'public\img\blue-archive\local'),
+    (Join-Path $ProjectRoot 'public\img\blue-archive\bundled')
 )
 
 $sourceArguments = @(
@@ -92,6 +113,9 @@ $sourceArguments = @(
     'UNIFIED_WORKSPACE.md', 'merge-user-data.cjs', '*.cmd'
 )
 Invoke-RobocopyChecked -Arguments $sourceArguments
+
+# The broad source copy excludes local previews. Include only verified artwork.
+Invoke-BaAssetPreparation (Join-Path $AppPath 'public\img\blue-archive\bundled')
 
 # The managed GGUF flow calls these scripts from the Electron app root. Keep
 # them in portable builds even though the rest of packaging/ stays excluded.

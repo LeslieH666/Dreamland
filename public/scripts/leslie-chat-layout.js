@@ -34,6 +34,7 @@ import { getLeslieConnectionState } from './leslie-connection-state.js';
 import { user_avatar } from './personas.js';
 import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { DREAMLAND_BRAND, BLUE_ARCHIVE_NOTICE } from './dreamland-brand.js';
+import { getDreamlandPage, navigateDreamlandPage, returnToDreamlandChat, syncDreamlandPages, usesDreamlandPages } from './dreamland-pages.js';
 import {
     beginRealitySession,
     getWorldLineKind,
@@ -63,6 +64,7 @@ let chatTransitionSequence = 0;
 let chatCreationTask = null;
 let realitySessionChatId = '';
 let realitySessionTask = null;
+let worldLineSwitchTask = null;
 
 async function cancelPendingRealityTasks() {
     if (typeof globalThis.LeslieRealityCancelPending === 'function') {
@@ -80,6 +82,13 @@ function isMobileLayout() {
 
 function updateMobileAccessibility(chatOpen) {
     const shell = document.getElementById('sheld');
+    if (usesDreamlandPages() && getDreamlandPage() !== 'chat') {
+        shell?.setAttribute('inert', '');
+        shell?.setAttribute('aria-hidden', 'true');
+        sidebar?.toggleAttribute('inert', isMobileLayout());
+        sidebar?.setAttribute('aria-hidden', String(isMobileLayout()));
+        return;
+    }
     if (!isMobileLayout() || !getLayoutEnabled()) {
         sidebar?.removeAttribute('aria-hidden');
         sidebar?.removeAttribute('inert');
@@ -169,6 +178,7 @@ function createSidebar() {
             <div class="leslie-brand" aria-label="DreamLand">
                 <span class="leslie-brand-mark"><img src="${DREAMLAND_BRAND.icon}" alt=""></span>
                 <span class="leslie-brand-copy"><strong>DreamLand</strong><small>故事与陪伴的归处</small></span>
+                <span class="dreamland-momotalk-brand"><span class="dreamland-momotalk-peach" aria-hidden="true"></span><span><strong>MomoTalk</strong><small>DreamLand · 故事与陪伴</small></span></span>
             </div>
             <div class="leslie-sidebar-actions"></div>
         </header>
@@ -249,6 +259,9 @@ function ensureChatHeader() {
         createIconButton({ action: 'new-chat', icon: 'fa-plus', label: '新建当前世界线会话' }),
         createIconButton({ action: 'chat-more', icon: 'fa-ellipsis-vertical', label: '更多会话操作' }),
     );
+    const newChatLabel = document.createElement('span');
+    newChatLabel.className = 'leslie-new-chat-label';
+    actions.querySelector('[data-action="new-chat"]').append(newChatLabel);
 
     const worldLineSwitch = document.createElement('div');
     worldLineSwitch.className = 'leslie-world-line-switch';
@@ -651,6 +664,7 @@ async function createStoryChat(active) {
 async function createCurrentLineChat() {
     const active = getActiveEntity();
     if (chatCreationTask) return chatCreationTask;
+    if (worldLineSwitchTask) return;
     if (!active || is_send_press) {
         if (is_send_press) globalThis.toastr?.info('请等待当前回复结束后再新建会话。');
         return;
@@ -788,6 +802,18 @@ async function switchWorldLine(kind) {
     }
 }
 
+async function switchWorldLineSafely(kind) {
+    if (worldLineSwitchTask || chatCreationTask) return;
+    worldLineSwitchTask = Promise.resolve().then(() => switchWorldLine(kind));
+    updateHeader();
+    try {
+        await worldLineSwitchTask;
+    } finally {
+        worldLineSwitchTask = null;
+        updateHeader();
+    }
+}
+
 function buildAvatar(entity, className = '') {
     const avatar = document.createElement('span');
     avatar.className = `leslie-conversation-avatar ${className}`.trim();
@@ -824,7 +850,7 @@ function renderConversationList() {
         empty.className = 'leslie-conversation-empty';
         empty.innerHTML = layoutState.query
             ? '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><strong>没有找到对应会话</strong><span>换一个名称或清除搜索试试</span>'
-            : '<i class="fa-regular fa-comments" aria-hidden="true"></i><strong>还没有角色会话</strong><span>点击右上角按钮创建或导入角色</span>';
+            : '<i class="fa-regular fa-comments" aria-hidden="true"></i><strong>还没有角色会话</strong><span>打开角色工坊创建或导入角色</span>';
         fragment.append(empty);
     }
 
@@ -920,17 +946,20 @@ function updateHeader() {
         fallback.className = `fa-solid ${active?.type === 'group' ? 'fa-user-group' : homeOpen ? 'fa-house' : 'fa-user'}`;
     }
     if (newChatButton instanceof HTMLButtonElement) {
-        newChatButton.disabled = !active || is_send_press || Boolean(chatCreationTask);
+        newChatButton.disabled = !active || is_send_press || Boolean(chatCreationTask || worldLineSwitchTask);
         newChatButton.title = active?.type === 'group' ? '新建群聊会话'
             : getWorldLineKind(chat_metadata) === 'reality' ? '新建现实线会话' : '新建故事线会话';
         newChatButton.setAttribute('aria-label', newChatButton.title);
+        newChatButton.dataset.worldLine = active?.type === 'group' ? 'group' : getWorldLineKind(chat_metadata);
+        newChatButton.querySelector('.leslie-new-chat-label').textContent = newChatButton.title.replace('会话', '');
     }
     document.querySelectorAll('.leslie-world-line-switch [data-world-line]').forEach((button) => {
         const line = button.getAttribute('data-world-line');
-        const selected = Boolean(active?.type === 'character' && getWorldLineKind(chat_metadata) === line);
+        const selected = Boolean(active && (active.type === 'group' ? line === 'story' : getWorldLineKind(chat_metadata) === line));
         button.classList.toggle('is-active', selected);
         button.setAttribute('aria-pressed', String(selected));
-        button.toggleAttribute('disabled', active?.type !== 'character');
+        button.toggleAttribute('disabled', active?.type !== 'character' || is_send_press || Boolean(chatCreationTask || worldLineSwitchTask));
+        button.title = active?.type === 'group' ? '群聊目前仅支持故事线' : line === 'story' ? '切换到故事线' : '切换到现实线';
     });
     syncCharacterExportMenuState();
     document.querySelector('.leslie-chat-identity')?.setAttribute('aria-disabled', String(!active));
@@ -1042,6 +1071,7 @@ function toggleHeaderMenu() {
 }
 
 async function selectConversation(button) {
+    returnToDreamlandChat();
     const type = button.dataset.entityType;
     const id = button.dataset.entityId;
     const transitionSequence = ++chatTransitionSequence;
@@ -1086,6 +1116,12 @@ async function selectConversation(button) {
 }
 
 async function handleAction(action) {
+    if (usesDreamlandPages() && ['home', 'moments', 'workshop', 'background', 'settings', 'about'].includes(action)) {
+        if (navigateDreamlandPage(action)) {
+            if (action === 'home' && getActiveEntity() && isMobileLayout()) setMobileView('chat', { historyMode: 'replace' });
+            return;
+        }
+    }
     if (action === 'chat-more') {
         toggleHeaderMenu();
         return;
@@ -1162,10 +1198,10 @@ async function handleAction(action) {
             }
             break;
         case 'line-story':
-            await switchWorldLine('story');
+            await switchWorldLineSafely('story');
             break;
         case 'line-reality':
-            await switchWorldLine('reality');
+            await switchWorldLineSafely('reality');
             break;
         case 'world-info':
             openWorldInfo();
@@ -1177,6 +1213,14 @@ async function handleAction(action) {
 }
 
 function bindShellEvents() {
+    document.querySelector('.dreamland-navigation')?.addEventListener('click', event => {
+        const action = event.target instanceof Element ? event.target.closest('[data-action]')?.dataset.action : null;
+        if (usesDreamlandPages() && action) {
+            event.stopPropagation();
+            void handleAction(action);
+        }
+    });
+    document.addEventListener('dreamland:page-layout-changed', syncResponsiveNavigation);
     sidebar?.addEventListener('click', async (event) => {
         const target = event.target instanceof Element ? event.target : null;
         const conversation = target?.closest('.leslie-conversation-item');
@@ -1315,6 +1359,7 @@ function initLeslieChatLayout() {
     createWorkspaceBackdrop();
     ensureChatHistoryDialog();
     bindShellEvents();
+    syncDreamlandPages();
     initializeMobileNavigation();
     document.body.classList.remove('leslie-chat-layout-disabled');
     relocateMemoryLauncher();

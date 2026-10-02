@@ -6,7 +6,7 @@
 
 ![DreamLand 功能介绍](public/img/dreamland/features.svg)
 
-提供 **澄光、月幕、梦境手帖、蔚蓝终端** 四套完整界面风格，支持亮色、暗色和氛围控制。点击会话栏的外观按钮，或进入“设置 → 通用与外观”切换；Cupertino 与经典界面保留。品牌插画是概念图，实际界面见 [可切换截图预览](docs/dreamland-preview.html) 与 [主题与品牌说明](docs/dreamland-appearance.md)。
+提供 **澄光、月幕、梦境手帖、MomoTalk · 蔚蓝** 四套完整界面风格，支持亮色、暗色和氛围控制。进入“设置 → 通用与外观”切换；其他风格也保留会话栏外观按钮，Cupertino 与经典界面保留。MomoTalk 采用暖炭灰与玫瑰色暗色、整页功能导航和手机双线聊天入口，游戏图片通过[本机素材导入脚本](public/img/blue-archive/ASSETS.md)恢复，不随源码分发。品牌插画是概念图，先前界面见 [历史截图预览](docs/dreamland-preview.html)，最新行为见 [主题与品牌说明](docs/dreamland-appearance.md)。
 
 [English](README.en.md) | 简体中文
 

@@ -9,6 +9,8 @@ import {
     writeDesignLanguagePreference,
 } from './leslie-design-language-core.js';
 import { APPEARANCE_KEYS, DREAMLAND_STYLES, readAppearance, writeAppearance } from './dreamland-appearance-core.js';
+import { syncBaAppearance } from './dreamland-ba-assets.js';
+import { syncDreamlandPages } from './dreamland-pages.js';
 
 const DARK_LUMINANCE_THRESHOLD = 0.42;
 const THEME_PREFERENCE_KEY = 'leslie.theme.preference';
@@ -367,6 +369,8 @@ function syncThemeControls() {
     if (!document.body) {
         return;
     }
+    syncBaAppearance();
+    syncDreamlandPages();
 
     const preference = document.body.dataset.leslieThemePreference || getThemePreference();
     const scheme = document.body.dataset.leslieColorScheme || getLeslieColorScheme();
@@ -409,6 +413,8 @@ function syncThemeControls() {
 
     const paletteSelect = document.getElementById('leslie-palette-select');
     if (paletteSelect instanceof HTMLSelectElement) paletteSelect.value = palette;
+    const displayModeSelect = document.getElementById('leslie-display-mode-select');
+    if (displayModeSelect instanceof HTMLSelectElement) displayModeSelect.value = preference;
     for (const choice of document.querySelectorAll('#leslie-theme-menu [data-dreamland-style]')) {
         const selected = designLanguage === 'dreamland' && choice.dataset.dreamlandStyle === style;
         choice.classList.toggle('is-active', selected);
@@ -506,6 +512,8 @@ document.addEventListener('change', (event) => {
         scheduleLeslieColorSchemeUpdate();
     } else if (event.target instanceof HTMLSelectElement && event.target.id === 'leslie-palette-select') {
         setColorPalette(event.target.value);
+    } else if (event.target instanceof HTMLSelectElement && event.target.id === 'leslie-display-mode-select') {
+        setThemePreference(event.target.value);
     } else if (event.target instanceof HTMLSelectElement && event.target.id === 'dreamland-language-select') {
         setDesignLanguage(event.target.value);
     } else if (event.target instanceof HTMLSelectElement && event.target.dataset.dreamlandPreference) {

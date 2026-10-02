@@ -5,6 +5,10 @@ import { expect, test } from '@playwright/test';
 test.use({ channel: 'msedge' });
 
 async function preparePage(page) {
+    if (process.env.LESLIE_SYNTHETIC_SHOWCASE) {
+        await page.route('**/api/secrets/read', route => route.fulfill({ json: {} }));
+        await page.route('**/api/quick-replies/save', route => route.fulfill({ json: {} }));
+    }
     await page.route('**/api/horde/status', route => route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -79,6 +83,8 @@ test('mobile starts on contacts and enters a dedicated chat page', async ({ page
     await expect(shell).toHaveAttribute('aria-hidden', 'false');
     await expect(sidebar).toHaveAttribute('aria-hidden', 'true');
     await expect(page.locator('.leslie-mobile-back')).toBeVisible();
+    await expect(page.locator('[data-action="line-story"]')).toBeVisible();
+    await expect(page.locator('[data-action="line-reality"]')).toBeVisible();
     const messageChrome = await page.evaluate(() => {
         const probe = document.createElement('div');
         probe.className = 'mes';

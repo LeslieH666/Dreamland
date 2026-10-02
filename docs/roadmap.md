@@ -1,5 +1,15 @@
 # Roadmap
 
+## MomoTalk and local Blue Archive artwork (2026-10-02)
+
+- Blue now uses MomoTalk as the main conversation interface, replacing the earlier geometric approximation.
+- A pinned Global Android 1.93.454564 pack supplies 27 original atlas sprites and 3 original backgrounds; 7 color adaptations are explicitly recorded. Dark mode uses warm charcoal and dusty rose, with tinted original bubbles and button textures.
+- BA footer navigation opens full content pages for moments, workshop, backgrounds, settings and about. Desktop retains contacts; mobile uses the area above the footer. Chat, form drafts and original character saving remain intact, with browser back navigation and legacy-theme restoration.
+- Redundant BA header controls are hidden. Appearance and privacy live in settings, and manual/JSON character creation lives in the workshop. The shared mobile header exposes both world lines and line-specific creation; switching and creation are mutually guarded. Keyboard and safe-area layout are handled without a persistent-data migration.
+- Original NGUI crop and border metadata, URLs and checksums are recorded in [the asset ledger](../public/img/blue-archive/ASSETS.md). A validated importer can restore the separate local pack.
+- Game images and screenshots remain ignored and excluded from portable packages. Missing artwork falls back without preventing chat; appearance still uses the existing `blue` preference and requires no user-data migration.
+- Repository and lint checks, 640 unit tests, 22 appearance browser checks and 2 shared navigation checks passed. Local screenshots are in `Cache/MomoTalk-QA/preview.html`; the tracked preview remains the earlier four-theme baseline. Full portable rebuild and live desktop/phone acceptance remain release checks.
+
 ## Workspace cleanup (2026-10-02)
 
 - Windows startup uses one DreamLand entry in each source or portable workspace.
@@ -13,7 +23,7 @@
 - Public branding now uses DreamLand. Internal module names, Bridge v1 and user-data paths stay stable.
 - Clear, Moon, Paper and Blue styles support light/dark mode, responsive navigation and shared tool surfaces.
 - Cupertino and Classic remain available. Existing explicit preferences are preserved; new users start with Clear.
-- Original product art and icons are included. The Blue Archive-inspired theme includes an attribution notice and source inventory.
+- Original product art and icons are included. The initial Blue Archive-inspired geometric theme was replaced by the local artwork implementation described above.
 - Appearance preferences are browser-only. No chat, character, memory or identity schema migration is required.
 - See [appearance and branding](dreamland-appearance.md) for switching, background import and rollback.
 - [Actual screenshot preview](dreamland-preview.html) is available. Repository/lint checks, 636 unit tests and 24 browser checks passed; complete portable rebuild and live desktop/audio acceptance remain release checks.

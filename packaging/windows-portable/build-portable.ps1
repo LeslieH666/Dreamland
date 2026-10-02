@@ -75,7 +75,8 @@ $excludedDirectories = @(
     (Join-Path $ProjectRoot 'test-results'),
     (Join-Path $ProjectRoot 'tests'),
     (Join-Path $ProjectRoot 'src\electron\node_modules'),
-    (Join-Path $ProjectRoot 'public\scripts\extensions\third-party')
+    (Join-Path $ProjectRoot 'public\scripts\extensions\third-party'),
+    (Join-Path $ProjectRoot 'public\img\blue-archive\local')
 )
 
 $sourceArguments = @(

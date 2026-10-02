@@ -1,4 +1,5 @@
 import { APPEARANCE_KEYS, readAppearance } from './dreamland-appearance-core.js';
+import { syncBaAppearance } from './dreamland-ba-assets.js';
 
 // Login reads the same local appearance without reading any account data.
 let storage;
@@ -10,10 +11,12 @@ function applyLoginScheme() {
     let mode;
     try { mode = storage?.getItem('leslie.theme.preference'); } catch { mode = null; }
     document.body.dataset.leslieColorScheme = ['light', 'dark'].includes(mode) ? mode : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    syncBaAppearance();
 }
 applyLoginScheme();
 window.addEventListener('storage', event => {
     if (event.key === null || event.key === APPEARANCE_KEYS.style) document.body.dataset.dreamlandStyle = readAppearance(storage, 'style');
     if (event.key === null || event.key === 'leslie.theme.preference') applyLoginScheme();
+    syncBaAppearance();
 });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyLoginScheme);

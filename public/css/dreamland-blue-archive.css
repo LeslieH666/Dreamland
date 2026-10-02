@@ -1,24 +1,150 @@
-/* Original geometry informed by BA system screens; no game images are bundled. */
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .dreamland-navigation { background: #123d58; border-color: #26769e; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .dreamland-navigation button { color: #d6eeff; border-radius: 4px; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .dreamland-navigation button:hover,
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"].leslie-home-open .dreamland-navigation [data-action="home"] { background: #91e6ff; color: #13384c; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslie-sidebar-header { border-bottom: 3px solid var(--dl-accent); }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslieHomeEyebrow::after { content: " / ARCHIVE"; font-size: 10px; letter-spacing: .2em; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslieHomeIntro { border-top: 4px solid var(--dl-accent); }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] :where(.leslieHomeSectionKicker, .leslie-settings-eyebrow) { font-family: ui-monospace, Consolas, monospace; letter-spacing: .16em; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslie-conversation-filters button { border-radius: 4px; transform: skewX(-6deg); }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] :where(.leslie-settings-section, .leslie-workshop-section, .leslie-moments-post) { border-top: 3px solid var(--dl-accent); }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header { border-bottom: 3px solid #59c5e8; background: #123d58; color: #e5f7ff; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header :where(.leslie-chat-heading strong, .leslie-chat-name, .leslie-icon-button, .leslie-chat-avatar, .leslie-header-memory-button) { color: #e5f7ff; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header :where(.leslie-chat-heading small, .leslie-chat-status, .leslie-chat-world-line button) { color: #bce7fa; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header .leslie-icon-button,
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-actions #leslie-memory-launcher { color: #e5f7ff; background: #24516c; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-header .leslie-icon-button:hover,
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #leslie-chat-actions #leslie-memory-launcher:hover { color: #13384c; background: #91e6ff; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"]:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { border-left: 3px solid var(--dl-accent); border-radius: 4px 12px 12px; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-dreamland-decoration]:not([data-dreamland-decoration="off"]) .leslieHomeIntro {
-    background-image: linear-gradient(120deg, transparent 75%, var(--cu-blue-soft) 75%), linear-gradient(var(--cu-blue-soft) 1px, transparent 1px), linear-gradient(90deg, var(--cu-blue-soft) 1px, transparent 1px);
-    background-size: auto, 32px 32px, 32px 32px;
+/* MomoTalk composition with local, extracted NGUI artwork. See img/blue-archive/ASSETS.md. */
+.dreamland-momotalk-brand, .dreamland-momotalk-welcome, .dreamland-ba-status { display: none; }
+
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
+    --dl-accent: #b94362; --dl-accent-strong: #96304c;
+    --dl-canvas: #e9eaec; --dl-surface: #fff; --dl-soft: #f3f4f5;
+    --dl-text: #354252; --dl-muted: #687584; --dl-border: #d7dce2;
+    --dl-outgoing: #4b6887; --dl-radius: 8px; --ba-header: #f28ca2;
+    --leslie-sidebar-width: clamp(326px, 28vw, 390px);
+
+    & #leslie-conversation-sidebar { padding: 0 0 78px; background: var(--dl-soft); }
+    & .leslie-sidebar-header { min-height: 84px; padding: 0 12px 0 18px; background: var(--ba-header); border: 0; gap: 6px; }
+    & .leslie-brand { min-width: 0; }
+    & .leslie-brand > :is(.leslie-brand-mark, .leslie-brand-copy) { display: none; }
+    & .dreamland-momotalk-brand { display: flex; align-items: center; gap: 10px; min-width: 0; color: white; }
+    & .dreamland-momotalk-peach { flex: 0 0 32px; height: 36px; background: var(--ba-peach, none) center / contain no-repeat; }
+    & .dreamland-momotalk-brand > span:last-child { display: grid; min-width: 0; gap: 2px; }
+    & .dreamland-momotalk-brand strong { font: 700 25px/1.2 "Segoe UI", system-ui, sans-serif; letter-spacing: -.04em; }
+    & .dreamland-momotalk-brand small { font-size: 9px; letter-spacing: .025em; white-space: nowrap; color: #fff; }
+    & .leslie-sidebar-actions .leslie-icon-button { min-width: 30px; width: 30px; color: #fff; }
+    & .leslie-sidebar-actions .leslie-theme-toggle { color: white; }
+    & .leslie-sidebar-actions > button, & #leslie-chat-actions > :is(button, .leslie-header-memory-button), & .leslie-mobile-back { background: #ffffff22; border-radius: 5px; box-shadow: none; }
+    & .leslie-sidebar-actions > button:hover, & #leslie-chat-actions > button:hover { background: #ffffff3d; }
+    & .dreamland-navigation { inset: auto 0 0; width: auto; height: 78px; padding: 8px 4px; flex-direction: row; justify-content: space-around; gap: 0; background: var(--dl-surface); border: 0; border-top: 1px solid var(--dl-border); }
+    & .dreamland-navigation button { width: 50px; min-height: 56px; border-radius: 5px; gap: 4px; }
+    & .dreamland-navigation i { display: grid; width: 32px; height: 30px; place-items: center; background-position: center; background-size: contain; background-repeat: no-repeat; }
+    & .dreamland-navigation [data-action="home"] i { background-image: var(--ba-home, none); }
+    & .dreamland-navigation [data-action="moments"] i { background-image: var(--ba-moments, none); }
+    & .dreamland-navigation [data-action="workshop"] i { background-image: var(--ba-workshop, none); }
+    & .dreamland-navigation [data-action="background"] i { background-image: var(--ba-background, none); }
+    & .dreamland-navigation [data-action="settings"] i { background-image: var(--ba-settings, none); }
+    & .dreamland-navigation [data-action="about"] i { background-image: var(--ba-about, none); }
+    &[data-ba-assets="ready"] .dreamland-navigation :is([data-action="home"], [data-action="moments"]) i { background-color: #627f9c; background-size: 24px; border-radius: 5px; }
+    &[data-ba-assets="ready"] .dreamland-navigation i::before { visibility: hidden; }
+    & .leslie-sidebar-tools { padding: 14px 16px 10px; background: var(--dl-surface); border-bottom: 1px solid var(--dl-border); }
+    & .leslie-conversation-search { border-radius: 4px; background: var(--dl-soft); }
+    & .leslie-conversation-filters { gap: 4px; padding-top: 10px; }
+    & .leslie-conversation-filters button { flex: 1; min-height: 38px; border-radius: 4px; font-size: 12px; }
+    & .leslie-conversation-filters button.is-active { background: #fce1e9; color: #98364e; box-shadow: none; }
+    & .leslie-conversation-item { width: calc(100% - 20px); margin: 5px 10px; min-height: 84px; padding: 12px; background: var(--dl-surface); border: 0; border-radius: 6px; box-shadow: 0 1px 3px #2334470a; }
+    & .leslie-conversation-item.is-active { background: var(--dl-surface); box-shadow: inset 4px 0 #ec849c, 0 1px 3px #2334470a; }
+    & .leslie-conversation-avatar, & .leslie-conversation-avatar img { border-radius: 8px; }
+    & .leslie-sidebar-footer { background: var(--dl-soft); padding: 8px 12px; }
+    & #leslie-chat-header { min-height: 84px; flex-basis: 84px; padding-inline: 24px; background: var(--ba-header); border: 0; }
+    & #leslie-chat-name, & #leslie-chat-status, & #leslie-chat-actions > *, & .leslie-mobile-back { color: white; }
+    & .leslie-chat-heading strong { font-size: 18px; }
+    & .leslie-chat-heading small { opacity: .95; }
+    & .leslie-world-line-switch { background: #ffffff24; border: 0; border-radius: 5px; }
+    & .leslie-world-line-switch button { color: #fff; background: transparent; min-width: 64px; border-radius: 4px; }
+    & .leslie-world-line-switch button.is-active { background: #fff; color: #a93656; box-shadow: none; }
+    & .leslie-chat-avatar { border-radius: 8px; }
+    &:not(.leslie-chat-layout-disabled) #chat { background: var(--dl-canvas); gap: 18px; padding: 30px max(22px, calc((100% - 860px) / 2)) 28px; }
+    &:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { position: relative; isolation: isolate; max-width: min(85%, 780px); padding: 14px 20px 16px 24px; border: 0; border-radius: 14px; box-shadow: none; }
+    &:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block { background: var(--dl-outgoing); padding: 14px 24px 16px 20px; border-radius: 14px; }
+    &:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] :is(.mes_text, .ch_name, .timestamp, .mes_timer, .mesIDDisplay, .tokenCounterDisplay, a, .mes_buttons, .mes_button) { color: #f6fbff; }
+    & .mes_text { line-height: 1.75; font-size: 15px; }
+    &:not(.leslie-chat-layout-disabled) #form_sheld { padding: 12px max(22px, calc((100% - 860px) / 2)) 18px; background: var(--dl-canvas); }
+    &:not(.leslie-chat-layout-disabled) #send_form { border-radius: 6px; box-shadow: none; background: var(--dl-surface) !important; }
+    & #send_but { color: #fff; background: #4b6887; border-radius: 5px; min-width: 44px; }
+    & .dreamland-ba-status { display: block; grid-column: 1 / -1; margin: 0; padding: 12px 16px; color: var(--dl-muted); background: var(--dl-soft); border-radius: 5px; font-size: 12px; }
+    & .leslieHomeIntro { min-height: 300px; padding: 30px; background: linear-gradient(90deg, var(--dl-surface) 12%, color-mix(in srgb, var(--dl-surface) 93%, transparent) 42%, transparent 85%), var(--ba-scenery, none) center / cover no-repeat; border: 0; }
+    & .leslieHomeIntro > :is(.dreamland-home-art, .leslieHomeEyebrow, .dreamland-home-tagline) { display: none; }
+    & .dreamland-momotalk-welcome { display: flex; gap: 9px; align-items: center; font-size: 13px; font-weight: 700; color: var(--dl-accent); }
+    & .dreamland-momotalk-welcome > span { width: 30px; height: 36px; background: var(--ba-phone, none) center / contain no-repeat; }
+    & .leslieHomeIntro h1 { font-size: clamp(22px, 2.7vw, 30px); }
+    & .leslieHomeIntro > :not(.dreamland-home-art) { max-width: 68%; }
+    & .leslieHomeCharacter { border-radius: 5px; }
+    & :is(.leslieHomeQuickActions button, .leslieHomePrimaryActions button, .leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .leslie-moments-primary-button, .popup-button) { background-image: var(--ba-bluePattern, none); background-position: right bottom; background-size: auto 100%; background-repeat: no-repeat; border-radius: 5px; }
+    & :is(.leslieHomePrimaryActions .is-primary, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .popup-button-ok) { background-color: #f8f1cc; background-image: var(--ba-yellowPattern, none); color: #354252; }
+    & :is(.leslie-settings-header, .leslie-memory-header, .leslie-moments-header, .leslie-character-workshop-header) { background-image: var(--ba-bluePattern, none); background-position: right bottom; background-repeat: no-repeat; background-size: auto 100%; border-bottom: 3px solid #f4d462; }
+    & :is(.leslie-settings-heading, .leslie-memory-title-wrap, .leslie-workshop-title) { color: var(--dl-text); }
+    & :is(.leslie-settings-panel, .leslie-character-workshop-panel, #leslie-memory-panel, .popup) { border-radius: 8px; }
+    & .leslie-settings-overlay { background: transparent; }
+    & .leslie-settings-backdrop { backdrop-filter: none; background: #26394770; }
+    & .leslie-settings-nav-item.active { background: #d6ecf8; color: #2d526f; }
+    & :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) { background-color: #526b84; background-image: var(--ba-close, none); background-position: center; background-size: 18px; background-repeat: no-repeat; border-radius: 5px; }
+    &[data-ba-assets="ready"] :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) > i { visibility: hidden; }
+    &[data-dreamland-decoration="off"] .leslieHomeIntro { background: var(--dl-surface); }
+    &[data-dreamland-decoration="full"] .leslieHomeIntro { min-height: 360px; }
 }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-dreamland-decoration="full"] .leslieHomeIntro::after { content: "DREAMLAND / CONNECT YOUR STORY"; position: absolute; bottom: 18px; right: 20px; color: var(--dl-muted); font: 9px ui-monospace, monospace; letter-spacing: .16em; }
+
+/* Nine-slice coordinates come from Common.asset, not guessed rectangular substitutes. */
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-ba-bubbles]:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
+    background: transparent;
+    &::before { content: ""; position: absolute; inset: 0; z-index: -1; border: solid transparent; border-width: 21px 10px 10px 15px; border-image: var(--ba-bubble) 42 20 20 30 fill / 21px 10px 10px 15px / 0 stretch; pointer-events: none; }
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-ba-bubbles]:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block {
+    background: transparent;
+    &::before { border-image-source: var(--ba-outgoing); transform: scaleX(-1); }
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-ba-panels] :is(.leslie-settings-panel, .leslie-character-workshop-panel, #leslie-memory-panel, .popup) {
+    border: solid transparent; border-width: 16px 16px 20px;
+    border-image: var(--ba-panel) 145 48 65 48 fill / 48px 16px 22px 16px / 0 stretch;
+    background: transparent; box-shadow: none;
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-ba-assets="ready"] :is(.leslieHomePrimaryActions button, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .popup-button) {
+    border: 8px solid transparent;
+    border-image: var(--ba-button) 30 30 35 30 / 8px 8px 10px 8px / 0 stretch;
+    padding: 6px 12px;
+}
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-leslie-color-scheme="dark"] {
+    --dl-accent: #f2b2c5; --dl-accent-strong: #ffd2de;
+    --dl-canvas: #211f23; --dl-surface: #2d292f; --dl-soft: #28242a; --dl-outgoing: #6e4858;
+    --dl-text: #f4edf0; --dl-muted: #c8bcc3; --dl-border: #4c424a; --ba-header: #5d3d4a;
+    & .leslie-conversation-filters button.is-active, & .leslie-settings-nav-item.active { color: #f4edf0; background: #6e4858; }
+    & .leslie-world-line-switch button.is-active { background: #6e4858; color: #f4edf0; }
+    & #send_but, & .dreamland-navigation :is([data-action="home"], [data-action="moments"]) i { background-color: #6e4858; }
+    & :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) { background-color: #6e4858; }
+    & :is(.leslieHomePrimaryActions .is-primary, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .popup-button-ok) { background-color: #443b31; color: #f4edf0; }
+}
+@media (max-width: 1000px) and (min-width: 701px) {
+    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
+        --leslie-sidebar-width: 326px;
+        & #leslie-chat-header { padding-inline: 12px; }
+        & .leslie-world-line-switch button { min-width: 44px; padding-inline: 6px; }
+        & .leslie-chat-heading small { max-width: 90px; }
+    }
+}
+@media (max-width: 700px) {
+    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
+        & #leslie-conversation-sidebar { padding-bottom: max(76px, calc(70px + env(safe-area-inset-bottom))); }
+        & .leslie-sidebar-header { padding-inline: 18px 12px; min-height: 78px; }
+        & .leslie-sidebar-actions .leslie-icon-button { width: 38px; min-width: 38px; }
+        & .dreamland-navigation { height: max(76px, calc(70px + env(safe-area-inset-bottom))); padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+        & .dreamland-navigation button { width: 46px; }
+        & #leslie-chat-header { min-height: 68px; flex-basis: 68px; padding-inline: 8px; }
+        & #leslie-chat-name { font-size: 15px; }
+        & .leslieHomeIntro { min-height: 275px; padding: 22px 18px; background: linear-gradient(90deg, var(--dl-surface) 5%, color-mix(in srgb, var(--dl-surface) 88%, transparent) 60%, transparent), var(--ba-scenery, none) center / cover no-repeat; }
+        & .leslieHomeIntro > :not(.dreamland-home-art) { max-width: 100%; }
+        &:not(.leslie-chat-layout-disabled) #chat { padding: 20px 8px; gap: 16px; }
+        &:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { max-width: calc(100% - 48px); padding: 12px 14px 14px 20px; }
+        &:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block { padding: 12px 20px 14px 14px; }
+        &:not(.leslie-chat-layout-disabled) #form_sheld { padding: 8px 10px max(10px, env(safe-area-inset-bottom)); }
+        &[data-ba-panels] :is(.leslie-settings-panel, .leslie-character-workshop-panel, #leslie-memory-panel, .popup) { border-width: 8px; border-image-width: 38px 10px 14px 10px; }
+    }
+}
+@media (max-width: 380px) {
+    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
+        & .dreamland-momotalk-brand strong { font-size: 23px; }
+        & .dreamland-momotalk-brand { gap: 7px; }
+        & .dreamland-momotalk-peach { flex-basis: 26px; }
+        & .leslie-sidebar-header { padding-inline: 10px 6px; }
+        & .leslie-sidebar-actions .leslie-icon-button { min-width: 32px; width: 32px; }
+        & #leslie-chat-header { display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-rows: 44px 44px; min-height: 100px; flex-basis: 100px; gap: 0; padding: 6px 8px; }
+        & .leslie-mobile-back { grid-area: 1 / 1; }
+        & .leslie-chat-identity { grid-area: 1 / 2; }
+        & #leslie-chat-actions { grid-area: 2 / 2; justify-self: end; }
+        & .leslie-world-line-switch { grid-area: 2 / 1; }
+    }
+}

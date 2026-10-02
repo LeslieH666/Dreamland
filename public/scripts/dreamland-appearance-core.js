@@ -3,7 +3,7 @@ export const DREAMLAND_STYLES = Object.freeze({
     clear: { label: '澄光', english: 'Clear', description: '轻盈蓝灰 · 连续会话', icon: 'fa-cloud-sun' },
     moon: { label: '月幕', english: 'Moon', description: '静谧夜色 · 顶部导航', icon: 'fa-moon' },
     paper: { label: '梦境手帖', english: 'Paper', description: '暖纸墨绿 · 书页阅读', icon: 'fa-book-open' },
-    blue: { label: '蔚蓝终端', english: 'Blue', description: '蓝白几何 · BA 灵感', icon: 'fa-shapes' },
+    blue: { label: 'MomoTalk · 蔚蓝', english: 'Blue', description: 'MomoTalk 主界面 · BA 游戏素材', icon: 'fa-comment-dots' },
 });
 
 export const APPEARANCE_KEYS = Object.freeze({

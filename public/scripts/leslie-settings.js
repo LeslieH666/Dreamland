@@ -34,6 +34,9 @@ import {
 } from './leslie-privacy-mode.js';
 import './leslie-voice-settings.js';
 import { DREAMLAND_STYLES } from './dreamland-appearance-core.js';
+import { presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from './dreamland-pages.js';
+
+let settingsPageVisited = false;
 
 const SECONDARY_DRAWERS = [
     'ai-config-button',
@@ -1820,12 +1823,17 @@ function createSettingsOverlay() {
                                     <select id="dreamland-language-select"><option value="dreamland">DreamLand</option><option value="cupertino">Cupertino</option><option value="classic">经典</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="dreamland-decoration-select">
-                                    <span><strong>氛围装饰</strong><small>控制首页插画与几何纹理</small></span>
+                                    <span><strong>氛围装饰</strong><small>控制首页插画或 BA 游戏场景</small></span>
                                     <select id="dreamland-decoration-select" data-dreamland-preference="decoration"><option value="subtle">适中</option><option value="full">丰富</option><option value="off">关闭</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="dreamland-background-select">
                                     <span><strong>场景背景</strong><small>使用“背景”中导入的图片；角色图沿用角色卡</small></span>
                                     <select id="dreamland-background-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰氛围</option></select>
+                                </label>
+                                <p class="dreamland-ba-status" data-ba-asset-status aria-live="polite"></p>
+                                <label class="leslie-quick-control" for="leslie-display-mode-select">
+                                    <span><strong>明暗模式</strong><small>选择亮色、暗色或跟随应用主题</small></span>
+                                    <select id="leslie-display-mode-select"><option value="auto">自动</option><option value="light">亮色</option><option value="dark">暗色</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="leslie-theme-select">
                                     <span>
@@ -2077,6 +2085,16 @@ function closeOpenDrawers() {
  */
 function openSettings() {
     window.clearTimeout(closeTimer);
+    if (presentDreamlandPage('settings', settingsOverlay, () => {
+        settingsOverlay.dataset.open = 'false';
+        lockAdvancedSettings();
+    })) {
+        if (!settingsPageVisited) showSettingsHome();
+        settingsPageVisited = true;
+        settingsOverlay.dataset.open = 'true';
+        closeOpenDrawers();
+        return;
+    }
     lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : settingsLauncher;
     closeOpenDrawers();
     showSettingsHome();
@@ -2094,6 +2112,7 @@ function openSettings() {
  * Hide the settings hub and restore focus to its launcher.
  */
 function closeSettings() {
+    if (returnToDreamlandChat('settings')) return;
     settingsOverlay.dataset.open = 'false';
     settingsOverlay.classList.remove('leslie-settings-mobile-detail');
     document.documentElement.classList.remove('leslie-settings-open');
@@ -2985,6 +3004,7 @@ function handleSettingsKeydown(event) {
     if (event.key !== 'Tab') {
         return;
     }
+    if (usesDreamlandPages()) return;
 
     const focusable = Array.from(settingsOverlay.querySelectorAll('button:not([hidden]):not([disabled]), select:not([disabled]), input:not([disabled])'))
         .filter((element) => element instanceof HTMLElement && element.offsetParent !== null);
@@ -3031,6 +3051,7 @@ function initLeslieSettings() {
 
     settingsOverlay = createSettingsOverlay();
     document.body.append(settingsOverlay);
+    registerDreamlandPage('settings', openSettings);
     document.dispatchEvent(new CustomEvent('dreamland:appearance-ready'));
     demoModeBanner = createDemoModeBanner();
     document.body.append(demoModeBanner);

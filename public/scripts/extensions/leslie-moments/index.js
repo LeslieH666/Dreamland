@@ -10,6 +10,7 @@ import {
 import { extension_settings, getContext } from '../../extensions.js';
 import { getUserAvatar, user_avatar } from '../../personas.js';
 import { power_user } from '../../power-user.js';
+import { presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat } from '../../dreamland-pages.js';
 import { getMemoryChatIdentity } from '../leslie-memory/chat-context.js';
 import {
     buildStoryScopeRequest,
@@ -968,7 +969,16 @@ function openPage() {
     pageState.open = true;
     pageState.currentStory = getCurrentStory();
     synchronizeMemorySourceSelection();
-    document.body.classList.add('leslie-moments-page-open');
+    const page = presentDreamlandPage('moments', overlay, () => {
+        pageState.open = false;
+        pageState.audienceOpen = false;
+        pageState.likesPostId = null;
+        pageState.settingsOpen = false;
+        pageState.memoryPickerOpen = false;
+        pageState.memorySourceOpen = false;
+        overlay.classList.remove('is-open');
+    });
+    if (!page) document.body.classList.add('leslie-moments-page-open');
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
     renderPage();
@@ -976,6 +986,7 @@ function openPage() {
 }
 
 function closePage() {
+    if (returnToDreamlandChat('moments')) return;
     pageState.open = false;
     pageState.audienceOpen = false;
     pageState.likesPostId = null;
@@ -1985,6 +1996,7 @@ function bindLifecycleEvents() {
 export async function init() {
     synchronizeMomentsSettings({ save: true });
     installPage();
+    registerDreamlandPage('moments', openPage);
     installLauncher();
     bindLifecycleEvents();
     installBackgroundActivityWorker();

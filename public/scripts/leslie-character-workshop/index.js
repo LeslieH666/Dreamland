@@ -14,6 +14,9 @@ import {
     online_status,
     stopGeneration,
 } from '../../script.js';
+import { presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from '../dreamland-pages.js';
+
+let manualPage = false;
 import {
     assessCharacterCard,
     canonicalizeDialogueRoleLabels,
@@ -407,12 +410,19 @@ function resetResults() {
 }
 
 function openWorkshop() {
+    if (usesDreamlandPages() && manualPage) {
+        showManualPage();
+        return;
+    }
     state.previousFocus = document.activeElement;
+    const page = presentDreamlandPage('workshop', overlay, () => { overlay.dataset.open = 'false'; });
     overlay.hidden = false;
     syncProviderUi();
     setConnectionBadge();
-    document.documentElement.classList.add('leslie-character-workshop-open');
-    document.body.classList.add('leslie-character-workshop-open');
+    if (!page) {
+        document.documentElement.classList.add('leslie-character-workshop-open');
+        document.body.classList.add('leslie-character-workshop-open');
+    }
     requestAnimationFrame(() => {
         overlay.dataset.open = 'true';
         query('[data-workshop-field="name"]')?.focus();
@@ -420,6 +430,7 @@ function openWorkshop() {
 }
 
 function closeWorkshop() {
+    if (returnToDreamlandChat('workshop')) return;
     if (state.running) {
         return;
     }
@@ -1092,7 +1103,30 @@ function buildAuditedCard() {
     return normalizeCharacterCard(state.finalCard);
 }
 
+function showManualPage() {
+    const editor = document.getElementById('rm_ch_create_block');
+    if (!editor) return;
+    if (!editor.querySelector('.dreamland-native-editor-header')) {
+        const header = document.createElement('header');
+        header.className = 'dreamland-native-editor-header';
+        header.innerHTML = '<h1>角色创建与导入</h1><button type="button">返回 AI 工坊</button>';
+        header.querySelector('button').addEventListener('click', () => {
+            manualPage = false;
+            openWorkshop();
+        });
+        editor.prepend(header);
+    }
+    presentDreamlandPage('workshop', editor);
+}
+
 function openOriginalCreateEditor() {
+    if (usesDreamlandPages()) {
+        state.bypassNextCreateClick = true;
+        document.getElementById('rm_button_create')?.click();
+        manualPage = true;
+        showManualPage();
+        return;
+    }
     closeWorkshop();
     state.bypassNextCreateClick = true;
     const rightNavPanel = document.querySelector('#right-nav-panel');
@@ -1235,6 +1269,7 @@ function bindWorkshopEvents() {
 function initializeWorkshop() {
     overlay = createWorkshopMarkup();
     document.body.append(overlay);
+    registerDreamlandPage('workshop', openWorkshop);
     bindWorkshopEvents();
     setStage('brief');
 }

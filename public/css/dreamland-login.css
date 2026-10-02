@@ -5,3 +5,18 @@ body.login[data-leslie-design-language="dreamland"] #logoBlock { color: var(--dl
 body.login[data-leslie-design-language="dreamland"] #logoBlock img { width: 44px; height: 44px; }
 body.login[data-leslie-design-language="dreamland"] .leslie-login-backdrop { background: radial-gradient(ellipse at 10% 15%, var(--cu-blue-soft), transparent 70%), var(--dl-canvas); }
 body.login[data-leslie-design-language="dreamland"] a { color: var(--dl-accent); }
+body.login[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslie-login-backdrop {
+    background: linear-gradient(#16344933, #16344944), var(--ba-city, none) center / cover no-repeat, var(--dl-canvas);
+    filter: none;
+    opacity: 1;
+    inset: 0;
+}
+body.login[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] :is(.leslie-login-ghost-sidebar, .leslie-login-ghost-chat) { display: none; }
+body.login[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #shadow_popup { backdrop-filter: none; -webkit-backdrop-filter: none; background: #16344922; }
+body.login[data-leslie-design-language="dreamland"][data-dreamland-style="blue"][data-ba-panels] #dialogue_popup {
+    border: 16px solid transparent;
+    border-image: var(--ba-panel) 145 48 65 48 fill / 48px 16px 22px 16px / 0 stretch;
+    background: transparent;
+    box-shadow: none;
+}
+body.login[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] #logoBlock::after { content: ""; width: 30px; height: 38px; background: var(--ba-phone, none) center / contain no-repeat; }

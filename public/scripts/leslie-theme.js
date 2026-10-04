@@ -1,564 +1,189 @@
-/**
- * Keeps Leslie's semantic light/dark palette aligned with the currently
- * selected SillyTavern theme without changing or saving theme data.
- */
+/** One MomoTalk layout with rose controls, scenery and display mode. */
+import { APPEARANCE_KEYS, GLASS_RANGES, readAppearance, writeAppearance } from './dreamland-appearance-core.js';
+import { normalizePalette, applyDreamlandPalette } from './dreamland-palette.js';
+import { syncBaAppearance } from './dreamland-ba-assets.js';
+import { syncDreamlandPages } from './dreamland-pages.js';
+import { applyGlassAppearance, clearGlassAppearance } from './dreamland-glass.js';
 
-import {
-    DESIGN_LANGUAGES,
-    readDesignLanguagePreference,
-    writeDesignLanguagePreference,
-} from './leslie-design-language-core.js';
-import { APPEARANCE_KEYS, DREAMLAND_STYLES, readAppearance, writeAppearance } from './dreamland-appearance-core.js';
-
-const DARK_LUMINANCE_THRESHOLD = 0.42;
-const THEME_PREFERENCE_KEY = 'leslie.theme.preference';
-const COLOR_PALETTE_KEY = 'leslie.color.palette';
-const THEME_MODES = Object.freeze(['auto', 'light', 'dark']);
-const COLOR_PALETTES = Object.freeze(['jade', 'iris', 'clay', 'slate']);
-
-const COLOR_PALETTE_META = Object.freeze({
-    jade: { label: '青瓷', description: '柔和的青绿与暖白', light: '#23766e', dark: '#75c8ba' },
-    iris: { label: '鸢尾', description: '克制的蓝紫与雾白', light: '#5656a5', dark: '#aaa9e9' },
-    clay: { label: '暖砂', description: '陶土橘与奶油白', light: '#a45138', dark: '#e7ac8b' },
-    slate: { label: '石墨', description: '冷灰与低调蓝调', light: '#45647d', dark: '#9bbad1' },
-});
-
-const THEME_MODE_META = Object.freeze({
-    auto: {
-        label: '自动',
-        description: '跟随应用主题',
-        icon: 'fa-circle-half-stroke',
-    },
-    light: {
-        label: '亮色',
-        description: '始终使用亮色',
-        icon: 'fa-sun',
-    },
-    dark: {
-        label: '暗色',
-        description: '始终使用暗色',
-        icon: 'fa-moon',
-    },
-});
-
-const DESIGN_LANGUAGE_META = Object.freeze({
-    dreamland: {
-        label: 'DreamLand',
-        description: '澄光、月幕、梦境手帖、蔚蓝终端',
-        icon: 'fa-cloud',
-    },
-    cupertino: {
-        label: 'Cupertino',
-        description: 'Apple 风格的新界面',
-        icon: 'fa-mobile-screen-button',
-    },
-    classic: {
-        label: '经典',
-        description: '重构前的 Telegram 风格',
-        icon: 'fa-paper-plane',
-    },
-});
-
-/**
- * Access localStorage without breaking restricted or sandboxed webviews.
- * @returns {Storage | null} Browser storage when available.
- */
-function getBrowserStorage() {
+const MODE_KEY = 'leslie.theme.preference';
+const PALETTE_KEY = 'leslie.color.palette';
+const MODES = {
+    auto: { label: '跟随系统', icon: 'fa-circle-half-stroke' },
+    light: { label: '亮色', icon: 'fa-sun' },
+    dark: { label: '暗色', icon: 'fa-moon' },
+};
+function storage() {
+    try { return localStorage; } catch { return null; }
+}
+function readMode() {
     try {
-        return globalThis.localStorage;
-    } catch {
-        return null;
+        const value = storage()?.getItem(MODE_KEY);
+        return Object.hasOwn(MODES, value) ? value : 'auto';
+    } catch { return 'auto'; }
+}
+function readPalette() {
+    try { return normalizePalette(storage()?.getItem(PALETTE_KEY)); } catch { return 'rose'; }
+}
+function applyAppearance() {
+    if (!document.body?.classList.contains('leslie-modern')) return;
+    const body = document.body;
+    body.dataset.leslieDesignLanguage = 'dreamland';
+    body.dataset.dreamlandStyle = 'blue';
+    const mode = body.dataset.leslieThemePreference || readMode();
+    body.dataset.leslieThemePreference = mode;
+    const dark = mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    body.dataset.leslieColorScheme = dark ? 'dark' : 'light';
+    applyDreamlandPalette(body, body.dataset.leslieColorPalette || readPalette(), dark);
+    for (const key of ['decoration', 'background']) {
+        const attribute = 'dreamland' + key[0].toUpperCase() + key.slice(1);
+        body.dataset[attribute] ||= readAppearance(storage(), key);
     }
+    syncControls();
 }
-
-/**
- * Convert an sRGB channel to a linear-light channel.
- * @param {number} channel Channel value between 0 and 255.
- * @returns {number} Linear-light channel value.
- */
-function linearize(channel) {
-    const value = channel / 255;
-    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+function chooseMode(mode) {
+    if (!Object.hasOwn(MODES, mode)) return;
+    try { storage()?.setItem(MODE_KEY, mode); } catch { /* session-only appearance */ }
+    document.body.dataset.leslieThemePreference = mode;
+    applyAppearance();
 }
-
-/**
- * Read the RGB channels from a CSS rgb/rgba color.
- * @param {string} color CSS color value.
- * @returns {number[] | null} RGB channels, or null when parsing fails.
- */
-function parseRgb(color) {
-    const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
-    return channels?.length === 3 && channels.every(Number.isFinite) ? channels : null;
+function heading(text) {
+    const node = document.createElement('div');
+    node.className = 'leslie-theme-menu-heading';
+    node.textContent = text;
+    node.setAttribute('role', 'presentation');
+    return node;
 }
-
-/**
- * Infer whether the active SillyTavern UI tint is dark.
- * @returns {'light' | 'dark'} Leslie color scheme.
- */
-function getAutomaticColorScheme() {
-    const rootStyle = getComputedStyle(document.documentElement);
-    const tint = rootStyle.getPropertyValue('--SmartThemeBlurTintColor').trim();
-    const channels = parseRgb(tint);
-
-    if (!channels) {
-        return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-
-    const [red, green, blue] = channels.map(linearize);
-    const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-    return luminance < DARK_LUMINANCE_THRESHOLD ? 'dark' : 'light';
-}
-
-/**
- * Read the local presentation-only theme preference.
- * @returns {'auto' | 'light' | 'dark'} Theme preference.
- */
-function getThemePreference() {
-    try {
-        const storedPreference = localStorage.getItem(THEME_PREFERENCE_KEY);
-        return THEME_MODES.includes(storedPreference) ? storedPreference : 'auto';
-    } catch {
-        return 'auto';
-    }
-}
-
-function getColorPalette() {
-    try {
-        const stored = localStorage.getItem(COLOR_PALETTE_KEY);
-        return COLOR_PALETTES.includes(stored) ? stored : 'jade';
-    } catch {
-        return 'jade';
-    }
-}
-
-function setColorPalette(palette) {
-    if (!COLOR_PALETTES.includes(palette)) return;
-    try {
-        localStorage.setItem(COLOR_PALETTE_KEY, palette);
-    } catch {
-        // Keep the selected palette for this session if storage is unavailable.
-    }
-    document.body.dataset.leslieColorPalette = palette;
-    syncThemeControls();
-}
-
-/**
- * Persist a presentation-only preference without touching SillyTavern data.
- * @param {'auto' | 'light' | 'dark'} preference Theme preference.
- */
-function setThemePreference(preference) {
-    if (!THEME_MODES.includes(preference)) {
-        return;
-    }
-
-    try {
-        if (preference === 'auto') {
-            localStorage.removeItem(THEME_PREFERENCE_KEY);
-        } else {
-            localStorage.setItem(THEME_PREFERENCE_KEY, preference);
-        }
-    } catch {
-        // A restricted webview may disable localStorage. The current session
-        // can still apply the selected mode through the body dataset.
-    }
-
-    document.body.dataset.leslieThemePreference = preference;
-    applyLeslieColorScheme();
-}
-
-/**
- * Apply and persist a presentation-only design language.
- * @param {'dreamland' | 'cupertino' | 'classic'} designLanguage Requested language.
- */
-function setDesignLanguage(designLanguage) {
-    const normalized = writeDesignLanguagePreference(getBrowserStorage(), designLanguage);
-    document.body.dataset.leslieDesignLanguage = normalized;
-    syncThemeControls();
-}
-
-function setDreamLandAppearance(key, value) {
-    const normalized = writeAppearance(getBrowserStorage(), key, value);
-    if (!normalized) return;
-    document.body.dataset[`dreamland${key[0].toUpperCase()}${key.slice(1)}`] = normalized;
-    if (key === 'style') setDesignLanguage('dreamland');
-    syncThemeControls();
-}
-
-/**
- * Resolve the effective Leslie light/dark scheme.
- * @returns {'light' | 'dark'} Leslie color scheme.
- */
-function getLeslieColorScheme() {
-    const preference = document.body?.dataset.leslieThemePreference || getThemePreference();
-    return preference === 'auto' ? getAutomaticColorScheme() : preference;
-}
-
-function applyLeslieColorScheme() {
-    if (!document.body?.classList.contains('leslie-modern')) {
-        return;
-    }
-
-    document.body.dataset.leslieThemePreference ||= getThemePreference();
-    document.body.dataset.leslieDesignLanguage ||= readDesignLanguagePreference(getBrowserStorage());
-    document.body.dataset.leslieColorPalette ||= getColorPalette();
-    document.body.dataset.leslieColorScheme = getLeslieColorScheme();
-    for (const key of Object.keys(APPEARANCE_KEYS)) {
-        const attribute = `dreamland${key[0].toUpperCase()}${key.slice(1)}`;
-        document.body.dataset[attribute] ||= readAppearance(getBrowserStorage(), key);
-    }
-    syncThemeControls();
-}
-
-function createMenuHeading(label) {
-    const heading = document.createElement('div');
-    heading.className = 'leslie-theme-menu-heading';
-    heading.textContent = label;
-    heading.setAttribute('role', 'presentation');
-    return heading;
-}
-
-/**
- * Build the shared theme picker once.
- * @returns {HTMLDivElement | null} Theme picker element.
- */
-function ensureThemeMenu() {
-    if (!document.body) {
-        return null;
-    }
-
+function ensureMenu() {
     let menu = document.getElementById('leslie-theme-menu');
-    if (menu instanceof HTMLDivElement) {
-        return menu;
-    }
-
+    if (menu) return menu;
     menu = document.createElement('div');
     menu.id = 'leslie-theme-menu';
     menu.className = 'leslie-theme-menu';
     menu.hidden = true;
     menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', '界面主题');
-
-    menu.append(createMenuHeading('显示模式'));
-
-    for (const mode of THEME_MODES) {
-        const meta = THEME_MODE_META[mode];
+    menu.setAttribute('aria-label', 'MomoTalk 外观');
+    menu.append(heading('明暗模式'));
+    for (const [mode, meta] of Object.entries(MODES)) {
         const button = document.createElement('button');
         button.type = 'button';
         button.dataset.leslieThemeMode = mode;
         button.setAttribute('role', 'menuitemradio');
-        button.innerHTML = `
-            <i class="fa-solid ${meta.icon}" aria-hidden="true"></i>
-            <span><strong>${meta.label}</strong><small>${meta.description}</small></span>
-            <i class="fa-solid fa-check leslie-theme-choice-check" aria-hidden="true"></i>
-        `;
-        button.addEventListener('click', () => {
-            setThemePreference(mode);
-            closeThemeMenu();
-        });
+        button.innerHTML = '<i class="fa-solid ' + meta.icon + '" aria-hidden="true"></i><span>' + meta.label + '</span>';
+        button.addEventListener('click', () => { chooseMode(mode); closeMenu(); });
         menu.append(button);
     }
-
-    menu.append(createMenuHeading('DreamLand 风格'));
-    for (const [style, meta] of Object.entries(DREAMLAND_STYLES)) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.dreamlandStyle = style;
-        button.setAttribute('role', 'menuitemradio');
-        button.innerHTML = `<i class="fa-solid ${meta.icon}" aria-hidden="true"></i><span><strong>${meta.label} · ${meta.english}</strong><small>${meta.description}</small></span><i class="fa-solid fa-check leslie-theme-choice-check" aria-hidden="true"></i>`;
-        button.addEventListener('click', () => {
-            setDreamLandAppearance('style', style);
-            closeThemeMenu();
-        });
-        menu.append(button);
-    }
-
-    const paletteSeparator = document.createElement('hr');
-    paletteSeparator.className = 'leslie-theme-menu-separator';
-    menu.append(paletteSeparator, createMenuHeading('原界面主题色（Cupertino / 经典）'));
-
-    for (const palette of COLOR_PALETTES) {
-        const meta = COLOR_PALETTE_META[palette];
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.leslieColorPalette = palette;
-        button.setAttribute('role', 'menuitemradio');
-        button.setAttribute('aria-label', `${meta.label}，${meta.description}，提供亮色与暗色版本`);
-        button.innerHTML = `
-            <span class="leslie-palette-preview" aria-hidden="true"><i style="background:${meta.light}"></i><i style="background:${meta.dark}"></i></span>
-            <span><strong>${meta.label}</strong><small>${meta.description}</small></span>
-            <i class="fa-solid fa-check leslie-theme-choice-check" aria-hidden="true"></i>
-        `;
-        button.addEventListener('click', () => {
-            setColorPalette(palette);
-            closeThemeMenu();
-        });
-        menu.append(button);
-    }
-
-    const separator = document.createElement('hr');
-    separator.className = 'leslie-theme-menu-separator';
-    menu.append(separator, createMenuHeading('设计语言'));
-
-    for (const designLanguage of DESIGN_LANGUAGES) {
-        const meta = DESIGN_LANGUAGE_META[designLanguage];
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.leslieDesignLanguage = designLanguage;
-        button.setAttribute('role', 'menuitemradio');
-        button.innerHTML = `
-            <i class="fa-solid ${meta.icon}" aria-hidden="true"></i>
-            <span><strong>${meta.label}</strong><small>${meta.description}</small></span>
-            <i class="fa-solid fa-check leslie-theme-choice-check" aria-hidden="true"></i>
-        `;
-        button.addEventListener('click', () => {
-            setDesignLanguage(designLanguage);
-            closeThemeMenu();
-        });
-        menu.append(button);
-    }
-
     document.body.append(menu);
     return menu;
 }
-
-/**
- * Create a quick-access theme button for a Leslie header.
- * @returns {HTMLButtonElement} Theme toggle button.
- */
-function createThemeButton() {
-    const button = document.createElement('button');
-    const icon = document.createElement('i');
-    button.type = 'button';
-    button.className = 'leslie-icon-button leslie-theme-toggle';
-    button.setAttribute('aria-haspopup', 'menu');
-    button.setAttribute('aria-expanded', 'false');
-    icon.className = 'fa-solid fa-circle-half-stroke';
-    icon.setAttribute('aria-hidden', 'true');
-    button.append(icon);
-    button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        toggleThemeMenu(button);
-    });
-    return button;
+function closeMenu() {
+    const menu = document.getElementById('leslie-theme-menu');
+    if (menu) { menu.hidden = true; delete menu.dataset.open; }
+    document.querySelectorAll('.leslie-theme-toggle').forEach(button => button.setAttribute('aria-expanded', 'false'));
 }
-
-/** Add the appearance control to the conversation sidebar only. */
-function ensureThemeControls() {
-    const host = document.querySelector('.leslie-sidebar-actions');
-
-    document.querySelectorAll('#leslie-chat-actions > .leslie-theme-toggle').forEach(button => button.remove());
-
-    if (host instanceof HTMLElement) {
-        if (!host.querySelector(':scope > .leslie-theme-toggle')) {
-            host.prepend(createThemeButton());
-        }
-    }
-
-    ensureThemeMenu();
-    syncThemeControls();
-
-    if (host?.querySelector(':scope > .leslie-theme-toggle')) {
-        controlObserver.disconnect();
-    }
-}
-
-/** Keep icons, accessible labels and selected menu state synchronized. */
-function syncThemeControls() {
-    if (!document.body) {
-        return;
-    }
-
-    const preference = document.body.dataset.leslieThemePreference || getThemePreference();
-    const scheme = document.body.dataset.leslieColorScheme || getLeslieColorScheme();
-    const designLanguage = document.body.dataset.leslieDesignLanguage || readDesignLanguagePreference(getBrowserStorage());
-    const palette = COLOR_PALETTES.includes(document.body.dataset.leslieColorPalette)
-        ? document.body.dataset.leslieColorPalette : getColorPalette();
-    const meta = THEME_MODE_META[preference];
-    const designMeta = DESIGN_LANGUAGE_META[designLanguage];
-    const paletteMeta = COLOR_PALETTE_META[palette];
-    const style = document.body.dataset.dreamlandStyle || readAppearance(getBrowserStorage(), 'style');
-    const styleMeta = DREAMLAND_STYLES[style];
-
-    for (const button of document.querySelectorAll('.leslie-theme-toggle')) {
-        button.dataset.leslieThemeMode = preference;
-        button.title = `界面外观：${designLanguage === 'dreamland' ? styleMeta.label : paletteMeta.label} · ${designMeta.label} · ${meta.label}（当前${scheme === 'dark' ? '暗色' : '亮色'}）`;
-        button.setAttribute('aria-label', button.title);
-        const icon = button.querySelector(':scope > i');
-        if (icon) {
-            icon.className = `fa-solid ${meta.icon}`;
-        }
-    }
-
-    for (const choice of document.querySelectorAll('#leslie-theme-menu [data-leslie-theme-mode]')) {
-        const selected = choice.dataset.leslieThemeMode === preference;
-        choice.classList.toggle('is-active', selected);
-        choice.setAttribute('aria-checked', String(selected));
-    }
-
-    for (const choice of document.querySelectorAll('#leslie-theme-menu [data-leslie-design-language]')) {
-        const selected = choice.dataset.leslieDesignLanguage === designLanguage;
-        choice.classList.toggle('is-active', selected);
-        choice.setAttribute('aria-checked', String(selected));
-    }
-
-    for (const choice of document.querySelectorAll('#leslie-theme-menu [data-leslie-color-palette]')) {
-        const selected = choice.dataset.leslieColorPalette === palette;
-        choice.classList.toggle('is-active', selected);
-        choice.setAttribute('aria-checked', String(selected));
-    }
-
-    const paletteSelect = document.getElementById('leslie-palette-select');
-    if (paletteSelect instanceof HTMLSelectElement) paletteSelect.value = palette;
-    for (const choice of document.querySelectorAll('#leslie-theme-menu [data-dreamland-style]')) {
-        const selected = designLanguage === 'dreamland' && choice.dataset.dreamlandStyle === style;
-        choice.classList.toggle('is-active', selected);
-        choice.setAttribute('aria-checked', String(selected));
-    }
-    for (const key of Object.keys(APPEARANCE_KEYS)) {
-        const select = document.getElementById(`dreamland-${key}-select`);
-        const attribute = `dreamland${key[0].toUpperCase()}${key.slice(1)}`;
-        if (select instanceof HTMLSelectElement) select.value = document.body.dataset[attribute] || readAppearance(getBrowserStorage(), key);
-    }
-    const languageSelect = document.getElementById('dreamland-language-select');
-    if (languageSelect instanceof HTMLSelectElement) languageSelect.value = designLanguage;
-}
-
-/**
- * Position and open the shared picker next to its trigger.
- * @param {HTMLButtonElement} anchor Trigger button.
- */
-function openThemeMenu(anchor) {
-    const menu = ensureThemeMenu();
-    if (!menu) {
-        return;
-    }
-
-    closeThemeMenu();
+function toggleMenu(anchor) {
+    const menu = ensureMenu();
+    const open = menu.hidden || anchor.getAttribute('aria-expanded') !== 'true';
+    closeMenu();
+    if (!open) return;
     menu.hidden = false;
     menu.dataset.open = 'true';
     anchor.setAttribute('aria-expanded', 'true');
-
-    const anchorRect = anchor.getBoundingClientRect();
-    const menuRect = menu.getBoundingClientRect();
-    const gutter = 8;
-    const left = Math.max(gutter, Math.min(anchorRect.right - menuRect.width, innerWidth - menuRect.width - gutter));
-    const preferredTop = anchorRect.bottom + 6;
-    const top = preferredTop + menuRect.height <= innerHeight - gutter
-        ? preferredTop
-        : Math.max(gutter, anchorRect.top - menuRect.height - 6);
-
-    menu.style.left = `${Math.round(left)}px`;
-    menu.style.top = `${Math.round(top)}px`;
+    const bounds = anchor.getBoundingClientRect();
+    const size = menu.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(bounds.right - size.width, innerWidth - size.width - 8)) + 'px';
+    menu.style.top = Math.max(8, Math.min(bounds.bottom + 6, innerHeight - size.height - 8)) + 'px';
 }
-
-/** Close the picker and reset every trigger state. */
-function closeThemeMenu() {
-    const menu = document.getElementById('leslie-theme-menu');
-    if (menu) {
-        menu.hidden = true;
-        delete menu.dataset.open;
-    }
-
+function syncControls() {
+    applyGlassAppearance(document.body, storage());
+    syncBaAppearance();
+    syncDreamlandPages();
+    const mode = document.body.dataset.leslieThemePreference || readMode();
     for (const button of document.querySelectorAll('.leslie-theme-toggle')) {
-        button.setAttribute('aria-expanded', 'false');
+        button.title = 'MomoTalk 外观：' + MODES[mode].label;
+        button.setAttribute('aria-label', button.title);
     }
-}
-
-/**
- * Toggle the picker for a trigger.
- * @param {HTMLButtonElement} anchor Trigger button.
- */
-function toggleThemeMenu(anchor) {
-    const menu = ensureThemeMenu();
-    if (!menu) {
-        return;
+    for (const choice of document.querySelectorAll('#leslie-theme-menu [role="menuitemradio"]')) {
+        const selected = choice.dataset.leslieThemeMode === mode;
+        choice.classList.toggle('is-active', selected);
+        choice.setAttribute('aria-checked', String(selected));
     }
-
-    if (!menu.hidden && anchor.getAttribute('aria-expanded') === 'true') {
-        closeThemeMenu();
-    } else {
-        openThemeMenu(anchor);
+    for (const [id, value] of [['leslie-display-mode-select', mode]]) {
+        const select = document.getElementById(id);
+        if (select) select.value = value;
     }
-}
-
-let updateFrame = 0;
-let controlsFrame = 0;
-
-function scheduleLeslieColorSchemeUpdate() {
-    cancelAnimationFrame(updateFrame);
-    updateFrame = requestAnimationFrame(applyLeslieColorScheme);
-}
-
-function scheduleThemeControlsUpdate() {
-    cancelAnimationFrame(controlsFrame);
-    controlsFrame = requestAnimationFrame(ensureThemeControls);
-}
-
-// SillyTavern applies a theme by updating CSS variables on the root element.
-// Watching that style attribute also covers imported and custom themes.
-new MutationObserver(scheduleLeslieColorSchemeUpdate).observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['style'],
-});
-
-document.addEventListener('change', (event) => {
-    if (event.target instanceof Element && event.target.matches('#themes, toolcool-color-picker')) {
-        scheduleLeslieColorSchemeUpdate();
-    } else if (event.target instanceof HTMLSelectElement && event.target.id === 'leslie-palette-select') {
-        setColorPalette(event.target.value);
-    } else if (event.target instanceof HTMLSelectElement && event.target.id === 'dreamland-language-select') {
-        setDesignLanguage(event.target.value);
-    } else if (event.target instanceof HTMLSelectElement && event.target.dataset.dreamlandPreference) {
-        setDreamLandAppearance(event.target.dataset.dreamlandPreference, event.target.value);
-    }
-}, true);
-
-// Other windows may change appearance; no account or chat data is involved.
-window.addEventListener('storage', (event) => {
-    if (event.key === null || event.key?.startsWith('dreamland.appearance.') || event.key?.startsWith('leslie.')) {
-        delete document.body.dataset.leslieDesignLanguage;
-        delete document.body.dataset.leslieThemePreference;
-        delete document.body.dataset.leslieColorPalette;
-        for (const key of Object.keys(APPEARANCE_KEYS)) {
-            delete document.body.dataset[`dreamland${key[0].toUpperCase()}${key.slice(1)}`];
+    for (const key of Object.keys(APPEARANCE_KEYS)) {
+        for (const select of document.querySelectorAll(`[data-dreamland-preference="${key}"]`)) {
+            select.value = document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] || readAppearance(storage(), key);
         }
-        applyLeslieColorScheme();
     }
-});
-
-document.addEventListener('dreamland:appearance-ready', syncThemeControls);
-
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', scheduleLeslieColorSchemeUpdate);
-
-document.addEventListener('pointerdown', (event) => {
-    if (event.target instanceof Element && !event.target.closest('#leslie-theme-menu, .leslie-theme-toggle')) {
-        closeThemeMenu();
+}
+function initialize() {
+    applyAppearance();
+    const host = document.querySelector('.leslie-sidebar-actions');
+    if (host && !host.querySelector('.leslie-theme-toggle')) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'leslie-icon-button leslie-theme-toggle';
+        button.innerHTML = '<i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>';
+        button.setAttribute('aria-haspopup', 'menu');
+        button.setAttribute('aria-expanded', 'false');
+        button.addEventListener('click', event => { event.stopPropagation(); toggleMenu(button); });
+        host.prepend(button);
+    }
+    ensureMenu();
+    syncControls();
+}
+document.addEventListener('change', event => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    if (target.id === 'leslie-display-mode-select') chooseMode(target.value);
+    else if (['decoration', 'background'].includes(target.dataset.dreamlandPreference)) {
+        const key = target.dataset.dreamlandPreference;
+        document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] = writeAppearance(storage(), key, target.value);
+        syncControls();
     }
 }, true);
-
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-        closeThemeMenu();
+document.addEventListener('pointerdown', event => {
+    if (event.target instanceof Element && !event.target.closest('#leslie-theme-menu, .leslie-theme-toggle')) closeMenu();
+}, true);
+document.addEventListener('input', event => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !GLASS_RANGES[target.dataset.dreamlandPreference]) return;
+    const key = target.dataset.dreamlandPreference;
+    document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] = writeAppearance(storage(), key, target.value);
+    applyGlassAppearance(document.body, storage());
+}, true);
+document.addEventListener('click', event => {
+    if (!(event.target instanceof Element) || !event.target.closest('[data-dreamland-glass-reset]')) return;
+    for (const [key, range] of Object.entries(GLASS_RANGES)) {
+        document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] = writeAppearance(storage(), key, range.default);
+    }
+    applyGlassAppearance(document.body, storage());
+});
+document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
+document.addEventListener('dreamland:appearance-ready', syncControls);
+document.addEventListener('dreamland:background-selected', () => {
+    if (document.body.dataset.dreamlandBackground !== 'off') return;
+    document.body.dataset.dreamlandBackground = writeAppearance(storage(), 'background', 'visible');
+    syncControls();
+});
+window.addEventListener('resize', closeMenu);
+window.addEventListener('storage', event => {
+    if (event.key === null || event.key?.startsWith('leslie.') || event.key?.startsWith('dreamland.appearance.')) {
+        clearGlassAppearance(document.body);
+        for (const key of ['leslieThemePreference', 'leslieColorPalette', 'dreamlandDecoration', 'dreamlandBackground']) delete document.body.dataset[key];
+        applyAppearance();
     }
 });
-
-window.addEventListener('resize', closeThemeMenu);
-
-const controlObserver = new MutationObserver(scheduleThemeControlsUpdate);
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        scheduleLeslieColorSchemeUpdate();
-        scheduleThemeControlsUpdate();
-        controlObserver.observe(document.body, { childList: true, subtree: true });
-    }, { once: true });
-} else {
-    scheduleLeslieColorSchemeUpdate();
-    scheduleThemeControlsUpdate();
-    controlObserver.observe(document.body, { childList: true, subtree: true });
-}
-
-window.addEventListener('load', () => {
-    scheduleLeslieColorSchemeUpdate();
-    scheduleThemeControlsUpdate();
-}, { once: true });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyAppearance);
+let frame;
+const observer = new MutationObserver(() => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+        initialize();
+        if (document.querySelector('.leslie-sidebar-actions .leslie-theme-toggle')) observer.disconnect();
+    });
+});
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
+else initialize();
+observer.observe(document.body, { childList: true, subtree: true });

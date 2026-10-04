@@ -143,9 +143,7 @@ service was powered by Microsoft, with the voice named `Ashley`, along with a
 `+20%` of pitch, you can get the same voice as Neuro-sama's first version, try it
 yourself:
 
-<audio controls style="width: 100%;">
-  <source src="./assets/ashley-pitch-test.mp3" />
-</audio>
+> The audio sample is not included in this source workspace.
 
 Isn't it the same, this is insane! That's means, we can finally approach to
 what Neuro-sama can do with the new **Speech** ability!

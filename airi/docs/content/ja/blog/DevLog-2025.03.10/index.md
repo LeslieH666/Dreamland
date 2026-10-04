@@ -55,7 +55,7 @@ date: 2025-03-10
 
 3月8日の終わりには、[@LemonNekoGH](https://github.com/LemonNekoGH) と [@junkwarrior87](https://github.com/junkwarrior87) がなんとステージ全体のカラーカスタマイズ機能を実装しました！（これがわずか数時間で完成するとは夢にも思いませんでした...）
 
-<ThemedVideo controls muted src="/en/blog/DevLog-2025.03.10/assets/customizable-theme-colors.mp4" />
+<ThemedVideo controls muted src="/en/blog/DevLog-2025.03.05/assets/customizable-theme-colors.mp4" />
 
 - https://github.com/moeru-ai/airi/pull/53
 - https://github.com/moeru-ai/airi/pull/60

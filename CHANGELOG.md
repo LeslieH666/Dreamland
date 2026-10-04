@@ -6,6 +6,8 @@ All notable LeslieTavern-specific changes are documented in this file. The forma
 
 ### Added
 
+- Shared glass appearance sliders in Settings: transparency (0–100%) and Gaussian backdrop blur (0–48 px), with scrollable live previews and reset. Login cards and functional page headers share both values; chat headers keep the theme pink tint while other headers use the neutral surface. Real page content scrolls beneath the header and supplies its changing backdrop; functional headers no longer expose a static page wallpaper. Settings persist in the existing validated account preference map with login appearance hints and previous-record rollback; older records use defaults without migration.
+
 - Added a default-off experimental group-chat smart-speaker mode for existing permanent members. It combines explicit mentions, bounded character-card relevance, turn balance, recent-speaker penalties, existing talkativeness, and configurable reply caps while preserving forced replies, Swipe, native generation, and a fail-open natural-order fallback.
 - Added manually created current-chat temporary group roles backed only by versioned JSONL metadata. Active roles join normal prompt and speaker selection through hidden runtime adapters; dormant and archived roles retain Swipe, branch, and shared-memory attribution while remaining absent from the character library and permanent group data.
 - Added default-off model-assisted temporary-role review. One isolated bounded structured call can propose an editable new-role draft, an optionally immediate confirmed reply, and evidence-based retirement candidates, while schema validation, cooldowns, current-chat identity checks, and explicit confirmation prevent direct model creation or archival.
@@ -50,12 +52,13 @@ All notable LeslieTavern-specific changes are documented in this file. The forma
 - Added an in-memory DeepSeek safety-test workbench that reuses the active character card prompt, runs authorized line-by-line checks, and exports results without writing to normal chats.
 - Added separate story and reality chat lines for solo characters. Reality chats use the device clock and elapsed offline interval, while confirmed memories can cross through the same character only as a two-item, tightly budgeted echo from the opposite line.
 - Reworked reality-line generation around a one-time de-fictionalized personality profile. New reality chats now receive model-generated openings, all foreground replies bypass story-only card fields and World Info, and a strict plain-message validator retries decorated role-play output before anything is stored.
-- Reworked reality-line generation around a one-time de-fictionalized personality profile. New reality chats now receive model-generated openings, all foreground replies bypass story-only card fields and World Info, and a strict plain-message validator retries decorated role-play output before anything is stored.
 - Added a desktop-first two-pane Moments layout with role and world-line navigation, plus a compact single-column mobile fallback.
 - Added Electron settings controls for starting and stopping AIRI and the tracked Peach local-model process.
 
 ### Changed
 
+- Removed old brand launchers and unused upstream deployment files. Windows startup now uses only the DreamLand launcher in each workspace.
+- Removed duplicate AIRI blog media and updated translations to use the retained files.
 - Encrypted user-space entry now restores small files with fewer disk operations. Login and switch controls show progress during vault work; encrypted rollback snapshots and full verification before resealing remain in place.
 - Refined Moments with Cupertino grouped controls, matched like/comment counters, correctly bounded liker avatars, adapted reply/thread UI, selected-first choice lists, complete bound and legacy memory-source discovery, A–B–C or newest-first memory-topic sorting, fixed-layer dialogs that do not shift the desktop timeline, independently editable story visibility, and one read count per character on each post revision.
 - Moments timeline, activity, and queue stores now migrate legacy data through preserved pre-migration copies. Legacy unread posts are scheduled for genuine background reads, while posts with existing reads or comments retain their activity and gain reply support without being replayed.
@@ -81,7 +84,7 @@ All notable LeslieTavern-specific changes are documented in this file. The forma
 - Kept bundled Live2D loading independent of OPFS and moved custom-model cache persistence behind the visible model pipeline so a stalled browser storage backend cannot lock the stage and shortcut controls on “Loading”.
 - Removed the unused eager DuckDB/WASM bootstrap from the character stage; the placeholder initialization consumed hundreds of megabytes and could monopolize the renderer before the Live2D frame became interactive.
 - Made the Windows launcher accept only a complete, successfully stamped AIRI build so a failed partial rebuild cannot mix new main-process code with a stale renderer.
-- Consolidated the root Windows launch surface into `启动 Leslie Heaven.cmd`; AIRI and local-model lifecycle controls now live in LeslieTavern settings.
+- Consolidated the root Windows launch surface into `启动 DreamLand.cmd`; AIRI and local-model lifecycle controls now live in DreamLand settings.
 - Reality-line entry now reopens the latest matching JSONL and upgrades older metadata in place instead of creating a successor chat. Each deliberate entry produces one non-duplicated proactive greeting before the conversation continues, and reality memory snapshots no longer retain scenario, example-dialogue, or creator-note fields.
 
 ### Fixed

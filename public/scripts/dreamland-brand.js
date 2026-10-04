@@ -7,4 +7,4 @@ export const DREAMLAND_BRAND = Object.freeze({
     feedback: 'https://github.com/LeslieH666/LeslieTavern/issues',
 });
 
-export const BLUE_ARCHIVE_NOTICE = '本主题为非官方、非商业的界面交流学习项目。Blue Archive／蔚蓝档案及相关角色、图像、标识的权利归各自权利人所有。DreamLand 与相关权利人不存在官方合作或授权关系。第三方素材按各自许可条件使用；如有权利问题，可通过项目反馈渠道联系处理。内置品牌图与几何装饰为原创资源。';
+export const BLUE_ARCHIVE_NOTICE = '本主题为非官方、非商业的界面交流学习项目。Blue Archive／蔚蓝档案及相关角色、图像、标识的权利归各自权利人所有。DreamLand 与相关权利人不存在官方合作或授权关系。本机蔚蓝素材包使用游戏原始图集与背景，消息颜色和暗色阅读图片为基于原图的适配；素材包不随公开源码或便携包分发。第三方素材按各自许可条件使用；如有权利问题，可通过项目反馈渠道联系处理。';

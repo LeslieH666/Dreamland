@@ -9,7 +9,7 @@ const REQUIRED_CARD_FIELDS = [
     'post_history_instructions',
 ];
 
-const SHORT_REPLY_PATTERN = /(?:短(?:回复|对话)|最多.{0,8}(?:两行|2\s*行)|one\s+(?:reaction|beat)|two\s+lines?|concise)/i;
+const REPLY_CONTRACT_PATTERN = /(?:短(?:回复|对话)|最多.{0,8}(?:两行|2\s*行)|一个(?:主要)?(?:互动|情绪|对话)?(?:节拍|反应)|(?:遵循|尊重|按|依照).{0,16}(?:回复长度|篇幅|长度要求)|one\s+(?:reaction|beat)|two\s+lines?|concise)/i;
 const USER_CONTROL_PATTERN = /(?:(?:不得|不要|禁止).{0,14}(?:替|代替|控制|决定)|不(?:会)?替).{0,10}(?:用户|玩家)|do\s+not.{0,18}(?:control|decide|speak\s+for).{0,12}(?:user|player)/i;
 const RELATIONSHIP_PATTERN = /(?:关系|信任|亲密).{0,12}(?:不|不得|不能|逐步|慢速)|(?:relationship|trust|intimacy).{0,14}(?:gradual|slow|do\s+not|never)/i;
 const KNOWLEDGE_PATTERN = /(?:不知道|不知情|不能凭空|认知边界|knowledge\s+boundary|does\s+not\s+know|cannot\s+know)/i;
@@ -337,15 +337,24 @@ export function countDialogueExamples(examples) {
     return (String(examples).match(/<START>/gi) || []).length;
 }
 
+function parseDialogueExampleTurns(block) {
+    const labels = [...block.matchAll(/^[\t ]*(?:\{\{\s*(user|char)\s*\}\}|\[(USER|CHAR)\])[\t ]*[:：][\t ]*/gmi)];
+    return labels.map((label, index) => ({
+        role: (label[1] || label[2]).toLowerCase(),
+        text: block.slice(label.index + label[0].length, labels[index + 1]?.index ?? block.length).trim(),
+    }));
+}
+
 /**
  * Runs deterministic quality checks that do not depend on the reviewing model.
  * @param {object} card Character card.
  * @param {object} [context] Review context.
  * @param {object} [context.brief] Normalized creative brief.
  * @param {object} [context.knowledgeCheck] Knowledge check from the configured chat model.
+ * @param {boolean} [context.requireWorkshopExamples] Enforce new-card example requirements, excluding imported cards.
  * @returns {{score: number, blocking: object[], warnings: object[], passed: object[]}}
  */
-export function assessCharacterCard(card, { brief = {}, knowledgeCheck = {} } = {}) {
+export function assessCharacterCard(card, { brief = {}, knowledgeCheck = {}, requireWorkshopExamples = false } = {}) {
     const normalized = normalizeCharacterCard(card);
     const data = normalized.data;
     const blocking = [];
@@ -371,20 +380,42 @@ export function assessCharacterCard(card, { brief = {}, knowledgeCheck = {} } = 
         passed.push({ code: 'examples', message: `示例对话数量合适（${examples} 组）。` });
     }
 
-    const characterTurns = (data.mes_example.match(/\{\{char\}\}\s*:/gi) || []).length;
-    const userTurns = (data.mes_example.match(/\{\{user\}\}\s*:/gi) || []).length;
-    if (examples > 0 && (characterTurns < examples || userTurns < examples)) {
-        warnings.push({ code: 'dialogue_roles', message: '部分示例缺少用户触发标签或角色回应标签，互动范本不够完整。' });
+    const dialogueBlocks = data.mes_example.split(/<START>/gi).slice(1).map(parseDialogueExampleTurns);
+    if (requireWorkshopExamples && brief.mode !== 'imported') {
+        const continuous = dialogueBlocks.filter(turns => turns.some((turn, index) => turn.role === 'user'
+            && turns.slice(index, index + 4).length === 4
+            && turns.slice(index, index + 4).every((item, offset) => item.text && item.role === (offset % 2 ? 'char' : 'user')))).length;
+        if (examples < 6 || examples > 8 || continuous < 2) {
+            blocking.push({ code: 'workshop_example_structure', message: `新生成卡需 6～8 组示例，其中至少两组在同一个 <START> 内连续互动两轮；当前 ${examples} 组、${continuous} 组连续互动。修复现有组，续接不要另起 <START>。` });
+            score -= 9;
+        } else {
+            passed.push({ code: 'workshop_example_structure', message: '新生成示例数量及连续两轮互动符合要求。' });
+        }
+    }
+    const incompleteBlocks = dialogueBlocks.filter(turns => !turns.some(turn => turn.role === 'user')
+        || turns.some((turn, index) => !turn.text || (turn.role === 'user' && turns[index + 1]?.role !== 'char')));
+    if (examples > 0 && incompleteBlocks.length > 0) {
+        warnings.push({ code: 'dialogue_roles', message: `${incompleteBlocks.length} 组示例缺少完整的用户触发与角色回应，或发言顺序不完整；其他组的多轮发言不能补足这一组。` });
         score -= 8;
     } else if (examples > 0) {
         passed.push({ code: 'dialogue_roles', message: '每组示例都包含用户触发与角色回应。' });
     }
 
-    if (!SHORT_REPLY_PATTERN.test(data.post_history_instructions)) {
-        warnings.push({ code: 'reply_contract', message: '输出契约没有明确短回复或单节拍要求。' });
+    const repeatedReplies = new Map();
+    for (const turn of dialogueBlocks.flat()) {
+        if (turn.role !== 'char') continue;
+        const text = turn.text.normalize('NFKC').replace(/[\s\p{P}\p{S}]/gu, '').toLocaleLowerCase();
+        if (text.length >= 8) repeatedReplies.set(text, (repeatedReplies.get(text) || 0) + 1);
+    }
+    if ([...repeatedReplies.values()].some(count => count >= 3)) {
+        warnings.push({ code: 'repeated_dialogue', message: '至少三次角色回应使用了相同的较长台词；建议检查是否在不同情境中重复套话。此提醒不扣分，也不判断角色是否自然。' });
+    }
+
+    if (!REPLY_CONTRACT_PATTERN.test(data.post_history_instructions)) {
+        warnings.push({ code: 'reply_contract', message: '输出契约没有明确互动节拍或遵循用户回复长度的要求。' });
         score -= 7;
     } else {
-        passed.push({ code: 'reply_contract', message: '已固定真人短对话节奏。' });
+        passed.push({ code: 'reply_contract', message: '已明确互动节奏或回复长度契约。' });
     }
 
     const controlText = `${data.system_prompt}\n${data.post_history_instructions}`;

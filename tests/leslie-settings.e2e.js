@@ -65,7 +65,7 @@ test('Leslie settings keeps essentials clear and advanced tools guarded', async 
     await expect(advancedPreview).toHaveAttribute('aria-hidden', 'true');
     await expect(advancedPreview.locator('button').first()).toHaveAttribute('tabindex', '-1');
     await expect(page.locator('#leslie-advanced-relock')).toBeHidden();
-    await expect(page.locator('#leslie-theme-select')).toHaveValue(await page.locator('#themes').inputValue());
+    await expect(page.locator('#leslie-theme-select')).toHaveCount(0);
 
     await settingsNavigation.locator('[data-leslie-detail="model"]').click();
     await expect(page.locator('#leslie-settings-home')).toBeHidden();

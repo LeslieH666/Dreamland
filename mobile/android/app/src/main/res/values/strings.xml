@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DreamLand</string>
+    <string name="connect_title">连接你的 DreamLand</string>
+    <string name="connect_help">确保手机和电脑连接到同一个可信网络，再填写电脑上显示的局域网地址。</string>
+    <string name="server_address_label">电脑地址</string>
+    <string name="server_address_hint">例如 http://192.168.1.20:8000</string>
+    <string name="remember_address">记住这台电脑</string>
+    <string name="connect_button">连接</string>
+    <string name="connection_privacy">聊天与角色数据仍保存在电脑上。此客户端不会启动电脑上的本地模型或 AIRI。</string>
+    <string name="switch_server">切换电脑</string>
+    <string name="connection_failed">无法连接。请确认地址、电脑服务和局域网设置。</string>
+    <string name="external_link_blocked">为保护连接，只能在 DreamLand 服务器页面内浏览。</string>
+    <string name="local_server_channel">DreamLand 手机本地服务</string>
+    <string name="local_server_running">角色和聊天数据保存在此手机。轻触可返回应用。</string>
+    <string name="stop_local_server">停止本地服务</string>
+    <string name="local_server_starting">正在手机上启动 DreamLand。本地数据保存在应用空间内，首次启动需要初始化文件。</string>
+    <string name="local_server_start_failed">手机本地服务暂时没有启动成功。请检查 APK 完整性后重试。</string>
+    <string name="retry_local_server">重试启动</string>
+    <string name="local_server_subtitle">此手机本地运行</string>
+</resources>

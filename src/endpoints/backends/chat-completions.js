@@ -1994,6 +1994,7 @@ router.post('/status', async function (request, statusResponse) {
                 'Authorization': 'Bearer ' + apiKey,
                 ...headers,
             },
+            signal: AbortSignal.timeout(20_000),
         });
 
         if (response.ok) {
@@ -2056,14 +2057,26 @@ router.post('/status', async function (request, statusResponse) {
                 }
             }
         } else {
-            console.error('Chat Completion status check failed. Either Access Token is incorrect or API endpoint is down.');
-            statusResponse.send({ error: true, data: { data: [] } });
+            console.error('Chat Completion model discovery returned an upstream HTTP error:', response.status);
+            statusResponse.status(502).send({ error: true, failure: 'provider-response', upstreamStatus: response.status });
         }
     } catch (e) {
-        console.error(e);
+        const code = e?.cause?.code || e?.code;
+        const errorName = typeof e?.name === 'string' && /^[A-Za-z]+Error$/.test(e.name) ? e.name : 'UnknownError';
+        const causeCode = typeof code === 'string' && /^[A-Z0-9_]{1,48}$/.test(code) ? code : null;
+        const failure = ['TimeoutError', 'AbortError'].includes(e?.name) || ['ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT'].includes(code)
+            ? 'timeout'
+            : ['ENOTFOUND', 'EAI_AGAIN'].includes(code)
+                ? 'dns'
+                : ['ECONNRESET', 'ECONNREFUSED', 'EHOSTUNREACH', 'ENETUNREACH', 'UND_ERR_SOCKET'].includes(code)
+                    ? 'network'
+                    : /^ERR_TLS|^CERT_|^DEPTH_ZERO|^SELF_SIGNED/.test(code || '')
+                        ? 'tls'
+                        : 'provider';
+        console.error('Chat Completion model discovery failed:', failure, errorName, causeCode || 'no-cause-code');
 
         if (!statusResponse.headersSent) {
-            statusResponse.send({ error: true });
+            statusResponse.status(502).send({ error: true, failure, errorName, causeCode });
         } else {
             statusResponse.end();
         }

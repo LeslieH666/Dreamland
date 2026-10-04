@@ -221,10 +221,10 @@ router.post('/create', requireAdminMiddleware, async (request, response) => {
             try {
                 ensureUserDirectoriesExist(directories);
                 await checkForNewContent([directories], [CONTENT_TYPES.SETTINGS]);
-                sealUserSpace(globalThis.DATA_ROOT, newUser.handle, request.body.password);
+                await sealUserSpace(globalThis.DATA_ROOT, newUser.handle, request.body.password);
                 await storage.setItem(toKey(handle), newUser);
             } catch (error) {
-                purgeUserVault(globalThis.DATA_ROOT, newUser.handle);
+                await purgeUserVault(globalThis.DATA_ROOT, newUser.handle);
                 throw error;
             }
         } else {
@@ -260,7 +260,7 @@ router.post('/delete', requireAdminMiddleware, async (request, response) => {
         }
 
         if (request.body.purge && areLeslieUserSpacesEnabled()) {
-            purgeUserVault(globalThis.DATA_ROOT, request.body.handle);
+            await purgeUserVault(globalThis.DATA_ROOT, request.body.handle);
         }
         await storage.removeItem(toKey(request.body.handle));
         if (request.body.purge) await storage.removeItem(toAvatarKey(request.body.handle));

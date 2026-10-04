@@ -5,16 +5,16 @@ date: 2025-03-20
 ---
 
 <script setup>
-import Gelbana from './assets/steins-gate-gelnana-from-elpsycongrooblog.avif'
-import NewUIV3 from '../DevLog-2025.03.10/assets/new-ui-v3.avif'
-import NewUIV3Dark from '../DevLog-2025.03.10/assets/new-ui-v3-dark.avif'
-import HistoireColorSlider from './assets/histoire-color-slider.avif'
-import HistoireColorSliderDark from './assets/histoire-color-slider-dark.avif'
-import HistoireLogo from './assets/histoire-logo.avif'
-import HistoireLogoDark from './assets/histoire-logo-dark.avif'
-import NewUIV4Speech from './assets/new-ui-v4-speech.avif'
-import NewUIV4SpeechDark from './assets/new-ui-v4-speech-dark.avif'
-import SteinsGateMayori from './assets/steins-gate-mayori.avif'
+import Gelbana from '../../../en/blog/DevLog-2025.03.20/assets/steins-gate-gelnana-from-elpsycongrooblog.avif'
+import NewUIV3 from '../../../en/blog/DevLog-2025.03.10/assets/new-ui-v3.avif'
+import NewUIV3Dark from '../../../en/blog/DevLog-2025.03.10/assets/new-ui-v3-dark.avif'
+import HistoireColorSlider from '../../../en/blog/DevLog-2025.03.20/assets/histoire-color-slider.avif'
+import HistoireColorSliderDark from '../../../en/blog/DevLog-2025.03.20/assets/histoire-color-slider-dark.avif'
+import HistoireLogo from '../../../en/blog/DevLog-2025.03.20/assets/histoire-logo.avif'
+import HistoireLogoDark from '../../../en/blog/DevLog-2025.03.20/assets/histoire-logo-dark.avif'
+import NewUIV4Speech from '../../../en/blog/DevLog-2025.03.20/assets/new-ui-v4-speech.avif'
+import NewUIV4SpeechDark from '../../../en/blog/DevLog-2025.03.20/assets/new-ui-v4-speech-dark.avif'
+import SteinsGateMayori from '../../../en/blog/DevLog-2025.03.20/assets/steins-gate-mayori.avif'
 </script>
 
 又见面了！距离上一篇开发日志已经过去10天了。
@@ -57,7 +57,7 @@ import SteinsGateMayori from './assets/steins-gate-mayori.avif'
 
 这是 [@sumimakito](https://github.com/sumimakito) 完成后录制的第一眼：
 
-<ThemedVideo muted autoplay src="./assets/histoire-first-look.mp4" />
+<ThemedVideo muted autoplay src="../../../en/blog/DevLog-2025.03.20/assets/histoire-first-look.mp4" />
 
 整个 OKLCH 调色板可以一次性展开到画布上，供我们参考。但是要尝试颜色并获得与 Project AIRI 主题相同的感觉方案并不完美，不是吗？
 
@@ -113,9 +113,7 @@ logo 和默认的绿色可以被替换以与 AIRI 的主题保持一致，这就
 
 这是因为对于 Neuro-sama 的第一个版本，文本转语音服务是由 Microsoft 提供支持的，使用名为 `Ashley` 的声音，加上 `+20%` 的音调，你可以得到与 Neuro-sama 第一个版本相同的声音，自己试试：
 
-<audio controls style="width: 100%;">
-  <source src="./assets/ashley-pitch-test.mp3" />
-</audio>
+> 此源码工作区不包含该音频样例。
 
 不是完全一样吗，这简直太疯狂了！这意味着，我们终于可以通过新的**语音**能力接近 Neuro-sama 所能做到的事情！
 
@@ -134,7 +132,7 @@ logo 和默认的绿色可以被替换以与 AIRI 的主题保持一致，这就
 
 有了所有这些，我们可以得到这个结果：
 
-<ThemedVideo controls muted autoplay src="./assets/airi-demo.mp4" />
+<ThemedVideo controls muted autoplay src="../../../en/blog/DevLog-2025.03.20/assets/airi-demo.mp4" />
 
 几乎一模一样。但我们的故事并没有在这里结束，目前，我们还没有实现记忆功能、更好的动作控制，转录设置 UI 也缺失了。希望我们能在月底前完成这些工作。
 

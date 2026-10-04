@@ -19,7 +19,7 @@ import AwesomeAIVTuber from '../DevLog-2025.04.06/assets/awesome-ai-vtuber-logo-
 import airisScreenshot1 from './assets/airis-screenshot-1.avif';
 import projectAIRIBannerLight from './assets/banner-light-1280x640.avif';
 import projectAIRIBannerDark from './assets/banner-dark-1280x640.avif';
-import ReLUStickerWow from './assets/relu-sticker-wow.avif'
+import ReLUStickerWow from '../DevLog-2025.04.06/assets/relu-sticker-wow.avif'
 </script>
 
 Hello, it's me, Neko again!

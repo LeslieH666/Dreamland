@@ -644,6 +644,8 @@ body.leslie-modern .leslie-chat-heading small {
     white-space: nowrap;
 }
 
+.leslie-new-chat-label { display: none; }
+
 .leslie-world-line-switch {
     display: inline-grid;
     flex: 0 0 auto;
@@ -1266,6 +1268,14 @@ body.leslie-modern:not(.leslie-chat-layout-disabled) #top-settings-holder .fillR
     body.leslie-modern:not(.leslie-chat-layout-disabled) #send_form {
         min-height: 54px;
         border-radius: 20px;
+    }
+
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #form_sheld:not(.isExecutingCommandsFromChatInput) #send_form #rightSendForm #send_but {
+        display: grid !important;
+        flex: 0 0 44px;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
     }
 
     body.leslie-modern:not(.leslie-chat-layout-disabled) #send_textarea {

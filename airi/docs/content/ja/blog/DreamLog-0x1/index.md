@@ -18,7 +18,7 @@ import AwesomeAIVTuber from '../../../en/blog/DevLog-2025.04.06/assets/awesome-a
 import airisScreenshot1 from '../../../en/blog/DreamLog-0x1/assets/airis-screenshot-1.avif';
 import projectAIRIBannerLight from '../../../en/blog/DreamLog-0x1/assets/banner-light-1280x640.avif';
 import projectAIRIBannerDark from '../../../en/blog/DreamLog-0x1/assets/banner-dark-1280x640.avif';
-import ReLUStickerWow from '../../../en/blog/DreamLog-0x1/assets/relu-sticker-wow.avif'
+import ReLUStickerWow from '../../../en/blog/DevLog-2025.04.06/assets/relu-sticker-wow.avif'
 </script>
 
 こんにちは、また私、Neko です！

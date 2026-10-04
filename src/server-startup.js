@@ -10,6 +10,7 @@ import { router as usersAdminRouter } from './endpoints/users-admin.js';
 import { router as leslieDemoModeRouter } from './leslie-demo-mode/router.js';
 import { router as leslieLocalModelRouter } from './leslie-local-model/router.js';
 import { router as leslieUserSpacesRouter } from './leslie-user-spaces/router.js';
+import { router as lesliePreferencesRouter } from './leslie-user-spaces/preferences-router.js';
 import { router as movingUIRouter } from './endpoints/moving-ui.js';
 import { router as imagesRouter } from './endpoints/images.js';
 import { router as quickRepliesRouter } from './endpoints/quick-replies.js';
@@ -150,6 +151,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/leslie/demo-mode', leslieDemoModeRouter);
     app.use('/api/leslie/local-model', leslieLocalModelRouter);
     app.use('/api/leslie/user-spaces', leslieUserSpacesRouter);
+    app.use('/api/leslie/preferences', lesliePreferencesRouter);
     app.use('/api/users', usersPrivateRouter);
     app.use('/api/users', usersAdminRouter);
     app.use('/api/moving-ui', movingUIRouter);

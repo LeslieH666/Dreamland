@@ -10,6 +10,7 @@ import { imageSize as sizeOf } from 'image-size';
 import { getConfigValue, invalidateFirefoxCache } from '../util.js';
 import { getThumbnailResolution, isAnimatedWebP, isAnimatedApng, thumbnailDimensions as dimensions } from './image-metadata.js';
 import { ResizeStrategy } from '@jimp/plugin-resize';
+import { runUserSpaceTask } from '../leslie-user-spaces/activity.js';
 
 export const publicRouter = express.Router();
 export const apiRouter = express.Router();
@@ -174,7 +175,7 @@ export async function generateThumbnail(directories, type, file, forceGenerate =
         }
 
         // Process the image to generate thumbnail
-        const result = await processSingleImage(file, originalFolder, thumbnailFolder, type);
+        const result = await runUserSpaceTask(directories.root, () => processSingleImage(file, originalFolder, thumbnailFolder, type));
         if (result.success) {
             return { path: pathToCachedFile, aspectRatio: result.aspectRatio ?? null, resolution: result.resolution ?? null };
         } else {

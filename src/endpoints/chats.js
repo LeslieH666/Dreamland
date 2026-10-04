@@ -9,6 +9,8 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
+import { getLeslieDemoStorageHandle } from '../leslie-demo-mode.js';
+import { registerUserSpaceFlusher } from '../leslie-user-spaces/activity.js';
 import {
     getConfigValue,
     humanizedDateTime,
@@ -64,6 +66,17 @@ function backupChat(directory, name, data, backupPrefix = CHAT_BACKUPS_PREFIX) {
  * @type {Map<string, import('lodash').DebouncedFunc<typeof backupChat>>}
  */
 const backupFunctions = new Map();
+
+// Include trailing backups in the encrypted snapshot and retire their timers.
+registerUserSpaceFlusher(handle => {
+    for (const storageHandle of [handle, getLeslieDemoStorageHandle(handle)]) {
+        const backup = backupFunctions.get(storageHandle);
+        if (!backup) continue;
+        backup.flush();
+        backup.cancel();
+        backupFunctions.delete(storageHandle);
+    }
+});
 
 /**
  * Gets a backup function for a user.

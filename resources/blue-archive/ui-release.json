@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "gameVersion": "1.93.454564",
+  "bundles": 420,
+  "images": 7212,
+  "atlases": 21,
+  "dynamicTextures": 14,
+  "archive": "blue-archive-ui-1.93.454564.zip",
+  "bytes": 945111002,
+  "sha256": "6da574f60ead7300feb0be4c83493fc78d55c07a2b420680e1497aa509a57994",
+  "url": "https://github.com/LeslieH666/LeslieTavern/releases/download/ba-ui-library-1.93.454564/blue-archive-ui-1.93.454564.zip",
+  "scope": "Interface bundles and dependencies only; game-content families excluded.",
+  "catalog": {
+    "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/resource-data.json",
+    "sha256": "027cf49801cf8acb8864929f4bdbbb4df90075bf44129a7d08a31f63e40743f3"
+  }
+}

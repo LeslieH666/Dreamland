@@ -1,25 +1,35 @@
-/** Browser-only appearance preferences. Chat and account schemas stay untouched. */
+/** One MomoTalk layout; colors and scenery remain independent preferences. */
 export const DREAMLAND_STYLES = Object.freeze({
-    clear: { label: '澄光', english: 'Clear', description: '轻盈蓝灰 · 连续会话', icon: 'fa-cloud-sun' },
-    moon: { label: '月幕', english: 'Moon', description: '静谧夜色 · 顶部导航', icon: 'fa-moon' },
-    paper: { label: '梦境手帖', english: 'Paper', description: '暖纸墨绿 · 书页阅读', icon: 'fa-book-open' },
-    blue: { label: '蔚蓝终端', english: 'Blue', description: '蓝白几何 · BA 灵感', icon: 'fa-shapes' },
+    blue: { label: 'MomoTalk · 蔚蓝', english: 'Blue', description: 'MomoTalk 主界面 · BA 游戏素材', icon: 'fa-comment-dots' },
 });
 
 export const APPEARANCE_KEYS = Object.freeze({
     style: 'dreamland.appearance.style',
     decoration: 'dreamland.appearance.decoration',
     background: 'dreamland.appearance.background',
+    glassTransparency: 'dreamland.appearance.glassTransparency',
+    glassBlur: 'dreamland.appearance.glassBlur',
 });
+export const GLASS_RANGES = Object.freeze({
+    glassTransparency: { min: 0, max: 100, default: '28' },
+    glassBlur: { min: 0, max: 48, default: '24' },
+});
+
+export function validGlassValue(key, value) {
+    const range = GLASS_RANGES[key];
+    return Boolean(range && typeof value === 'string' && /^(0|[1-9]\d*)$/.test(value)
+        && Number(value) >= range.min && Number(value) <= range.max);
+}
 const OPTIONS = Object.freeze({
     style: Object.keys(DREAMLAND_STYLES),
-    decoration: ['full', 'subtle', 'off'],
+    decoration: ['subtle', 'off'],
     background: ['off', 'soft', 'visible'],
 });
-const DEFAULTS = Object.freeze({ style: 'clear', decoration: 'subtle', background: 'off' });
+const DEFAULTS = Object.freeze({ style: 'blue', decoration: 'subtle', background: 'off' });
 
 /** Validate preferences before applying them to DOM attributes or saving them. */
 export function normalizeAppearance(key, value) {
+    if (GLASS_RANGES[key]) return validGlassValue(key, value) ? value : GLASS_RANGES[key].default;
     return OPTIONS[key]?.includes(value) ? value : DEFAULTS[key];
 }
 
@@ -28,7 +38,7 @@ export function readAppearance(storage, key) {
     try {
         return normalizeAppearance(key, storage?.getItem(APPEARANCE_KEYS[key]));
     } catch {
-        return DEFAULTS[key];
+        return GLASS_RANGES[key]?.default ?? DEFAULTS[key];
     }
 }
 

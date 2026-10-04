@@ -1,0 +1,1278 @@
+{
+  "version": 2,
+  "region": "Global / Android",
+  "gameVersion": "1.93.454564",
+  "acquired": "2026-10-02",
+  "rights": "Blue Archive game artwork belongs to its respective rights holders. Pinned artwork is included in the project for this unofficial theme; no official affiliation or license is implied. Portable builds include only verified artwork.",
+  "references": [
+    "https://bluearchive.jp/system",
+    "https://kivo.wiki/gallery/1",
+    "https://github.com/Deathemonic/BA-AD"
+  ],
+  "bundle": {
+    "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/Preload/Android/prologdepengroup-assets-_mx-uis-atlas-_mxprolog-2024-11-18_assets_all_1611534265.bundle",
+    "sha256": "0e70ed53933a136bc1d39deee742b283e377355219e4657e46245ef8f2954019",
+    "size": 1832133
+  },
+  "assets": [
+    {
+      "file": "Common_Bg_Raius10px.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Bg_Raius10px",
+        "x": 1443,
+        "y": 1535,
+        "width": 24,
+        "height": 24,
+        "borderLeft": 10,
+        "borderRight": 10,
+        "borderTop": 10,
+        "borderBottom": 10,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "75ce6a84c8a0bc92f75e7b8d5288f9b41a7d3d2f5f70cd1949367be010e1fe72"
+    },
+    {
+      "file": "Common_Bg_Raius10px_Select.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Bg_Raius10px_Select",
+        "x": 1314,
+        "y": 4,
+        "width": 30,
+        "height": 30,
+        "borderLeft": 14,
+        "borderRight": 14,
+        "borderTop": 14,
+        "borderBottom": 14,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "c5059e8d951ee0d2a871605efd4fee60db48de6944db327f31be7b11e0391c82"
+    },
+    {
+      "file": "Common_Bg_Raius10px_Shadow.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Bg_Raius10px_Shadow",
+        "x": 1271,
+        "y": 404,
+        "width": 34,
+        "height": 38,
+        "borderLeft": 16,
+        "borderRight": 16,
+        "borderTop": 8,
+        "borderBottom": 24,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "640bedc4f74d901a0bfa2ba98413cf1c73b0bfa71f89e7bb7e8f4699734fe12d"
+    },
+    {
+      "file": "Common_BGDeco.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_BGDeco",
+        "x": 1577,
+        "y": 1863,
+        "width": 94,
+        "height": 100,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "d39754b13b3d41bb028f4348c2186b7f2952e03be3bcf067038bfb6dbbbf99e8"
+    },
+    {
+      "file": "Common_Btn_BG.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Btn_BG",
+        "x": 1903,
+        "y": 829,
+        "width": 68,
+        "height": 70,
+        "borderLeft": 30,
+        "borderRight": 30,
+        "borderTop": 30,
+        "borderBottom": 35,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "be562c441f74cd7f6224cfdb8e4b260dffd38a68fc94dd8117c663b19deb20ba"
+    },
+    {
+      "file": "Common_Btn_Normal_B_S_Pt.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Btn_Normal_B_S_Pt",
+        "x": 479,
+        "y": 907,
+        "width": 251,
+        "height": 140,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "1a7a759f7a3b450f5ad830c2189df80ee78ce76566f1a119d77e7c827ad15434"
+    },
+    {
+      "file": "Common_Btn_Normal_Y_S_Pt.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Btn_Normal_Y_S_Pt",
+        "x": 0,
+        "y": 57,
+        "width": 251,
+        "height": 140,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "bca22af2a93d69a4d3bae5f468fb5cf6477bb41d5f397b75c9e23640eac3fb35"
+    },
+    {
+      "file": "Common_Btn_Pin_01.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Btn_Pin_01",
+        "x": 1175,
+        "y": 1942,
+        "width": 106,
+        "height": 106,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "cd719542079ac7243b301552137e0e5e073379642bcdbe38fcccdb059b0076cb"
+    },
+    {
+      "file": "Common_Btn_Search.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Btn_Search",
+        "x": 1962,
+        "y": 135,
+        "width": 70,
+        "height": 72,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "bf7d39c94db2de1eb52b571d30409449f65d6696b83f3e779e3df89abe00ef95"
+    },
+    {
+      "file": "Common_Bubble_Bg_Radius.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Bubble_Bg_Radius",
+        "x": 2207,
+        "y": 632,
+        "width": 56,
+        "height": 56,
+        "borderLeft": 25,
+        "borderRight": 25,
+        "borderTop": 25,
+        "borderBottom": 25,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "9dee97d5704e602ed93090b16f8102c03edc500bcf3c651a683c92cc9d3e468d"
+    },
+    {
+      "file": "Common_Icon_Back.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Back",
+        "x": 1955,
+        "y": 357,
+        "width": 82,
+        "height": 65,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "438f3706f1c6056a0660f7912f1d07620ca8d81c4070e438f859242d2630b286"
+    },
+    {
+      "file": "Common_Icon_Close.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Close",
+        "x": 2380,
+        "y": 444,
+        "width": 60,
+        "height": 60,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "900d9124578df3403754f33be4b36dbad3fde5e1164cc194818215f5dafcfce6"
+    },
+    {
+      "file": "Common_Icon_Friends.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Friends",
+        "x": 1420,
+        "y": 1762,
+        "width": 126,
+        "height": 80,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "0d05cff5a147e2df6d2ff292e0ed858a47c677026edccea17b59258f2a5fb7b6"
+    },
+    {
+      "file": "Common_Icon_MoMoTalk.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_MoMoTalk",
+        "x": 1487,
+        "y": 1850,
+        "width": 89,
+        "height": 113,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "10957be5d797e100b40d6a280bb5e0d91c34840bd1c3d02a309ffd47e21ed7d9"
+    },
+    {
+      "file": "Common_Icon_Notice.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Notice",
+        "x": 1642,
+        "y": 1670,
+        "width": 86,
+        "height": 97,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "b106f02f2820ea46d34aa36cf3907063bda1dfa80a02409a2ed1ed094550b286"
+    },
+    {
+      "file": "Common_Icon_Setting_Game.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Setting_Game",
+        "x": 926,
+        "y": 922,
+        "width": 148,
+        "height": 110,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "75d62024004f88d2638b8bdd070747e22293e239b867ef864ad6bd271a260171"
+    },
+    {
+      "file": "Common_Icon_SpecialLobby.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_SpecialLobby",
+        "x": 1675,
+        "y": 734,
+        "width": 80,
+        "height": 80,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "1c6c47b5401225b778d759ac64b687d88f6073ab30cb12c405f091dbe3891ae4"
+    },
+    {
+      "file": "Common_Icon_StudentRecord.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_StudentRecord",
+        "x": 1131,
+        "y": 814,
+        "width": 107,
+        "height": 134,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "81920dc4c93cd15b0a53925cc7a9c74fedd0a6443d3bd94123192728601db6fa"
+    },
+    {
+      "file": "Common_Icon_ToLobby.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_ToLobby",
+        "x": 2095,
+        "y": 600,
+        "width": 50,
+        "height": 65,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "2e813260c6a64f63f4f404f486571e8efb2a32f68201e302478a9e89f4b368b5"
+    },
+    {
+      "file": "Common_Popup_Bg.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Popup_Bg",
+        "x": 731,
+        "y": 1025,
+        "width": 118,
+        "height": 215,
+        "borderLeft": 48,
+        "borderRight": 48,
+        "borderTop": 145,
+        "borderBottom": 65,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "1c0b43034b2fae6890fe01bf0bd6563d9924d1d36a480c86870f2e012e8b7a57"
+    },
+    {
+      "file": "Common_Title_Bg.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Title_Bg",
+        "x": 2569,
+        "y": 24,
+        "width": 58,
+        "height": 58,
+        "borderLeft": 25,
+        "borderRight": 25,
+        "borderTop": 25,
+        "borderBottom": 25,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "92cbf42f28baff055a23c133af2e6ba53855f2e3bfbbf3291d1723b3f76a7482"
+    },
+    {
+      "file": "Popup_System_Deco.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Popup_System_Deco",
+        "x": 979,
+        "y": 1040,
+        "width": 126,
+        "height": 126,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "a2521d5c4525254d0ef63ae56a8e2f4ef55081966774be674e5c5e36c3e297c2"
+    },
+    {
+      "file": "School_Chat_BG.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "School_Chat_BG",
+        "x": 2040,
+        "y": 870,
+        "width": 62,
+        "height": 70,
+        "borderLeft": 30,
+        "borderRight": 20,
+        "borderTop": 42,
+        "borderBottom": 20,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "b905e3ad3558719b5bb714bbc25335ab8dc19f0869b0bc1ba0f30c45d8147188"
+    },
+    {
+      "file": "School_Icon_Chat.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "School_Icon_Chat",
+        "x": 1555,
+        "y": 1376,
+        "width": 92,
+        "height": 92,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "e3e7d9d5d5f07b7b80bde798fb65c2d8ff1ae9e275195afc9e28e70cd1732924"
+    },
+    {
+      "file": "School_Icon_MomoTalk.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "School_Icon_MomoTalk",
+        "x": 1577,
+        "y": 1768,
+        "width": 100,
+        "height": 94,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "1511590a2307cd66ee3712d26d78c41572f9e618a292b9059d03f6331806bb96"
+    },
+    {
+      "file": "School_Icon_Schedule.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "School_Icon_Schedule",
+        "x": 1374,
+        "y": 1317,
+        "width": 93,
+        "height": 107,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "4161a8b40af6faba69eb31336a19b1679c8af88636b14c20ca4d856286ff94af"
+    },
+    {
+      "file": "Emoji_Momotalk.png",
+      "kind": "game-sprite",
+      "atlas": "Emoji",
+      "sprite": {
+        "name": "Emoji_Momotalk",
+        "x": 594,
+        "y": 473,
+        "width": 106,
+        "height": 106,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "b407cd05815da34320638db4c0e28c853a8dc9c30ff0c983d6962daeaeb4ee79"
+    },
+    {
+      "file": "BG_View_Kivotos.jpg",
+      "kind": "game-background",
+      "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/Preload/MediaResources/UIs/03_Scenario/01_Background/BG_View_Kivotos.jpg",
+      "md5": "9caefceca36a51018db7ad31dde4da3d",
+      "size": [
+        1600,
+        1124
+      ],
+      "sha256": "b1c813685b990396d6c77e1b8c2665ecbd13fb4370507031b66f8309e16d8460"
+    },
+    {
+      "file": "BG_MainOffice_Night.jpg",
+      "kind": "game-background",
+      "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/MediaResources/UIs/03_Scenario/01_Background/BG_MainOffice_Night.jpg",
+      "md5": "79384d8e3f8ec18908720bf17c0103da",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "071793d75a1c6f69d6ad60baa2628c1b85aa94aab8b64d2e32c2cea6e06fa767"
+    },
+    {
+      "file": "BG_SchaleOperationRoom.jpg",
+      "kind": "game-background",
+      "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/MediaResources/UIs/03_Scenario/01_Background/BG_SchaleOperationRoom.jpg",
+      "md5": "b16c749a794895e934c2f667136f8497",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "217b715d78d94ab1157453b10b3c69bfac4fd8ef25d56cf48c1d311195645dee"
+    },
+    {
+      "file": "School_Chat_BG_Outgoing.png",
+      "kind": "adaptation",
+      "source": "School_Chat_BG.png",
+      "tint": "#4b6887",
+      "operation": "multiply-rgb-preserve-alpha",
+      "purpose": "MomoTalk outgoing / dark reading adaptation; not an unmodified game sprite",
+      "sha256": "ebd2d45a5eede91943be258025dfb6941e3c4034a8f79df9a7aecc25008aaf6c"
+    },
+    {
+      "file": "School_Chat_BG_Dark.png",
+      "kind": "adaptation",
+      "source": "School_Chat_BG.png",
+      "tint": "#2d292f",
+      "operation": "multiply-rgb-preserve-alpha",
+      "purpose": "Warm charcoal BA dark reading adaptation; original shape and alpha retained",
+      "sha256": "4dd53387f0633f338fcfc5df577ff0364f56a3eec8b39a13bc86f81fad1a1b96"
+    },
+    {
+      "file": "Common_Popup_Bg_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Popup_Bg.png",
+      "tint": "#2d292f",
+      "operation": "multiply-rgb-preserve-alpha",
+      "purpose": "Warm charcoal BA dark reading adaptation; original shape and alpha retained",
+      "sha256": "5365b25b7f79dda9c7f7006d31b13dcb8ed7eae5cc54ac796aeeb0e3553fe4fe"
+    },
+    {
+      "file": "Common_Title_Bg_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Title_Bg.png",
+      "tint": "#2d292f",
+      "operation": "multiply-rgb-preserve-alpha",
+      "purpose": "Warm charcoal BA dark reading adaptation; original shape and alpha retained",
+      "sha256": "0b9249a1d0d4b40f282ec42624837c6d2d30704987c54386ed75860b476458ac"
+    },
+    {
+      "file": "School_Chat_BG_Outgoing_Dark.png",
+      "kind": "adaptation",
+      "source": "School_Chat_BG.png",
+      "tint": "#6e4858",
+      "operation": "multiply-rgb-preserve-alpha",
+      "purpose": "Warm rose / muted gold dark-theme adaptation; not an unmodified game sprite",
+      "sha256": "bf2ecb6414c20699ce5a46f3d62d41aa3e6cebdf85aef038e6d1c9953582596a"
+    },
+    {
+      "file": "Common_Btn_Normal_B_S_Pt_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_B_S_Pt.png",
+      "tint": "#a48494",
+      "operation": "desaturate-tint-preserve-alpha",
+      "purpose": "Warm rose / muted gold dark-theme adaptation; not an unmodified game sprite",
+      "sha256": "a7a0bb09a4ab56d6bb9f70470d06946b5ab7c624647e637639f639ca68b70295"
+    },
+    {
+      "file": "Common_Btn_Normal_Y_S_Pt_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_Y_S_Pt.png",
+      "tint": "#b7a779",
+      "operation": "desaturate-tint-preserve-alpha",
+      "purpose": "Warm rose / muted gold dark-theme adaptation; not an unmodified game sprite",
+      "sha256": "61601eab53e5e588c07d9fc013a0e4bf9b0c7b3846c1f449eb933bfd408ada9c"
+    },
+    {
+      "file": "Common_Btn_Normal_R_S_Pt.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Btn_Normal_R_S_Pt",
+        "x": 252,
+        "y": 57,
+        "width": 251,
+        "height": 140,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "4440ba666f5531e1efe36a579363301e1d100bfc0be49387ba0d1ce4288e3547"
+    },
+    {
+      "file": "Cafe_Icon_Photo.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Cafe_Icon_Photo",
+        "x": 1344,
+        "y": 599,
+        "width": 120,
+        "height": 104,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "9fbb3e4320095682f6d4fd188315b71b7bb42531aa75cf55644a8479d72072fc"
+    },
+    {
+      "file": "Cafe_Icon_NameEdit.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Cafe_Icon_NameEdit",
+        "x": 1934,
+        "y": 1457,
+        "width": 50,
+        "height": 50,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "6505d79dfc146e80dfaaccf641b1a07fe5871747438754cc0c18c51ea7343e34"
+    },
+    {
+      "file": "Common_Icon_Outdoor.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Outdoor",
+        "x": 1669,
+        "y": 1300,
+        "width": 86,
+        "height": 86,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "65596fa338248931855217c8bb33b83bc238e19612bc080cdd0d105bd1e0941c"
+    },
+    {
+      "file": "Common_Icon_Option.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Option",
+        "x": 1675,
+        "y": 815,
+        "width": 80,
+        "height": 80,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "a2c823756e285ad69de0faaf3623cfd6f70926bf32a432762792f5d14dece966"
+    },
+    {
+      "file": "Cafe_Icon_Info.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Cafe_Icon_Info",
+        "x": 1729,
+        "y": 1695,
+        "width": 90,
+        "height": 90,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "044c29e42d1d6f9e4e4b6617d746c1a367781a7eeeb3c14e37a37236d6e2b36b"
+    },
+    {
+      "file": "Common_Icon_Search.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Search",
+        "x": 1552,
+        "y": 1149,
+        "width": 87,
+        "height": 88,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "c97181c9175ded63b4caf51229fe796fe0d43ace2252a2872c0e430e5f6d7dcb"
+    },
+    {
+      "file": "Common_Icon_Plus.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Plus",
+        "x": 1923,
+        "y": 1405,
+        "width": 50,
+        "height": 50,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "c16f90ba3fca434238bc2dccb13992f3c3fb00dc48db10ad739a891e7ef2d93f"
+    },
+    {
+      "file": "Common_Icon_Copy.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Copy",
+        "x": 1920,
+        "y": 1705,
+        "width": 49,
+        "height": 59,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "49d52bac2cace16b343a97d874e35e108def0e5d349fdee4802675aca4c70b63"
+    },
+    {
+      "file": "Common_Icon_Heart.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Heart",
+        "x": 1648,
+        "y": 1387,
+        "width": 90,
+        "height": 83,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "8d6583d1af5a6be48702491ef51fd1721b728b4e337ec62102f977b82532299e"
+    },
+    {
+      "file": "Nav_Chat.png",
+      "kind": "adaptation",
+      "source": "School_Icon_Chat.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "fbb054553aaf86a9da59f1fe45013778e14416ff15e83464d0d19fc79f5c7579"
+    },
+    {
+      "file": "Nav_Moments.png",
+      "kind": "adaptation",
+      "source": "Cafe_Icon_Photo.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "0078c4560dc7264bb81ab036353527bfd6b076f9ac64ae906d475a14ea049e73"
+    },
+    {
+      "file": "Nav_Workshop.png",
+      "kind": "adaptation",
+      "source": "Cafe_Icon_NameEdit.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "4ba744477c8df67df9e14a3540a405970821aaf7004124912a94c33229e24820"
+    },
+    {
+      "file": "Nav_Background.png",
+      "kind": "adaptation",
+      "source": "Common_Icon_Outdoor.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "5609bed1b4b416d7c0334b579e64434df09f744bc43b06994c578fa410cd3587"
+    },
+    {
+      "file": "Nav_Settings.png",
+      "kind": "adaptation",
+      "source": "Common_Icon_Option.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "cfa7989e5cffd3d73f3ed8d65d379962494d88551d3d3f4d77b7a4264e02da8e"
+    },
+    {
+      "file": "Nav_About.png",
+      "kind": "adaptation",
+      "source": "Cafe_Icon_Info.png",
+      "operation": "white-glyph-preserve-alpha",
+      "purpose": "Extract original white UI glyph for consistent navigation; not unmodified artwork",
+      "sha256": "3464a88675b3d59a1f640e84ce1a95e7d832c24f1d318d3ec37fa832725b1b3f"
+    },
+    {
+      "file": "Common_Btn_Rose_Primary.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "423fb75e7cb3ab28ba642c031e29e1b83137aad81290c9711488ad2b17de5c4f",
+      "shadow": "#8e2e49",
+      "highlight": "#ae4964"
+    },
+    {
+      "file": "Common_Btn_Rose_Soft.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "d703a2cda446293dd9bd9a81153d7d4e12e23af96013d9017c0701c54ea9efb7",
+      "shadow": "#eed2dc",
+      "highlight": "#fff8fb"
+    },
+    {
+      "file": "Common_Btn_Rose_Primary_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "3dba20a345db07e0fa2fa6aecd3caa136eb57498d2acc89cee7ace81e4ed5342",
+      "shadow": "#593540",
+      "highlight": "#754957"
+    },
+    {
+      "file": "Common_Btn_Rose_Soft_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_Normal_R_S_Pt.png",
+      "operation": "colorize-range-preserve-alpha",
+      "purpose": "Rose theme button texture adaptation; not unmodified artwork",
+      "sha256": "db36b7c3e8a26ba752967feca75e7e553f973ee5eae88f841b70505221ae7c46",
+      "shadow": "#342930",
+      "highlight": "#4d3843"
+    },
+    {
+      "file": "Common_Bg_Paper.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Bg_Paper",
+        "x": 1635,
+        "y": 1575,
+        "width": 96,
+        "height": 85,
+        "borderLeft": 16,
+        "borderRight": 17,
+        "borderTop": 58,
+        "borderBottom": 22,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "b4914da4d096631136f578aaa136a2cd6bc162ac7f7acbce886ca437bac3f00a"
+    },
+    {
+      "file": "Card_Line_Char.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Card_Line_Char",
+        "x": 2199,
+        "y": 18,
+        "width": 59,
+        "height": 70,
+        "borderLeft": 23,
+        "borderRight": 28,
+        "borderTop": 28,
+        "borderBottom": 35,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "144f7380f7b9a7d67d66ea0b02a5f93aaaf422f2f58c98f9c2dafcd75e97d7f7"
+    },
+    {
+      "file": "Common_Icon_Order.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Order",
+        "x": 514,
+        "y": 667,
+        "width": 118,
+        "height": 55,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "9f8f033dd7577a7bcfbc6ccf591df428334c283ee17839976f8b735df55ab373"
+    },
+    {
+      "file": "Common_Btn_Base_Blue.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_BG.png",
+      "operation": "multiply-rgb-preserve-alpha",
+      "tint": "#79ddf9",
+      "sha256": "56362854360819bf2126cdb36356339e2681dd4281ee15f713df87243bc61f54"
+    },
+    {
+      "file": "Common_Btn_Base_Yellow.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_BG.png",
+      "operation": "multiply-rgb-preserve-alpha",
+      "tint": "#fae94b",
+      "sha256": "fbb49e05fda260cc55da977c27798161daea7169f6221c8c1018ee0d12540402"
+    },
+    {
+      "file": "Common_Btn_Base_Neutral_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_BG.png",
+      "operation": "multiply-rgb-preserve-alpha",
+      "tint": "#403d46",
+      "sha256": "2d06af3af79c46108d689db01005376db1e898fe47b096855839a76aebc0fb7f"
+    },
+    {
+      "file": "ImgFont_Momotalk.png",
+      "kind": "game-texture",
+      "texture": "ImgFont_Momotalk",
+      "pathId": "7069044326222584334",
+      "sha256": "27528650f17ef349ade837d8f691eff861ae4a9243ddd9d376e16b74a9a220d1",
+      "bundle": {
+        "path": "Preload/Android/prologgroup-assets-_mx-addressableasset-uis-00_images-imagefont-_mxprolog-2024-11-18_000_assets_all_274474007.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/Preload/Android/prologgroup-assets-_mx-addressableasset-uis-00_images-imagefont-_mxprolog-2024-11-18_000_assets_all_274474007.bundle",
+        "sha256": "171ddc4beb166f92c03ff156af011e015ea3607da28d79775efd0f1587046bb4"
+      }
+    },
+    {
+      "file": "Common_Reward_Deco.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Reward_Deco",
+        "x": 0,
+        "y": 1340,
+        "width": 335,
+        "height": 320,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "a0b9ef1cfcc89eb9e1b548d147d35fdb0a823d6f223f29ee6afbbd8927ef57b7"
+    },
+    {
+      "file": "Common_Icon_Setting_Game.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Setting_Game",
+        "x": 926,
+        "y": 922,
+        "width": 148,
+        "height": 110,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "75d62024004f88d2638b8bdd070747e22293e239b867ef864ad6bd271a260171"
+    },
+    {
+      "file": "Common_Icon_Social.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Social",
+        "x": 940,
+        "y": 1329,
+        "width": 149,
+        "height": 116,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "11157d7d277b5f0cfb0ec82e35ad52639ecedf8ccee2346a66c6eeef0f81674a"
+    },
+    {
+      "file": "Event_Icon_Message.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_Message",
+        "x": 888,
+        "y": 1421,
+        "width": 92,
+        "height": 113,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "9fc4603120803ec6eba18a4e187d1d5eb9ac30458a22155fc9a59ab802cd89c9",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Event_Icon_Replay.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_Replay",
+        "x": 1926,
+        "y": 1949,
+        "width": 116,
+        "height": 99,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 3,
+        "paddingBottom": 0
+      },
+      "sha256": "c5985dae33b46eb61065e30c17b82f5f3b0e41b0bd9da7d28612cdb4881b0781",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Dreamland_Nav_Home.png",
+      "kind": "project-generated",
+      "sha256": "d6bef865519eeb928da4cdc255b54798c52ab4cb5173853bfc1bda217541c3b3",
+      "provenance": "Built-in imagegen; user accepted blue/white home icon, then requested upright walls and horizontal base. 2026-10-03. Not original game artwork."
+    },
+    {
+      "file": "Event_Icon_CardShop.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_CardShop",
+        "x": 1239,
+        "y": 1946,
+        "width": 116,
+        "height": 102,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "99d3ce2618b4ce61814e4b20332407ea784372f6dd2baaa80be4343de2a3f44c",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Event_Icon_MinigameOption.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_MinigameOption",
+        "x": 669,
+        "y": 1484,
+        "width": 103,
+        "height": 106,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "4ca7467014eb790baf72a4139c48fda53371bfc84c69bd205c56cda9914d49d3",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Common_Top_Menu_Bg.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Top_Menu_Bg",
+        "x": 0,
+        "y": 1083,
+        "width": 343,
+        "height": 105,
+        "borderLeft": 310,
+        "borderRight": 20,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 61
+      },
+      "sha256": "2b7aedff6c7d71b171c6d3b3a63a2db1c88bcb68d9976403b08b222fd61746c3",
+      "bundle": {
+        "path": "Preload/Android/prologdepengroup-assets-_mx-uis-atlas-_mxprolog-2024-11-18_assets_all_1611534265.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/Preload/Android/prologdepengroup-assets-_mx-uis-atlas-_mxprolog-2024-11-18_assets_all_1611534265.bundle",
+        "sha256": "0e70ed53933a136bc1d39deee742b283e377355219e4657e46245ef8f2954019"
+      }
+    }
+  ]
+}

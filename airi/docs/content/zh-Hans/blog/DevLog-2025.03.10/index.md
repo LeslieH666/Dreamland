@@ -16,13 +16,13 @@ date: 2025-03-10
 
 是我首先完成了设置设计的基础版本，感觉是这样的：
 
-![](./assets/new-ui-v1.avif)
+![](../../../en/blog/DevLog-2025.03.10/assets/new-ui-v1.avif)
 
-![](./assets/new-ui-v1-dark.avif)
+![](../../../en/blog/DevLog-2025.03.10/assets/new-ui-v1-dark.avif)
 
 后来 [@sumimakito](https://github.com/sumimakito) 上线帮助我为按钮实现了这种点状效果：
 
-![](./assets/new-ui-v2.avif)
+![](../../../en/blog/DevLog-2025.03.10/assets/new-ui-v2.avif)
 
 > 现在我们能从菜单中感受到更多的节奏感，对吧？！
 
@@ -55,7 +55,7 @@ date: 2025-03-10
 
 在3月8日结束时，[@LemonNekoGH](https://github.com/LemonNekoGH) 和 [@junkwarrior87](https://github.com/junkwarrior87) 居然实现了整个舞台的颜色自定义功能！（我从来没想过这能在短短几个小时内完成...）
 
-<ThemedVideo controls muted src="./assets/customizable-theme-colors.mp4" />
+<ThemedVideo controls muted src="../../../en/blog/DevLog-2025.03.05/assets/customizable-theme-colors.mp4" />
 
 - https://github.com/moeru-ai/airi/pull/53
 - https://github.com/moeru-ai/airi/pull/60
@@ -68,9 +68,9 @@ date: 2025-03-10
 
 这是我们得到的最终结果，试试看！
 
-![](./assets/new-ui-v3.avif)
+![](../../../en/blog/DevLog-2025.03.10/assets/new-ui-v3.avif)
 
-![](./assets/new-ui-v3-dark.avif)
+![](../../../en/blog/DevLog-2025.03.10/assets/new-ui-v3-dark.avif)
 
 一如既往，欢迎来为我们做贡献！我们绝对对每个人都开放和友好，即使是那些不熟悉编程和编码的人！
 

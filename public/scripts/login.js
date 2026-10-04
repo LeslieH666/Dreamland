@@ -113,10 +113,38 @@ async function performLogin(handle, password) {
     const button = $('#loginButton');
     const originalLabel = button.text();
     button.prop('disabled', true).text('正在进入空间…');
+    $('#userList .userSelect, #userHandle, #userPassword').prop('disabled', true);
+    $('#userSelectBlock').attr('aria-busy', 'true');
+    // getRandomValues also works on a phone's plain HTTP LAN connection.
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    const operation = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    const status = $('<div class="dreamland-login-progress" role="status" aria-live="polite"><span></span><progress max="1"></progress></div>');
+    button.after(status);
+    status.find('span').text(encryptedSpaces ? '正在打开空间，请稍候…' : '正在登录…');
+    let pollTimer;
+    let polling = true;
+    const poll = async () => {
+        try {
+            const result = await fetch(`/api/users/login-progress?operation=${operation}`, { cache: 'no-store' });
+            if (result.ok && polling) {
+                const progress = await result.json();
+                const label = { sealing: '正在封存上一空间', key: '正在验证加密密钥', decrypt: '正在解密与校验数据', loading: '正在加载空间', ready: '空间已准备好' }[progress.phase] || '正在打开空间';
+                status.find('span').text(progress.total > 0 ? `${label} · ${progress.completed} / ${progress.total}` : `${label}…`);
+                if (progress.total > 0) status.find('progress').attr('value', progress.completed / progress.total);
+                else status.find('progress').removeAttr('value');
+            }
+        } catch { /* the login request remains authoritative */ }
+        if (polling) pollTimer = setTimeout(poll, 800);
+    };
+    if (encryptedSpaces) void poll();
     displayError('');
     const userInfo = {
         handle: handle,
         password: password,
+        operation,
     };
 
     let redirecting = false;
@@ -149,9 +177,14 @@ async function performLogin(handle, password) {
         console.error('Error logging in:', error);
         displayError(String(error));
     } finally {
+        polling = false;
+        clearTimeout(pollTimer);
         if (!redirecting) {
             loginPending = false;
             button.prop('disabled', false).text(originalLabel);
+            $('#userList .userSelect, #userHandle, #userPassword').prop('disabled', false);
+            $('#userSelectBlock').attr('aria-busy', 'false');
+            status.remove();
         }
     }
 }
@@ -162,6 +195,10 @@ async function performLogin(handle, password) {
  * @returns {Promise<void>}
  */
 async function onUserSelected(user) {
+    if (user.appearance && Object.keys(user.appearance).length) {
+        window.LeslieLoginAppearance = user.appearance;
+        window.dispatchEvent(new CustomEvent('dreamland-login-appearance', { detail: user.appearance }));
+    }
     // No password, just log in
     if (!user.password) {
         return await performLogin(user.handle, '');
@@ -291,7 +328,13 @@ function configureDiscreetLogin() {
     initAccessibility();
 
     csrfToken = await getCsrfToken();
-    encryptedSpaces = await fetch('/api/users/mode').then(response => response.json()).then(mode => mode.encryptedSpaces === true).catch(() => true);
+    encryptedSpaces = await fetch('/api/users/mode').then(response => response.json()).then(mode => {
+        if (Object.keys(mode.appearance || {}).length) {
+            window.LeslieLoginAppearance = mode.appearance;
+            window.dispatchEvent(new CustomEvent('dreamland-login-appearance', { detail: mode.appearance }));
+        }
+        return mode.encryptedSpaces === true;
+    }).catch(() => true);
     $('#recoverPassword').toggle(!encryptedSpaces);
     const userList = await getUserList();
 

@@ -8,8 +8,10 @@
 
 import { eventSource, event_types, getRequestHeaders, saveSettingsDebounced, setGenerationParamsFromPreset, setOnlineStatus, stopStatusLoading } from '../script.js';
 import { clearUserSpaceBrowserState } from './leslie-user-space-browser.js';
+import { flushUserSpacePreferences } from './leslie-user-preferences.js';
 import { extension_settings } from './extensions.js';
 import { getLeslieConnectionState } from './leslie-connection-state.js';
+import { getDreamLandClientCapabilities, isDreamLandAndroidClient } from './leslie-mobile-client.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { selectContextPreset, selectInstructPreset } from './instruct-mode.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
@@ -33,7 +35,9 @@ import {
     syncLesliePrivacyModeControls,
 } from './leslie-privacy-mode.js';
 import './leslie-voice-settings.js';
-import { DREAMLAND_STYLES } from './dreamland-appearance-core.js';
+import { navigateDreamlandPage, presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from './dreamland-pages.js';
+
+let settingsPageVisited = false;
 
 const SECONDARY_DRAWERS = [
     'ai-config-button',
@@ -58,11 +62,9 @@ const COPY = {
         introBody: '这里只整理入口，不会删除或改写 SillyTavern 的原功能。常用选项可以直接调整，复杂功能仍保留在高级设置中。',
         safeNote: '聊天记录、角色卡和提示词顺序不会因这个界面而改变。',
         quickTitle: '外观与使用习惯',
-        quickBody: '四套界面风格与外观偏好保存在当前浏览器；基础主题沿用原设置。',
+        quickBody: '统一使用 MomoTalk 界面和默认红色；明暗与外观偏好按用户空间保存，登录页同步使用。',
         theme: '界面主题',
         themeHelp: '选择 SillyTavern 基础主题',
-        palette: '原界面主题色',
-        paletteHelp: '亮色和暗色会自动使用成套配色',
         language: '界面语言',
         languageHelp: '更改后页面会重新载入',
         reducedMotion: '减少动态效果',
@@ -336,11 +338,9 @@ const COPY = {
         introBody: 'This page reorganizes access without removing or rewriting SillyTavern features. Common options stay close at hand, while complex tools remain available under Advanced.',
         safeNote: 'This interface does not change chats, character cards, or prompt order.',
         quickTitle: 'Appearance & comfort',
-        quickBody: 'Interface styles and appearance preferences are saved in this browser. The base theme uses SillyTavern settings.',
+        quickBody: 'MomoTalk uses the default rose accent. Display mode and appearance are saved per user space and reflected on the login page.',
         theme: 'Theme',
         themeHelp: 'Choose the base SillyTavern theme',
-        palette: 'Original interface palette',
-        paletteHelp: 'Each palette includes light and dark colors',
         language: 'Language',
         languageHelp: 'The page reloads after a change',
         reducedMotion: 'Reduce motion',
@@ -650,6 +650,7 @@ async function changeUserSpace(action) {
     const root = settingsOverlay?.querySelector('#leslie-settings-detail');
     const field = selector => root?.querySelector(selector)?.value || '';
     try {
+        if (!await flushUserSpacePreferences()) throw new Error('设置尚未保存，请稍后重试。');
         if (action === 'switch') {
             userSpacesBusy = true;
             const button = root?.querySelector('[data-leslie-space-switch]');
@@ -1069,6 +1070,10 @@ function getDesktopServiceStateCopy(serviceState, copy) {
 }
 
 function renderDesktopServices(copy) {
+    const capabilities = getDreamLandClientCapabilities();
+    if (!capabilities.airiCompanion && !capabilities.localModelManagement) {
+        return '';
+    }
     const desktopApiAvailable = typeof globalThis.leslieDesktopServices?.getStatus === 'function';
     const available = desktopApiAvailable && desktopServiceStatus?.available !== false;
     const rows = [['airi'], ['localModel']].map(([service]) => {
@@ -1129,6 +1134,10 @@ async function requestHostLocalModel(path, body) {
 }
 
 async function refreshDesktopServiceStatus() {
+    if (!getDreamLandClientCapabilities().localModelManagement) {
+        desktopServiceStatus = { available: false, localModels: { models: [] }, services: {} };
+        return;
+    }
     try {
         desktopServiceStatus = typeof globalThis.leslieDesktopServices?.getStatus === 'function'
             ? await globalThis.leslieDesktopServices.getStatus()
@@ -1254,6 +1263,9 @@ function renderModelDetail() {
     const copy = COPY[getCopyLocale()];
     const activeService = getActiveModelService();
     activeModelKind ??= MODEL_SERVICES[activeService]?.kind || 'online';
+    if (isDreamLandAndroidClient() && activeModelKind === 'local') {
+        activeModelKind = 'online';
+    }
     const serviceCopy = {
         deepseek: [copy.serviceDeepSeek, copy.serviceDeepSeekBody],
         custom: [copy.serviceCustom, copy.serviceCustomBody],
@@ -1270,7 +1282,7 @@ function renderModelDetail() {
     const kindOptions = [
         ['online', 'fa-solid fa-cloud', copy.onlineApi, copy.onlineApiBody],
         ['local', 'fa-solid fa-computer', copy.localApi, copy.localApiBody],
-    ].map(([kind, icon, title, body]) => `
+    ].filter(([kind]) => !isDreamLandAndroidClient() || kind === 'online').map(([kind, icon, title, body]) => `
         <button type="button" class="leslie-api-kind-card${kind === activeModelKind ? ' is-active' : ''}" data-leslie-api-kind="${kind}" aria-pressed="${kind === activeModelKind}">
             <span class="${icon}" aria-hidden="true"></span>
             <span><strong>${title}</strong><small>${body}</small></span>
@@ -1326,7 +1338,7 @@ function renderModelDetail() {
             <span><strong>${copy.allProviders}</strong><small>${copy.fullSettingsHelp}</small></span>
             <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
         </button>`;
-    const localContent = `${renderLocalModelSetup(copy)}
+    const localContent = isDreamLandAndroidClient() ? '' : `${renderLocalModelSetup(copy)}
         <details class="leslie-local-advanced" ${localAdvancedOpen ? 'open' : ''}>
             <summary><span><strong>${copy.localModelAdvanced}</strong><small>${copy.localModelAdvancedHelp}</small></span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
             <div class="leslie-local-advanced-content">
@@ -1766,6 +1778,10 @@ function createSettingsOverlay() {
                     </div>
                     <div class="leslie-settings-navigation-group leslie-settings-navigation-advanced">
                         <span class="leslie-settings-navigation-label">${copy.advancedGroup}</span>
+                        <button type="button" class="leslie-settings-nav-item" data-leslie-settings-about>
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            <span><strong>关于 DreamLand</strong><small>版本、项目介绍与素材说明</small></span>
+                        </button>
                         <button type="button" class="leslie-settings-nav-item" data-leslie-settings-anchor="advanced" data-leslie-settings-page="advanced">
                             <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
                             <span><strong>${copy.advancedTitle}</strong><small>${copy.advancedBody}</small></span>
@@ -1809,43 +1825,39 @@ function createSettingsOverlay() {
                                 </div>
                             </div>
                             <div class="leslie-settings-quick-grid">
-                                <label class="leslie-quick-control" for="dreamland-style-select">
-                                    <span><strong>DreamLand · 界面风格</strong><small>四套完整风格，选择后即时生效</small></span>
-                                    <select id="dreamland-style-select" data-dreamland-preference="style">
-                                        ${Object.entries(DREAMLAND_STYLES).map(([value, meta]) => `<option value="${value}">${meta.label} · ${meta.english}</option>`).join('')}
-                                    </select>
-                                </label>
-                                <label class="leslie-quick-control" for="dreamland-language-select">
-                                    <span><strong>界面版本</strong><small>可随时恢复原界面</small></span>
-                                    <select id="dreamland-language-select"><option value="dreamland">DreamLand</option><option value="cupertino">Cupertino</option><option value="classic">经典</option></select>
-                                </label>
                                 <label class="leslie-quick-control" for="dreamland-decoration-select">
-                                    <span><strong>氛围装饰</strong><small>控制首页插画与几何纹理</small></span>
-                                    <select id="dreamland-decoration-select" data-dreamland-preference="decoration"><option value="subtle">适中</option><option value="full">丰富</option><option value="off">关闭</option></select>
+                                    <span><strong>首页场景装饰</strong><small>显示或关闭首页 BA 游戏场景</small></span>
+                                    <select id="dreamland-decoration-select" data-dreamland-preference="decoration"><option value="subtle">显示</option><option value="off">关闭</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="dreamland-background-select">
-                                    <span><strong>场景背景</strong><small>使用“背景”中导入的图片；角色图沿用角色卡</small></span>
-                                    <select id="dreamland-background-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰氛围</option></select>
+                                    <span><strong>聊天背景显示</strong><small>在下方“背景素材”选择图片；选择后自动开启显示</small></span>
+                                    <select id="dreamland-background-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰背景</option></select>
                                 </label>
-                                <label class="leslie-quick-control" for="leslie-theme-select">
-                                    <span>
-                                        <strong>${copy.theme}</strong>
-                                        <small>${copy.themeHelp}</small>
-                                    </span>
-                                    <select id="leslie-theme-select" aria-label="${copy.theme}"></select>
+                                <label class="leslie-quick-control" for="leslie-display-mode-select">
+                                    <span><strong>明暗模式</strong><small>亮色、暗色或跟随系统；与登录页同步</small></span>
+                                    <select id="leslie-display-mode-select"><option value="auto">跟随系统</option><option value="light">亮色</option><option value="dark">暗色</option></select>
                                 </label>
-                                <label class="leslie-quick-control" for="leslie-palette-select">
-                                    <span>
-                                        <strong>${copy.palette}</strong>
-                                        <small>${copy.paletteHelp}</small>
-                                    </span>
-                                    <select id="leslie-palette-select" aria-label="${copy.palette}">
-                                        <option value="jade">青瓷 · Jade</option>
-                                        <option value="iris">鸢尾 · Iris</option>
-                                        <option value="clay">暖砂 · Clay</option>
-                                        <option value="slate">石墨 · Slate</option>
-                                    </select>
-                                </label>
+                                <section class="dreamland-glass-settings" aria-labelledby="dreamland-glass-title">
+                                    <h4 id="dreamland-glass-title">磨砂玻璃效果</h4>
+                                    <p id="dreamland-glass-help">登录卡片与标题栏同步调节透明度和模糊；聊天栏保留主题粉色，其他标题栏使用白色。滚动内容从标题栏后方透出。</p>
+                                    <label for="dreamland-glass-transparency">标题栏透明度 <output for="dreamland-glass-transparency" data-dreamland-glass-value="glassTransparency">28%</output></label>
+                                    <input id="dreamland-glass-transparency" type="range" min="0" max="100" step="1" value="28" data-dreamland-preference="glassTransparency" aria-describedby="dreamland-glass-help dreamland-glass-transparency-help">
+                                    <small id="dreamland-glass-transparency-help">0% 为不透明，100% 为全透明；暗色模式对应深色底。</small>
+                                    <label for="dreamland-glass-blur">高斯模糊 <output for="dreamland-glass-blur" data-dreamland-glass-value="glassBlur">24 px</output></label>
+                                    <input id="dreamland-glass-blur" type="range" min="0" max="48" step="1" value="24" data-dreamland-preference="glassBlur" aria-describedby="dreamland-glass-help">
+                                    <div class="dreamland-glass-preview" role="group" aria-label="实时预览：滚动示例内容，查看白色功能页栏、粉色聊天栏与登录卡片">
+                                        <div class="dreamland-glass-preview-sample">
+                                            <div class="dreamland-glass-preview-white">功能页标题栏</div>
+                                            <div class="dreamland-glass-preview-scroll" tabindex="0" aria-label="白色标题栏滚动预览"><p>向上滚动，内容会经过标题栏后方。</p><p>朋友圈 · 今天的小小记录</p><p>透过玻璃看到的是当前页面内容。</p><p>调节模糊，比较文字与色块的变化。</p></div>
+                                        </div>
+                                        <div class="dreamland-glass-preview-sample">
+                                            <div class="dreamland-glass-preview-color">聊天标题栏 · 主题粉色</div>
+                                            <div class="dreamland-glass-preview-scroll" tabindex="0" aria-label="粉色聊天栏滚动预览"><p>聊天消息也会从标题栏后方经过。</p><p>透明度改变，主题粉色保持不变。</p><p>向上滚动观察高斯模糊效果。</p><p>文字和色块随滚动实时变化。</p></div>
+                                        </div>
+                                        <div class="dreamland-glass-preview-login-scene"><div class="dreamland-glass-preview-login"><strong>DreamLand</strong><span>登录卡片预览</span></div></div>
+                                    </div>
+                                    <button type="button" class="leslie-settings-secondary-button" data-dreamland-glass-reset>恢复默认效果</button>
+                                </section>
                                 <label class="leslie-quick-control" for="leslie-language-select">
                                     <span>
                                         <strong>${copy.language}</strong>
@@ -1868,6 +1880,8 @@ function createSettingsOverlay() {
                                     <input id="leslie-fast-ui" type="checkbox" role="switch">
                                 </label>
                             </div>
+                            ${renderSettingsRow({ target: 'backgrounds-button', icon: 'fa-solid fa-panorama', title: copy.backgroundTitle, body: copy.backgroundBody })}
+                            <div class="dreamland-asset-health"><strong>BA 游戏素材</strong><p class="dreamland-ba-status" data-ba-asset-status aria-live="polite">正在检测本机素材…</p><button type="button" class="leslie-settings-secondary-button" data-ba-asset-retry>重新检测</button></div>
                         </section>
 
                         <section class="leslie-settings-section leslie-demo-mode-card" data-leslie-demo-card>
@@ -1922,7 +1936,6 @@ function createSettingsOverlay() {
                         <div class="leslie-advanced-preview" aria-hidden="true">
                             ${renderSettingsRow({ target: 'advanced-formatting-button', icon: 'fa-solid fa-code-branch', title: copy.promptTitle, body: copy.promptBody })}
                             ${renderSettingsRow({ target: 'extensions-settings-button', icon: 'fa-solid fa-cubes', title: copy.extensionsTitle, body: copy.extensionsBody })}
-                            ${renderSettingsRow({ target: 'backgrounds-button', icon: 'fa-solid fa-panorama', title: copy.backgroundTitle, body: copy.backgroundBody })}
                             ${renderSettingsRow({ target: 'user-settings-button', icon: 'fa-solid fa-sliders', title: copy.fullSettingsTitle, body: copy.fullSettingsBody })}
                         </div>
                         <div class="leslie-advanced-lock">
@@ -2003,7 +2016,10 @@ function updateDemoModeUi() {
         }
     });
     if (demoModeBanner) {
+        const footer = document.querySelector('#leslie-conversation-sidebar .leslie-sidebar-footer');
+        if (footer && demoModeBanner.parentElement !== footer) footer.prepend(demoModeBanner);
         demoModeBanner.hidden = !active;
+        demoModeBanner.querySelector('button').setAttribute('aria-label', copy.demoExit);
     }
 }
 
@@ -2038,6 +2054,7 @@ async function toggleDemoMode() {
     updateDemoModeUi();
     try {
         await Promise.resolve(saveSettingsDebounced.flush?.());
+        if (!await flushUserSpacePreferences()) throw new Error('设置尚未保存，请稍后重试。');
         const response = await fetch('/api/leslie/demo-mode/switch', {
             method: 'POST',
             headers: getRequestHeaders(),
@@ -2077,6 +2094,16 @@ function closeOpenDrawers() {
  */
 function openSettings() {
     window.clearTimeout(closeTimer);
+    if (presentDreamlandPage('settings', settingsOverlay, () => {
+        settingsOverlay.dataset.open = 'false';
+        lockAdvancedSettings();
+    })) {
+        if (!settingsPageVisited) showSettingsHome();
+        settingsPageVisited = true;
+        settingsOverlay.dataset.open = 'true';
+        closeOpenDrawers();
+        return;
+    }
     lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : settingsLauncher;
     closeOpenDrawers();
     showSettingsHome();
@@ -2094,6 +2121,7 @@ function openSettings() {
  * Hide the settings hub and restore focus to its launcher.
  */
 function closeSettings() {
+    if (returnToDreamlandChat('settings')) return;
     settingsOverlay.dataset.open = 'false';
     settingsOverlay.classList.remove('leslie-settings-mobile-detail');
     document.documentElement.classList.remove('leslie-settings-open');
@@ -2113,6 +2141,10 @@ function closeSettings() {
  * @param {string} [afterOpenId] Optional original control to click after opening.
  */
 function openOriginalDrawer(targetId, afterOpenId) {
+    if (targetId === 'backgrounds-button' && usesDreamlandPages()) {
+        void navigateDreamlandPage('background');
+        return;
+    }
     const target = document.getElementById(targetId);
     const drawer = target?.querySelector('.drawer-content');
     const toggle = target?.querySelector('.drawer-toggle');
@@ -2836,6 +2868,10 @@ async function detectAndApplyLocalModel(button) {
 async function connectSelectedModelService() {
     const serviceId = getActiveModelService();
     const service = MODEL_SERVICES[serviceId];
+    if (isDreamLandAndroidClient() && service?.kind === 'local') {
+        toastr.info('手机端暂不支持本地大模型，请使用在线模型接口。', COPY[getCopyLocale()].modelTitle);
+        return;
+    }
     if (service?.kind === 'local' && !isLocalModelLoadingEnabled()) {
         const copy = COPY[getCopyLocale()];
         toastr.warning(copy.localModelLoadingDisabled, copy.modelTitle);
@@ -2985,6 +3021,7 @@ function handleSettingsKeydown(event) {
     if (event.key !== 'Tab') {
         return;
     }
+    if (usesDreamlandPages()) return;
 
     const focusable = Array.from(settingsOverlay.querySelectorAll('button:not([hidden]):not([disabled]), select:not([disabled]), input:not([disabled])'))
         .filter((element) => element instanceof HTMLElement && element.offsetParent !== null);
@@ -3031,6 +3068,7 @@ function initLeslieSettings() {
 
     settingsOverlay = createSettingsOverlay();
     document.body.append(settingsOverlay);
+    registerDreamlandPage('settings', openSettings);
     document.dispatchEvent(new CustomEvent('dreamland:appearance-ready'));
     demoModeBanner = createDemoModeBanner();
     document.body.append(demoModeBanner);
@@ -3046,8 +3084,17 @@ function initLeslieSettings() {
         event.stopPropagation();
         openSettings();
     });
+    document.addEventListener('leslie:open-model-settings', () => {
+        openSettings();
+        showDetail('model');
+    });
     settingsOverlay.addEventListener('click', async (event) => {
         const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest('[data-leslie-settings-about]')) {
+            event.preventDefault();
+            navigateDreamlandPage('about');
+            return;
+        }
         const spaceAction = target?.closest('[data-leslie-space-activate], [data-leslie-space-create], [data-leslie-space-switch]');
         if (spaceAction) {
             event.preventDefault();
@@ -3226,7 +3273,6 @@ function initLeslieSettings() {
     });
     document.addEventListener('keydown', handleSettingsKeydown);
 
-    mirrorSelect('themes', 'leslie-theme-select');
     mirrorSelect('ui_language_select', 'leslie-language-select');
     mirrorCheckbox('reduced_motion', 'leslie-reduced-motion', 'input');
     mirrorCheckbox('fast_ui_mode', 'leslie-fast-ui', 'change');

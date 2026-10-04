@@ -4,7 +4,7 @@ DreamLand, formerly LeslieTavern, is a space for character conversations and des
 
 ![Original DreamLand product concept art](public/img/dreamland/introduction.png)
 
-Four interface styles are available: Clear, Moon, Paper and Blue. Each supports light and dark surfaces. Cupertino and Classic remain available. See the [interactive screenshot preview](docs/dreamland-preview.html) and [appearance and branding](docs/dreamland-appearance.md).
+DreamLand uses one **MomoTalk / Blue Archive** layout and component system with the default rose accent and consistent game UI buttons and navigation. Display mode and scenery persist per user space and also theme login; legacy layouts and accents migrate automatically. Main features occupy full content pages with mobile story/reality controls. All 57 runtime artwork files ship in `public/img/blue-archive/bundled/` without a separate install; portable builds verify and include the complete allowlist. See [appearance behavior](docs/dreamland-appearance.md) and the [UI asset library](resources/blue-archive/README.md).
 
 English | [简体中文](README.md)
 

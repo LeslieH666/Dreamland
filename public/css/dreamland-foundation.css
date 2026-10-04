@@ -1,0 +1,1277 @@
+/* Shared extension and native-control foundation for the MomoTalk UI. */
+
+/* --------------------------------------------------------------------------
+ * 1. Semantic material tokens
+ * ----------------------------------------------------------------------- */
+
+body.leslie-modern {
+    color-scheme: light;
+
+    /* Telegram-inspired light materials. */
+    --tg-layer-0: #e9eff5;
+    --tg-layer-1: #ffffff;
+    --tg-layer-2: #f6f8fa;
+    --tg-layer-strong: #eef2f6;
+    --tg-layer-hover: #f1f3f5;
+    --tg-layer-raised: #ffffff;
+    --tg-layer-active: #e7f2fd;
+    --tg-bubble-incoming: #ffffff;
+    --tg-bubble-outgoing: #def1fd;
+    --tg-text-primary: #17212b;
+    --tg-text-secondary: #5f7184;
+    --tg-text-tertiary: #657688;
+    --tg-border: rgba(23, 33, 43, 0.10);
+    --tg-border-soft: rgba(23, 33, 43, 0.07);
+    --tg-accent: #3390ec;
+    --tg-accent-strong: #2481cc;
+    --tg-accent-soft: rgba(51, 144, 236, 0.12);
+    --tg-success: #31a86b;
+    --tg-warning: #d9922e;
+    --tg-danger: #d95763;
+    --tg-overlay: rgba(15, 28, 41, 0.34);
+    --tg-shadow-float: 0 10px 32px rgba(23, 33, 43, 0.16), 0 2px 8px rgba(23, 33, 43, 0.08);
+    --tg-shadow-soft: 0 2px 10px rgba(23, 33, 43, 0.07);
+    --tg-shadow-bubble: 0 1px 2px rgba(23, 33, 43, 0.10);
+    --tg-chat-pattern: rgba(95, 113, 132, 0.08);
+
+    /* Map the existing Leslie components onto one material system. */
+    --leslie-accent: var(--tg-accent);
+    --leslie-accent-strong: var(--tg-accent-strong);
+    --leslie-accent-soft: var(--tg-accent-soft);
+    --leslie-mint: #e5f6ed;
+    --leslie-mint-strong: #d5f0e1;
+    --leslie-canvas: var(--tg-layer-0);
+    --leslie-surface: var(--tg-layer-1);
+    --leslie-surface-solid: var(--tg-layer-1);
+    --leslie-surface-subtle: var(--tg-layer-2);
+    --leslie-text: var(--tg-text-primary);
+    --leslie-text-soft: var(--tg-text-secondary);
+    --leslie-border: var(--tg-border);
+    --leslie-shadow: var(--tg-shadow-float);
+    --leslie-shadow-soft: var(--tg-shadow-soft);
+
+    --leslie-shell-bg: var(--tg-layer-0);
+    --leslie-sidebar-bg: var(--tg-layer-1);
+    --leslie-chat-bg: var(--tg-layer-0);
+    --leslie-shell-surface: var(--tg-layer-1);
+    --leslie-shell-surface-soft: var(--tg-layer-2);
+    --leslie-shell-hover: var(--tg-layer-hover);
+    --leslie-shell-active: var(--tg-layer-active);
+    --leslie-shell-border: var(--tg-border);
+    --leslie-shell-text: var(--tg-text-primary);
+    --leslie-shell-muted: var(--tg-text-secondary);
+    --leslie-shell-accent: var(--tg-accent);
+    --leslie-shell-accent-soft: var(--tg-accent-soft);
+    --leslie-shell-success: var(--tg-success);
+    --leslie-incoming-bubble: var(--tg-bubble-incoming);
+    --leslie-outgoing-bubble: var(--tg-bubble-outgoing);
+    --leslie-workspace-shadow: var(--tg-shadow-float);
+}
+
+body.leslie-modern[data-leslie-color-scheme="dark"] {
+    color-scheme: dark;
+    --tg-layer-0: #0e1621;
+    --tg-layer-1: #17212b;
+    --tg-layer-2: #182533;
+    --tg-layer-strong: #1c2937;
+    --tg-layer-hover: #202b36;
+    --tg-layer-raised: #223043;
+    --tg-layer-active: #2b5278;
+    --tg-bubble-incoming: #182533;
+    --tg-bubble-outgoing: #2b5278;
+    --tg-text-primary: #f5f5f5;
+    --tg-text-secondary: #9aabba;
+    --tg-text-tertiary: #7f91a4;
+    --tg-border: rgba(255, 255, 255, 0.075);
+    --tg-border-soft: rgba(255, 255, 255, 0.05);
+    --tg-accent: #4aa8ff;
+    --tg-accent-strong: #62b4ff;
+    --tg-accent-soft: rgba(74, 168, 255, 0.14);
+    --tg-success: #46c684;
+    --tg-warning: #e5a63a;
+    --tg-danger: #e26d78;
+    --tg-overlay: rgba(4, 10, 17, 0.58);
+    --tg-shadow-float: 0 14px 38px rgba(0, 0, 0, 0.38), 0 2px 10px rgba(0, 0, 0, 0.24);
+    --tg-shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.22);
+    --tg-shadow-bubble: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --tg-chat-pattern: rgba(154, 171, 186, 0.055);
+    --leslie-mint: #173d35;
+    --leslie-mint-strong: #1d4a40;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.leslie-modern:not([data-leslie-color-scheme]) {
+        color-scheme: dark;
+        --tg-layer-0: #0e1621;
+        --tg-layer-1: #17212b;
+        --tg-layer-2: #182533;
+        --tg-layer-strong: #1c2937;
+        --tg-layer-hover: #202b36;
+        --tg-layer-raised: #223043;
+        --tg-layer-active: #2b5278;
+        --tg-bubble-incoming: #182533;
+        --tg-bubble-outgoing: #2b5278;
+        --tg-text-primary: #f5f5f5;
+        --tg-text-secondary: #9aabba;
+        --tg-text-tertiary: #7f91a4;
+        --tg-border: rgba(255, 255, 255, 0.075);
+        --tg-border-soft: rgba(255, 255, 255, 0.05);
+        --tg-accent: #4aa8ff;
+        --tg-accent-strong: #62b4ff;
+        --tg-accent-soft: rgba(74, 168, 255, 0.14);
+        --tg-success: #46c684;
+        --tg-warning: #e5a63a;
+        --tg-danger: #e26d78;
+        --tg-overlay: rgba(4, 10, 17, 0.58);
+        --tg-shadow-float: 0 14px 38px rgba(0, 0, 0, 0.38), 0 2px 10px rgba(0, 0, 0, 0.24);
+        --tg-shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.22);
+        --tg-shadow-bubble: 0 1px 2px rgba(0, 0, 0, 0.24);
+        --tg-chat-pattern: rgba(154, 171, 186, 0.055);
+        --leslie-mint: #173d35;
+        --leslie-mint-strong: #1d4a40;
+    }
+}
+
+body.leslie-modern,
+body.leslie-modern button,
+body.leslie-modern input,
+body.leslie-modern select,
+body.leslie-modern textarea {
+    text-shadow: none;
+}
+
+body.leslie-modern #bg1 {
+    background: var(--tg-layer-0);
+    filter: none;
+    opacity: 1;
+}
+
+body.leslie-modern ::selection {
+    background: color-mix(in srgb, var(--tg-accent) 24%, transparent);
+}
+
+body.leslie-modern ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body.leslie-modern ::-webkit-scrollbar-thumb:vertical,
+body.leslie-modern ::-webkit-scrollbar-thumb:horizontal {
+    background: color-mix(in srgb, var(--tg-text-tertiary) 45%, transparent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+    box-shadow: none;
+}
+
+body.leslie-modern :where(button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--tg-accent) 55%, transparent);
+    outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+ * 2. Conversation list and navigation material
+ * ----------------------------------------------------------------------- */
+
+body.leslie-modern #leslie-conversation-sidebar {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-1);
+    border-right-color: var(--tg-border);
+}
+
+body.leslie-modern .leslie-sidebar-header {
+    min-height: 60px;
+    padding: 0 12px 0 14px;
+    border-bottom-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-brand-mark,
+body.leslie-modern .leslie-settings-logo,
+body.leslie-modern .leslie-character-workshop-logo,
+body.leslie-modern .leslie-memory-mark {
+    color: #fff;
+    background: var(--tg-accent);
+    border-radius: 50%;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-brand-copy strong,
+body.leslie-modern .leslie-conversation-primary strong,
+body.leslie-modern .leslie-connection-card strong {
+    color: var(--tg-text-primary);
+}
+
+body.leslie-modern .leslie-brand-copy small,
+body.leslie-modern .leslie-connection-card small,
+body.leslie-modern .leslie-conversation-preview,
+body.leslie-modern .leslie-conversation-primary time {
+    color: var(--tg-text-secondary);
+}
+
+body.leslie-modern .leslie-icon-button,
+body.leslie-modern .leslie-header-memory-button,
+body.leslie-modern #leslie-chat-actions #leslie-memory-launcher {
+    color: var(--tg-text-secondary);
+    border-radius: 50%;
+}
+
+body.leslie-modern .leslie-icon-button:hover,
+body.leslie-modern .leslie-icon-button:focus-visible,
+body.leslie-modern .leslie-header-memory-button:hover,
+body.leslie-modern .leslie-header-memory-button:focus-visible {
+    color: var(--tg-accent);
+    background: var(--tg-accent-soft);
+}
+
+body.leslie-modern .leslie-sidebar-tools {
+    padding: 8px 10px 7px;
+    border-bottom-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-conversation-search {
+    min-height: 36px;
+    grid-template-columns: 32px minmax(0, 1fr) 30px;
+    color: var(--tg-text-secondary);
+    background: var(--tg-layer-strong);
+    border-color: transparent;
+    border-radius: 18px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-conversation-search:focus-within {
+    background: var(--tg-layer-1);
+    border-color: color-mix(in srgb, var(--tg-accent) 58%, transparent);
+    box-shadow: 0 0 0 2px var(--tg-accent-soft);
+}
+
+body.leslie-modern .leslie-conversation-search input {
+    height: 34px;
+    color: var(--tg-text-primary) !important;
+    font-size: 13px;
+}
+
+body.leslie-modern .leslie-conversation-search input::placeholder {
+    color: var(--tg-text-tertiary);
+}
+
+body.leslie-modern .leslie-conversation-filters {
+    margin-top: 7px;
+    gap: 4px;
+}
+
+body.leslie-modern .leslie-conversation-filters button {
+    min-height: 28px;
+    padding: 0 11px;
+    color: var(--tg-text-secondary);
+    border-radius: 14px;
+}
+
+body.leslie-modern .leslie-conversation-filters button:hover,
+body.leslie-modern .leslie-conversation-filters button:focus-visible {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-hover);
+}
+
+body.leslie-modern .leslie-conversation-filters button.is-active {
+    color: var(--tg-accent-strong);
+    background: var(--tg-accent-soft);
+}
+
+body.leslie-modern .leslie-conversation-list {
+    padding: 4px;
+}
+
+body.leslie-modern .leslie-conversation-item {
+    min-height: 64px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    margin: 0;
+    padding: 7px 9px;
+    gap: 10px;
+    color: var(--tg-text-primary);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-conversation-item::before {
+    display: none;
+}
+
+body.leslie-modern .leslie-conversation-item:hover,
+body.leslie-modern .leslie-conversation-item:focus-visible {
+    background: var(--tg-layer-hover);
+}
+
+body.leslie-modern .leslie-conversation-item.is-active {
+    background: var(--tg-layer-active);
+}
+
+body.leslie-modern .leslie-conversation-avatar {
+    width: 48px;
+    height: 48px;
+    color: var(--tg-accent);
+    background: var(--tg-layer-strong);
+    border-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-conversation-copy {
+    gap: 4px;
+}
+
+body.leslie-modern .leslie-conversation-primary strong {
+    font-size: 14px;
+    font-weight: 650;
+}
+
+body.leslie-modern .leslie-conversation-primary time {
+    font-size: 11px;
+}
+
+body.leslie-modern .leslie-conversation-preview {
+    font-size: 13px;
+}
+
+body.leslie-modern .leslie-conversation-item.is-active .leslie-conversation-primary time {
+    color: var(--tg-accent-strong);
+}
+
+body.leslie-modern .leslie-sidebar-footer {
+    padding: 5px 7px 7px;
+    border-top-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-connection-card {
+    min-height: 48px;
+    color: var(--tg-text-primary);
+    border-radius: 8px;
+}
+
+body.leslie-modern .leslie-connection-card:hover,
+body.leslie-modern .leslie-connection-card:focus-visible {
+    background: var(--tg-layer-hover);
+}
+
+/* --------------------------------------------------------------------------
+ * 3. Chat canvas, header, bubbles, composer and floating menus
+ * ----------------------------------------------------------------------- */
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #sheld {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-0);
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #leslie-chat-header {
+    min-height: 60px;
+    flex-basis: 60px;
+    padding: 0 14px 0 16px;
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-1);
+    border-bottom-color: var(--tg-border-soft);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+body.leslie-modern .leslie-chat-avatar {
+    width: 40px;
+    height: 40px;
+    background: var(--tg-layer-strong);
+    border-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-chat-heading strong {
+    color: var(--tg-text-primary);
+    font-weight: 650;
+}
+
+body.leslie-modern .leslie-chat-heading small {
+    margin-top: 3px;
+    color: var(--tg-text-secondary);
+    font-size: 11px;
+}
+
+body.leslie-modern .leslie-chat-more-menu {
+    width: 232px;
+    padding: 5px;
+    color: var(--tg-text-primary);
+    background: color-mix(in srgb, var(--tg-layer-raised) 96%, transparent);
+    border-color: var(--tg-border);
+    border-radius: 10px;
+    box-shadow: var(--tg-shadow-float);
+    backdrop-filter: blur(18px) saturate(120%);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+body.leslie-modern .leslie-chat-more-menu button {
+    min-height: 40px;
+    color: var(--tg-text-primary);
+    border-radius: 7px;
+}
+
+body.leslie-modern .leslie-chat-more-menu button:hover,
+body.leslie-modern .leslie-chat-more-menu button:focus-visible {
+    color: var(--tg-accent-strong);
+    background: var(--tg-layer-hover);
+}
+
+body.leslie-modern .leslie-chat-more-menu button i {
+    color: var(--tg-text-secondary);
+}
+
+body.leslie-modern .leslie-chat-more-menu hr {
+    border-top-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-theme-toggle[aria-expanded="true"] {
+    color: var(--tg-accent);
+    background: var(--tg-accent-soft);
+}
+
+body.leslie-modern .leslie-theme-menu {
+    position: fixed;
+    z-index: 56000;
+    display: grid;
+    width: 210px;
+    padding: 5px;
+    gap: 1px;
+    color: var(--tg-text-primary);
+    background: color-mix(in srgb, var(--tg-layer-raised) 96%, transparent);
+    border: 1px solid var(--tg-border);
+    border-radius: 10px;
+    box-shadow: var(--tg-shadow-float);
+    backdrop-filter: blur(18px) saturate(120%);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+body.leslie-modern .leslie-theme-menu[hidden] {
+    display: none !important;
+}
+
+body.leslie-modern .leslie-theme-menu-heading {
+    padding: 5px 9px 3px;
+    color: var(--tg-text-secondary);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+}
+
+body.leslie-modern .leslie-theme-menu-separator {
+    width: calc(100% - 12px);
+    margin: 5px 6px 3px;
+    border: 0;
+    border-top: 1px solid var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-theme-menu button {
+    display: grid;
+    width: 100%;
+    min-height: 46px;
+    margin: 0;
+    padding: 5px 9px;
+    grid-template-columns: 28px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 8px;
+    color: var(--tg-text-primary);
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    box-shadow: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+body.leslie-modern .leslie-theme-menu button:hover,
+body.leslie-modern .leslie-theme-menu button:focus-visible {
+    background: var(--tg-layer-hover);
+}
+
+body.leslie-modern .leslie-theme-menu button > i:first-child {
+    color: var(--tg-text-secondary);
+    text-align: center;
+}
+
+body.leslie-modern .leslie-theme-menu button > span {
+    display: grid;
+    min-width: 0;
+    gap: 1px;
+}
+
+body.leslie-modern .leslie-theme-menu button strong {
+    color: inherit;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+body.leslie-modern .leslie-theme-menu button small {
+    color: var(--tg-text-secondary);
+    font-size: 10px;
+}
+
+body.leslie-modern .leslie-theme-menu .leslie-theme-choice-check {
+    color: var(--tg-accent);
+    opacity: 0;
+}
+
+body.leslie-modern .leslie-theme-menu button.is-active {
+    color: var(--tg-accent-strong);
+    background: var(--tg-layer-active);
+}
+
+body.leslie-modern .leslie-theme-menu button.is-active > i:first-child,
+body.leslie-modern .leslie-theme-menu button.is-active .leslie-theme-choice-check {
+    color: var(--tg-accent-strong);
+    opacity: 1;
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #chat {
+    padding: 18px max(18px, calc((100% - 1040px) / 2)) 10px;
+    color: var(--tg-text-primary);
+    background-color: var(--tg-layer-0);
+    background-image:
+        radial-gradient(circle at 1px 1px, var(--tg-chat-pattern) 1px, transparent 1.1px),
+        linear-gradient(color-mix(in srgb, var(--tg-layer-0) 94%, transparent), var(--tg-layer-0));
+    background-size: 24px 24px, auto;
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
+    max-width: min(76%, 780px);
+    padding: 9px 13px 10px;
+    color: var(--tg-text-primary);
+    background: var(--tg-bubble-incoming);
+    border-color: var(--tg-border-soft);
+    border-radius: 6px 16px 16px 16px;
+    box-shadow: var(--tg-shadow-bubble);
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block {
+    color: var(--tg-text-primary);
+    background: var(--tg-bubble-outgoing);
+    border-color: color-mix(in srgb, var(--tg-accent) 14%, var(--tg-border));
+    border-radius: 16px 6px 16px 16px;
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #chat > .mes[is_system="true"] .mes_block {
+    color: var(--tg-text-secondary);
+    background: color-mix(in srgb, var(--tg-layer-strong) 92%, transparent);
+    border-color: transparent;
+    border-radius: 14px;
+    box-shadow: none;
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) .mes .avatar img {
+    border-color: var(--tg-layer-1);
+    box-shadow: var(--tg-shadow-bubble);
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) .mes_block .ch_name {
+    color: var(--tg-accent-strong);
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #form_sheld {
+    padding: 8px max(18px, calc((100% - 1040px) / 2)) 10px;
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-1);
+    border-top-color: var(--tg-border-soft);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #send_form {
+    min-height: 52px;
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-2) !important;
+    border-color: var(--tg-border);
+    border-radius: 18px;
+    box-shadow: none;
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #send_textarea {
+    color: var(--tg-text-primary);
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #send_textarea::placeholder {
+    color: var(--tg-text-tertiary);
+}
+
+body.leslie-modern #leslie-workspace-backdrop,
+body.leslie-modern .leslie-settings-backdrop {
+    background: var(--tg-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.leslie-modern:not(.leslie-chat-layout-disabled) #top-settings-holder .drawer-content.openDrawer {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-raised);
+    border-color: var(--tg-border);
+    border-radius: 14px;
+    box-shadow: var(--tg-shadow-float);
+}
+
+/* --------------------------------------------------------------------------
+ * 4. Settings: grouped lists instead of a wall of floating cards
+ * ----------------------------------------------------------------------- */
+
+body.leslie-modern .leslie-settings-overlay,
+body.leslie-modern .leslie-settings-panel,
+body.leslie-modern .leslie-settings-content-pane {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-0);
+}
+
+body.leslie-modern .leslie-settings-master,
+body.leslie-modern .leslie-settings-navigation,
+body.leslie-modern .leslie-settings-header {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-1);
+}
+
+body.leslie-modern .leslie-settings-master,
+body.leslie-modern .leslie-settings-navigation {
+    border-color: var(--tg-border);
+}
+
+body.leslie-modern .leslie-settings-master,
+body.leslie-modern .leslie-settings-content-pane {
+    grid-template-rows: 60px minmax(0, 1fr);
+}
+
+body.leslie-modern .leslie-settings-header,
+body.leslie-modern .leslie-settings-content-header {
+    min-height: 60px;
+}
+
+body.leslie-modern .leslie-settings-content-header {
+    padding: 0 20px;
+    background: var(--tg-layer-1);
+    border-bottom-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-settings-heading strong,
+body.leslie-modern .leslie-settings-content-heading strong,
+body.leslie-modern .leslie-settings-navigation-heading span {
+    color: var(--tg-text-primary);
+}
+
+body.leslie-modern .leslie-settings-heading small,
+body.leslie-modern .leslie-settings-content-heading small,
+body.leslie-modern .leslie-settings-content-save,
+body.leslie-modern .leslie-settings-navigation-heading small,
+body.leslie-modern .leslie-settings-navigation-label {
+    color: var(--tg-text-secondary);
+}
+
+body.leslie-modern .leslie-settings-close,
+body.leslie-modern .leslie-settings-content-back {
+    color: var(--tg-text-secondary);
+    border-radius: 50%;
+}
+
+body.leslie-modern .leslie-settings-close:hover,
+body.leslie-modern .leslie-settings-close:focus-visible,
+body.leslie-modern .leslie-settings-content-back:hover,
+body.leslie-modern .leslie-settings-content-back:focus-visible {
+    color: var(--tg-accent);
+    background: var(--tg-accent-soft);
+}
+
+body.leslie-modern .leslie-settings-navigation {
+    padding: 12px 8px 10px;
+    gap: 12px;
+}
+
+body.leslie-modern .leslie-settings-navigation-group {
+    gap: 2px;
+}
+
+body.leslie-modern .leslie-settings-nav-item {
+    min-height: 52px;
+    padding: 7px 9px;
+    color: var(--tg-text-secondary);
+    border-color: transparent;
+    border-radius: 8px;
+}
+
+body.leslie-modern .leslie-settings-nav-item > i {
+    color: inherit;
+    background: transparent;
+    border-radius: 50%;
+}
+
+body.leslie-modern .leslie-settings-nav-item:hover,
+body.leslie-modern .leslie-settings-nav-item:focus-visible {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-hover);
+    border-color: transparent;
+}
+
+body.leslie-modern .leslie-settings-nav-item.active {
+    color: var(--tg-accent-strong);
+    background: var(--tg-layer-active);
+    border-color: transparent;
+}
+
+body.leslie-modern .leslie-settings-nav-item.active > i {
+    color: #fff;
+    background: var(--tg-accent);
+}
+
+body.leslie-modern .leslie-settings-scroll {
+    padding: 20px clamp(16px, 4vw, 48px) 40px;
+    background: var(--tg-layer-0);
+}
+
+body.leslie-modern .leslie-settings-intro,
+body.leslie-modern .leslie-detail-hero {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-1);
+    border-color: var(--tg-border-soft);
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-settings-intro p,
+body.leslie-modern .leslie-detail-hero p,
+body.leslie-modern .leslie-settings-section-heading p,
+body.leslie-modern .leslie-detail-card-heading p,
+body.leslie-modern .leslie-settings-row-description,
+body.leslie-modern .leslie-quick-control small,
+body.leslie-modern .leslie-detail-field-copy small,
+body.leslie-modern .leslie-detail-switch-row small,
+body.leslie-modern .leslie-style-preset-copy small,
+body.leslie-modern .leslie-style-preset-copy em {
+    color: var(--tg-text-secondary);
+}
+
+body.leslie-modern .leslie-settings-section,
+body.leslie-modern .leslie-detail-card,
+body.leslie-modern .leslie-advanced-preview,
+body.leslie-modern .leslie-detail-full-button,
+body.leslie-modern .leslie-character-actions > button {
+    background: var(--tg-layer-1);
+    border-color: var(--tg-border-soft);
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-settings-list {
+    overflow: hidden;
+    background: var(--tg-layer-1);
+    border: 1px solid var(--tg-border-soft);
+    border-radius: 12px;
+}
+
+body.leslie-modern .leslie-settings-row {
+    min-height: 58px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--tg-border-soft);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-settings-row:last-child {
+    border-bottom: 0;
+}
+
+body.leslie-modern .leslie-settings-row:hover,
+body.leslie-modern .leslie-settings-row:focus-visible {
+    background: var(--tg-layer-hover);
+    border-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-quick-control,
+body.leslie-modern .leslie-detail-switch-row,
+body.leslie-modern .leslie-service-card,
+body.leslie-modern .leslie-api-kind-card,
+body.leslie-modern .leslie-style-preset {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-2);
+    border-color: var(--tg-border-soft);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-service-card:hover,
+body.leslie-modern .leslie-service-card:focus-visible,
+body.leslie-modern .leslie-api-kind-card:hover,
+body.leslie-modern .leslie-api-kind-card:focus-visible,
+body.leslie-modern .leslie-style-preset:hover,
+body.leslie-modern .leslie-style-preset:focus-visible {
+    background: var(--tg-layer-hover);
+    border-color: color-mix(in srgb, var(--tg-accent) 28%, var(--tg-border));
+}
+
+body.leslie-modern .leslie-service-card.is-active,
+body.leslie-modern .leslie-api-kind-card.is-active,
+body.leslie-modern .leslie-style-preset.is-active {
+    color: var(--tg-accent-strong);
+    background: var(--tg-layer-active);
+    border-color: color-mix(in srgb, var(--tg-accent) 34%, var(--tg-border));
+}
+
+body.leslie-modern .leslie-detail-field input:not([type="range"]),
+body.leslie-modern .leslie-detail-field select,
+body.leslie-modern .leslie-detail-field textarea,
+body.leslie-modern .leslie-detail-range-controls input[type="number"],
+body.leslie-modern .leslie-quick-control select {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-2);
+    border-color: var(--tg-border);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-detail-field input:focus,
+body.leslie-modern .leslie-detail-field select:focus,
+body.leslie-modern .leslie-detail-field textarea:focus,
+body.leslie-modern .leslie-quick-control select:focus {
+    border-color: var(--tg-accent);
+    box-shadow: 0 0 0 2px var(--tg-accent-soft);
+}
+
+body.leslie-modern .leslie-settings-safe-note,
+body.leslie-modern .leslie-detail-callout,
+body.leslie-modern .leslie-detail-privacy,
+body.leslie-modern .leslie-style-preset-note {
+    color: var(--tg-text-secondary);
+    background: var(--tg-accent-soft);
+    border-color: color-mix(in srgb, var(--tg-accent) 22%, var(--tg-border));
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-settings-primary-button,
+body.leslie-modern .leslie-character-workshop-button.is-primary {
+    color: #fff;
+    background: var(--tg-accent);
+    border-color: var(--tg-accent);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+ * 5. Memory: same master-detail hierarchy and form materials
+ * ----------------------------------------------------------------------- */
+
+body.leslie-modern #leslie-memory-overlay {
+    padding: 18px;
+    background: var(--tg-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.leslie-modern #leslie-memory-panel {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-0);
+    border-color: var(--tg-border);
+    border-radius: 14px;
+    box-shadow: var(--tg-shadow-float);
+}
+
+body.leslie-modern .leslie-memory-header {
+    min-height: 60px;
+    padding: 8px 14px;
+    background: var(--tg-layer-1);
+    border-bottom-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-memory-title {
+    color: var(--tg-text-primary);
+}
+
+body.leslie-modern .leslie-memory-subtitle,
+body.leslie-modern .leslie-memory-help,
+body.leslie-modern .leslie-memory-field label,
+body.leslie-modern .leslie-memory-tab,
+body.leslie-modern .leslie-memory-tab small,
+body.leslie-modern .leslie-memory-navigation-note,
+body.leslie-modern .leslie-memory-stat span,
+body.leslie-modern .leslie-memory-event-meta {
+    color: var(--tg-text-secondary);
+}
+
+body.leslie-modern .leslie-memory-layout,
+body.leslie-modern .leslie-memory-main,
+body.leslie-modern .leslie-memory-content {
+    background: var(--tg-layer-0);
+}
+
+body.leslie-modern .leslie-memory-navigation {
+    background: var(--tg-layer-1);
+    border-right-color: var(--tg-border);
+}
+
+body.leslie-modern .leslie-memory-statusbar,
+body.leslie-modern .leslie-memory-tabs {
+    border-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-memory-icon-button,
+body.leslie-modern .leslie-memory-button {
+    color: var(--tg-text-primary);
+    background: transparent;
+    border-color: var(--tg-border);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-memory-icon-button:hover,
+body.leslie-modern .leslie-memory-button:hover {
+    background: var(--tg-layer-hover);
+}
+
+body.leslie-modern .leslie-memory-tab {
+    min-height: 52px;
+    border-color: transparent;
+    border-radius: 8px;
+}
+
+body.leslie-modern .leslie-memory-tab > i {
+    background: transparent;
+    border-radius: 50%;
+}
+
+body.leslie-modern .leslie-memory-tab:hover,
+body.leslie-modern .leslie-memory-tab:focus-visible {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-hover);
+    border-color: transparent;
+}
+
+body.leslie-modern .leslie-memory-tab.active {
+    color: var(--tg-accent-strong);
+    background: var(--tg-layer-active);
+    border-color: transparent;
+}
+
+body.leslie-modern .leslie-memory-tab.active > i,
+body.leslie-modern .leslie-memory-button.primary {
+    color: #fff;
+    background: var(--tg-accent);
+    border-color: var(--tg-accent);
+}
+
+body.leslie-modern .leslie-memory-navigation-note,
+body.leslie-modern .leslie-memory-card,
+body.leslie-modern .leslie-memory-section,
+body.leslie-modern .leslie-memory-stat,
+body.leslie-modern .leslie-memory-core,
+body.leslie-modern .leslie-memory-history-row {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-1);
+    border-color: var(--tg-border-soft);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-memory-field input,
+body.leslie-modern .leslie-memory-field select,
+body.leslie-modern .leslie-memory-field textarea,
+body.leslie-modern .leslie-memory-core-preview,
+body.leslie-modern .leslie-memory-prompt-preview {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-2);
+    border-color: var(--tg-border);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-memory-field input:focus,
+body.leslie-modern .leslie-memory-field select:focus,
+body.leslie-modern .leslie-memory-field textarea:focus {
+    border-color: var(--tg-accent);
+    box-shadow: 0 0 0 2px var(--tg-accent-soft);
+}
+
+/* --------------------------------------------------------------------------
+ * 6. Character workshop: restrained raised workspace materials
+ * ----------------------------------------------------------------------- */
+
+body.leslie-modern .leslie-character-workshop {
+    --workshop-overlay: var(--tg-overlay);
+    --workshop-card: var(--tg-layer-1);
+    --workshop-raised: var(--tg-layer-2);
+    color: var(--tg-text-primary);
+    background: var(--tg-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.leslie-modern .leslie-character-workshop-panel {
+    background: var(--tg-layer-0);
+    border-color: var(--tg-border);
+    border-radius: 14px;
+    box-shadow: var(--tg-shadow-float);
+}
+
+body.leslie-modern .leslie-character-workshop-header,
+body.leslie-modern .leslie-character-workshop-footer {
+    background: var(--tg-layer-1);
+    border-color: var(--tg-border-soft);
+}
+
+body.leslie-modern .leslie-character-workshop-header {
+    min-height: 60px;
+    padding: 0 16px;
+}
+
+body.leslie-modern .leslie-character-workshop-rail {
+    background: var(--tg-layer-1);
+    border-color: var(--tg-border);
+}
+
+body.leslie-modern .leslie-character-workshop-main {
+    background: var(--tg-layer-0);
+}
+
+body.leslie-modern .leslie-character-workshop-rail-copy p,
+body.leslie-modern .leslie-character-workshop-intro > p,
+body.leslie-modern .leslie-character-workshop-section-heading p,
+body.leslie-modern .leslie-character-workshop-status p,
+body.leslie-modern .leslie-character-workshop-review-copy p,
+body.leslie-modern .leslie-character-workshop-steps small,
+body.leslie-modern .leslie-character-workshop-toggle small,
+body.leslie-modern .leslie-character-workshop-json-import-note {
+    color: var(--tg-text-secondary);
+}
+
+body.leslie-modern .leslie-character-workshop-steps li {
+    background: transparent;
+    border-color: transparent;
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-character-workshop-steps li.is-active {
+    color: var(--tg-accent-strong);
+    background: var(--tg-layer-active);
+}
+
+body.leslie-modern .leslie-character-workshop textarea[data-workshop-prompt],
+body.leslie-modern .leslie-character-workshop textarea[data-workshop-import-json],
+body.leslie-modern .leslie-character-workshop select {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-2);
+    border-color: var(--tg-border);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-character-workshop textarea[data-workshop-prompt]:focus,
+body.leslie-modern .leslie-character-workshop textarea[data-workshop-import-json]:focus,
+body.leslie-modern .leslie-character-workshop select:focus {
+    border-color: var(--tg-accent);
+    box-shadow: 0 0 0 2px var(--tg-accent-soft);
+}
+
+body.leslie-modern .leslie-character-workshop-api-note,
+body.leslie-modern .leslie-character-workshop-json-import,
+body.leslie-modern .leslie-character-workshop-status,
+body.leslie-modern .leslie-character-workshop-brief-group,
+body.leslie-modern .leslie-character-workshop-knowledge article,
+body.leslie-modern .leslie-character-workshop-score,
+body.leslie-modern .leslie-character-workshop-review-copy,
+body.leslie-modern .leslie-character-workshop-preview details,
+body.leslie-modern .leslie-character-workshop-avatar-field {
+    color: var(--tg-text-primary);
+    background: var(--tg-layer-1);
+    border-color: var(--tg-border-soft);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-character-workshop-icon-button,
+body.leslie-modern .leslie-character-workshop-button {
+    color: var(--tg-text-primary);
+    background: transparent;
+    border-color: var(--tg-border);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+body.leslie-modern .leslie-character-workshop-icon-button {
+    border-radius: 50%;
+}
+
+body.leslie-modern .leslie-character-workshop-icon-button:hover,
+body.leslie-modern .leslie-character-workshop-button:hover {
+    background: var(--tg-layer-hover);
+}
+
+/* --------------------------------------------------------------------------
+ * 7. Responsive density and touch adaptation
+ * ----------------------------------------------------------------------- */
+
+@media (max-width: 1179px) {
+    body.leslie-modern {
+        --leslie-sidebar-width: clamp(300px, 31vw, 340px);
+    }
+
+    body.leslie-modern .leslie-settings-scroll {
+        padding-right: 24px;
+        padding-left: 24px;
+    }
+}
+
+@media (max-width: 899px) and (min-width: 701px) {
+    body.leslie-modern {
+        --leslie-sidebar-width: 300px;
+    }
+
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
+        max-width: min(82%, 720px);
+    }
+
+    body.leslie-modern .leslie-settings-layout {
+        grid-template-columns: 220px minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    body.leslie-modern {
+        --leslie-sidebar-width: 100dvw;
+    }
+
+    body.leslie-modern .leslie-sidebar-header {
+        min-height: calc(58px + env(safe-area-inset-top));
+        padding-top: env(safe-area-inset-top);
+    }
+
+    body.leslie-modern .leslie-sidebar-tools {
+        padding-top: 8px;
+    }
+
+    body.leslie-modern .leslie-conversation-search {
+        min-height: 40px;
+        border-radius: 20px;
+    }
+
+    body.leslie-modern .leslie-conversation-search input {
+        height: 38px;
+        font-size: 16px;
+    }
+
+    body.leslie-modern .leslie-conversation-item {
+        min-height: 68px;
+        grid-template-columns: 50px minmax(0, 1fr);
+        padding: 8px 10px;
+    }
+
+    body.leslie-modern .leslie-conversation-avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #leslie-chat-header {
+        min-height: calc(56px + env(safe-area-inset-top));
+        flex-basis: calc(56px + env(safe-area-inset-top));
+    }
+
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #chat {
+        padding: 11px max(4px, env(safe-area-inset-right)) 7px max(4px, env(safe-area-inset-left));
+        background-size: 22px 22px, auto;
+    }
+
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block {
+        max-width: min(90%, calc(100% - 36px));
+        padding: 8px 10px 9px;
+    }
+
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #form_sheld {
+        padding: 6px max(6px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+    }
+
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #send_form {
+        min-height: 50px;
+        border-radius: 17px;
+    }
+
+    body.leslie-modern .leslie-settings-master,
+    body.leslie-modern .leslie-settings-content-pane {
+        grid-template-rows: calc(56px + env(safe-area-inset-top)) minmax(0, 1fr);
+    }
+
+    body.leslie-modern .leslie-settings-header,
+    body.leslie-modern .leslie-settings-content-header {
+        min-height: calc(56px + env(safe-area-inset-top));
+        padding-top: env(safe-area-inset-top);
+    }
+
+    body.leslie-modern .leslie-settings-navigation {
+        padding: 10px 6px max(14px, env(safe-area-inset-bottom));
+    }
+
+    body.leslie-modern .leslie-settings-nav-item {
+        min-height: 56px;
+    }
+
+    body.leslie-modern .leslie-settings-scroll {
+        padding: 12px 9px max(20px, env(safe-area-inset-bottom));
+    }
+
+    body.leslie-modern #leslie-memory-overlay,
+    body.leslie-modern .leslie-character-workshop {
+        padding: 0;
+    }
+
+    body.leslie-modern #leslie-memory-panel,
+    body.leslie-modern .leslie-character-workshop-panel {
+        width: 100dvw;
+        max-width: 100dvw;
+        height: 100dvh;
+        max-height: 100dvh;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    body.leslie-modern .leslie-memory-header,
+    body.leslie-modern .leslie-character-workshop-header {
+        min-height: calc(56px + env(safe-area-inset-top));
+        padding-top: env(safe-area-inset-top);
+    }
+
+    body.leslie-modern .leslie-memory-navigation {
+        background: var(--tg-layer-1);
+    }
+
+    body.leslie-modern .leslie-memory-content,
+    body.leslie-modern .leslie-character-workshop-main {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+}
+
+@media (pointer: coarse) {
+    body.leslie-modern :where(
+        .leslie-icon-button,
+        .leslie-header-memory-button,
+        .leslie-settings-close,
+        .leslie-settings-content-back,
+        .leslie-memory-icon-button,
+        .leslie-character-workshop-icon-button
+    ) {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.leslie-modern *,
+    body.leslie-modern *::before,
+    body.leslie-modern *::after {
+        scroll-behavior: auto !important;
+    }
+}
+
+@media (forced-colors: active) {
+    body.leslie-modern :where(
+        .leslie-conversation-item.is-active,
+        .leslie-settings-nav-item.active,
+        .leslie-memory-tab.active
+    ) {
+        border: 1px solid Highlight;
+    }
+}

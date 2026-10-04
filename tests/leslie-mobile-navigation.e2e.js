@@ -5,6 +5,10 @@ import { expect, test } from '@playwright/test';
 test.use({ channel: 'msedge' });
 
 async function preparePage(page) {
+    if (process.env.LESLIE_SYNTHETIC_SHOWCASE) {
+        await page.route('**/api/secrets/read', route => route.fulfill({ json: {} }));
+        await page.route('**/api/quick-replies/save', route => route.fulfill({ json: {} }));
+    }
     await page.route('**/api/horde/status', route => route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -79,6 +83,8 @@ test('mobile starts on contacts and enters a dedicated chat page', async ({ page
     await expect(shell).toHaveAttribute('aria-hidden', 'false');
     await expect(sidebar).toHaveAttribute('aria-hidden', 'true');
     await expect(page.locator('.leslie-mobile-back')).toBeVisible();
+    await expect(page.locator('[data-action="line-story"]')).toBeVisible();
+    await expect(page.locator('[data-action="line-reality"]')).toBeVisible();
     const messageChrome = await page.evaluate(() => {
         const probe = document.createElement('div');
         probe.className = 'mes';
@@ -105,7 +111,7 @@ test('mobile starts on contacts and enters a dedicated chat page', async ({ page
 });
 
 test('desktop keeps contacts and chat visible together', async ({ page }) => {
-    // This case also verifies that an existing explicit Cupertino preference survives.
+    // A saved old layout must migrate without disturbing ordinary chat.
     await page.addInitScript(() => localStorage.setItem('leslie.design.language', 'cupertino'));
     const consoleErrors = collectConsoleErrors(page);
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -116,21 +122,19 @@ test('desktop keeps contacts and chat visible together', async ({ page }) => {
     const shell = page.locator('#sheld');
     await expect(sidebar).toBeVisible();
     await expect(shell).toBeVisible();
-    await expect(page.locator('.leslie-sidebar-actions [data-leslie-privacy-quick-toggle]')).toBeVisible();
+    await expect(page.locator('.leslie-sidebar-actions')).toBeHidden();
     await expect(page.locator('#leslie-chat-actions [data-leslie-privacy-quick-toggle]')).toBeHidden();
-    await expect(sidebar).not.toHaveAttribute('aria-hidden', /.+/);
-    await expect(shell).not.toHaveAttribute('aria-hidden', /.+/);
+    await expect(sidebar).toHaveAttribute('aria-hidden', 'false');
+    await expect(shell).toHaveAttribute('aria-hidden', 'false');
     await expect(page.locator('.leslie-mobile-back')).toBeHidden();
-    await expect(page.locator('body')).toHaveAttribute('data-leslie-design-language', 'cupertino');
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-design-language', 'dreamland');
 
     // Chat actions are available after entering a conversation, not on the home page.
     await page.locator('#leslie-conversation-list .leslie-conversation-item').first().click();
     await expect(page.locator('#chat > .mes')).not.toHaveCount(0);
     await expect(page.locator('body')).not.toHaveClass(/leslie-chat-transitioning/);
 
-    const cupertinoMotion = await probeMessageMotion(page, true);
-    expect(cupertinoMotion.marked).toBe(true);
-    expect(cupertinoMotion.animations).toBeGreaterThan(0);
+    expect(await probeMessageMotion(page)).toEqual({ marked: false, animations: 0 });
 
     const chatMenuButton = page.locator('#leslie-chat-actions [data-action="chat-more"]');
     await chatMenuButton.click();
@@ -138,32 +142,18 @@ test('desktop keeps contacts and chat visible together', async ({ page }) => {
     await page.keyboard.press('Escape');
     await expect(page.locator('#leslie-chat-more-menu')).toBeHidden();
 
-    const appearanceButton = page.locator('.leslie-sidebar-actions .leslie-theme-toggle');
-    await appearanceButton.click();
-    await expect(page.locator('#leslie-theme-menu')).toBeVisible();
-    await expect(page.locator('#leslie-theme-menu [data-leslie-design-language="cupertino"]')).toHaveAttribute('aria-checked', 'true');
-    await page.locator('#leslie-theme-menu [data-leslie-theme-mode="light"]').click();
+    await page.locator('.dreamland-navigation [data-action="settings"]').click();
+    await page.locator('.leslie-settings-nav-item[data-leslie-settings-home]').click();
+    await expect(page.locator('#dreamland-language-select')).toHaveCount(0);
+    await page.locator('#leslie-display-mode-select').selectOption('light');
     await expect(page.locator('body')).toHaveAttribute('data-leslie-color-scheme', 'light');
-    expect(await page.evaluate(() => localStorage.getItem('leslie.theme.preference'))).toBe('light');
-
-    await appearanceButton.click();
-    await page.locator('#leslie-theme-menu [data-leslie-design-language="classic"]').click();
-    await expect(page.locator('body')).toHaveAttribute('data-leslie-design-language', 'classic');
-    expect(await page.evaluate(() => localStorage.getItem('leslie.design.language'))).toBe('classic');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.locator('#leslie-display-mode-select').selectOption('auto');
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-scheme', 'dark');
+    await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
+    await expect(page.locator('body')).toHaveAttribute('data-leslie-color-scheme', 'light');
+    await page.locator('.dreamland-navigation [data-action="home"]').click();
     expect(await probeMessageMotion(page)).toEqual({ marked: false, animations: 0 });
-
-    await appearanceButton.click();
-    await page.locator('#leslie-theme-menu [data-leslie-design-language="cupertino"]').click();
-    await expect(page.locator('body')).toHaveAttribute('data-leslie-design-language', 'cupertino');
-
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    expect(await probeMessageMotion(page)).toEqual({ marked: false, animations: 0 });
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-
-    await appearanceButton.click();
-    await page.locator('#leslie-theme-menu [data-leslie-theme-mode="auto"]').click();
-    await expect(page.locator('body')).toHaveAttribute('data-leslie-theme-preference', 'auto');
-    expect(await page.evaluate(() => localStorage.getItem('leslie.theme.preference'))).toBeNull();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: 'test-results/leslie-desktop-two-column.png', fullPage: true });
     expect(consoleErrors).toEqual([]);

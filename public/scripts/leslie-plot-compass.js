@@ -13,6 +13,8 @@ import {
     updateChatMetadata,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
+// The launcher needs the choices toolbar even when bootstrap imports run in parallel.
+import './leslie-story-choices.js';
 import { getWorldLineKind } from './leslie-reality-context.js';
 import { createStoryChoiceContextKey } from './leslie-story-choices-core.js';
 import {
@@ -180,7 +182,7 @@ function createLauncher() {
         launcher.type = 'button';
         launcher.dataset.storyAction = 'plot-compass';
         launcher.title = '结合当前剧情与记忆规划下一章长线发展';
-        launcher.innerHTML = '<i class="fa-solid fa-compass" aria-hidden="true"></i><span>剧情灵感</span>';
+        launcher.innerHTML = '<i class="fa-solid fa-compass" aria-hidden="true"></i><span>剧情指南</span>';
         actions.prepend(launcher);
     }
     launcher.addEventListener('click', openCompass);
@@ -353,11 +355,13 @@ function updateLauncher() {
     if (!launcher) {
         return;
     }
-    launcher.hidden = !isSoloStoryChat();
+    launcher.hidden = !selected_group && (this_chid === undefined || this_chid === null);
     launcher.disabled = false;
-    launcher.title = !isModelConnected()
-        ? '连接聊天模型后即可生成剧情灵感'
-        : '结合当前剧情与记忆规划下一章长线发展';
+    launcher.title = !isSoloStoryChat()
+        ? '剧情指南用于故事线中的单角色聊天，点击查看说明'
+        : !isModelConnected()
+            ? '连接聊天模型后即可生成剧情灵感'
+            : '结合当前剧情与记忆规划下一章长线发展';
 }
 
 function appendTextElement(parent, tagName, className, text) {
@@ -436,7 +440,7 @@ function renderDialog() {
         return;
     }
     dialog.classList.toggle('is-loading', state.loading);
-    refreshButton.disabled = state.loading || !isModelConnected();
+    refreshButton.disabled = state.loading || !isModelConnected() || !isSoloStoryChat();
     renderSuggestionCards();
     if (state.loading) {
         dialogStatus.textContent = state.correcting
@@ -604,11 +608,17 @@ async function generateSuggestions({ force = false } = {}) {
 }
 
 function openCompass() {
-    if (!dialog || !isSoloStoryChat()) {
+    if (!dialog) {
         return;
     }
     if (!dialog.open) {
         dialog.showModal();
+    }
+    if (!isSoloStoryChat()) {
+        clearSuggestions();
+        state.error = '剧情指南用于故事线中的单角色聊天。请切换到故事线并选择一个角色后再规划主线；当前聊天仍可正常使用。';
+        renderDialog();
+        return;
     }
     state.error = '';
     renderDialog();

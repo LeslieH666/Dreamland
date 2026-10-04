@@ -24,7 +24,8 @@ import { serverDirectory } from './server-directory.js';
 import { filterValidIpPatterns, getIpFromRequest } from './express-common.js';
 import { extensionsEnabledFeatureGuard } from './endpoints/extensions.js';
 import { resolveLeslieSessionStorage, resolveLeslieStorageRoot } from './leslie-demo-mode.js';
-import { getUnlockedUserSpace, hasUserVault } from './leslie-user-spaces/vault.js';
+import { getUnlockedUserSpace, hasUserVault, isUserSpaceBusy } from './leslie-user-spaces/vault.js';
+import { trackUserSpaceRequest } from './leslie-user-spaces/activity.js';
 
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
@@ -43,7 +44,7 @@ const TRUSTED_PROXIES = filterValidIpPatterns(getConfigValue('sso.trustedProxies
  * @type {Map<string, UserDirectoryList>}
  */
 const DIRECTORIES_CACHE = new Map();
-const PUBLIC_USER_AVATAR = '/img/default-user.png';
+const PUBLIC_USER_AVATAR = '/img/dreamland/icon-192.png';
 const COOKIE_SECRET_PATH = 'cookie-secret.txt';
 
 const STORAGE_KEYS = {
@@ -1057,6 +1058,7 @@ export async function setUserDataMiddleware(request, response, next) {
     }
 
     if (LESLIE_USER_SPACES && getUnlockedUserSpace() !== handle) {
+        if (isUserSpaceBusy()) return next();
         request.session.handle = null;
         request.session.version = null;
         request.session.leslieServerSession = null;
@@ -1090,6 +1092,8 @@ export async function setUserDataMiddleware(request, response, next) {
         request.session.version = getAccountVersion(user);
     }
 
+    // Account lookup yields to I/O. A seal may have started while it was pending.
+    if (LESLIE_USER_SPACES && getUnlockedUserSpace() !== handle) return next();
     const { demoMode, storageHandle } = resolveLeslieSessionStorage(bridgeRequest ? null : request.session, handle);
     const directories = getUserDirectories(storageHandle);
     request.user = {
@@ -1098,6 +1102,7 @@ export async function setUserDataMiddleware(request, response, next) {
         storageHandle,
         demoMode,
     };
+    if (LESLIE_USER_SPACES) trackUserSpaceRequest(request, response);
 
     // Touch the session if loading the home page
     if (request.method === 'GET' && request.path === '/') {
@@ -1119,6 +1124,7 @@ export function requireLoginMiddleware(request, response, next) {
     // while an encrypted user space is still locked; data-bearing routes only
     // receive request.user after setUserDataMiddleware binds the open space.
     if (!request.user && request.leslieBridge?.authenticated !== true) {
+        if (LESLIE_USER_SPACES && isUserSpaceBusy()) return response.sendStatus(503);
         return response.sendStatus(403);
     }
 

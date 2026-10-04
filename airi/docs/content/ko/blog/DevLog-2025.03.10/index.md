@@ -5,7 +5,7 @@ date: 2025-03-10
 ---
 
 <script setup>
-import customizableThemeColors from '../../../en/blog/DevLog-2025.03.10/assets/customizable-theme-colors.mp4'
+import customizableThemeColors from '../../../en/blog/DevLog-2025.03.05/assets/customizable-theme-colors.mp4'
 </script>
 
 ## 데자뷔

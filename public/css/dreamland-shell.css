@@ -66,33 +66,8 @@ body.leslie-modern[data-leslie-design-language="dreamland"] .mes_text :where(img
 body.leslie-modern[data-leslie-design-language="dreamland"]:not(.leslie-chat-layout-disabled) #form_sheld { background: var(--dl-canvas); border: 0; padding: 12px max(24px, calc((100% - 920px) / 2)) 20px; backdrop-filter: none; }
 body.leslie-modern[data-leslie-design-language="dreamland"]:not(.leslie-chat-layout-disabled) #send_form { border-radius: var(--dl-radius); min-height: 56px; }
 
-/* Moon uses a horizontal navigation and a quieter conversation column. */
-@media (min-width: 701px) {
-    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"] .dreamland-navigation {
-        position: fixed; inset: 0 0 auto 0; width: auto; height: 60px; flex-direction: row;
-        justify-content: flex-end; padding: 0 22px; gap: 8px; border-right: 0; border-bottom: 1px solid var(--dl-border);
-    }
-    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"] .dreamland-navigation::before { content: "DreamLand / 月幕"; margin-right: auto; color: var(--dl-text); font-size: 18px; letter-spacing: .04em; }
-    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"] .dreamland-navigation button { flex-direction: row; width: auto; padding: 8px 12px; font-size: 12px; min-height: 44px; }
-    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"] #leslie-conversation-sidebar { top: 60px; padding-left: 0; }
-    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"]:not(.leslie-chat-layout-disabled) #sheld { top: 60px; height: calc(100dvh - 60px); max-height: calc(100dvh - 60px); }
-    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"] #leslie-conversation-sidebar { padding-left: 0; padding-bottom: 72px; }
-    body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"] .dreamland-navigation { inset: auto 0 0; flex-direction: row; width: auto; height: 72px; padding: 8px 10px; justify-content: space-around; gap: 2px; border-right: 0; border-top: 1px solid var(--dl-border); }
-}
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"] #leslie-chat-header { min-height: 70px; flex-basis: 70px; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"] .leslie-sidebar-header { background: radial-gradient(ellipse at top left, var(--cu-blue-soft), transparent 80%), var(--dl-surface); min-height: 110px; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="moon"]:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { padding: 18px 22px; box-shadow: 0 6px 24px #00000009; }
-
-/* Paper keeps speaker tools and avatars, while prose reads as a book page. */
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"] .leslie-conversation-item { border-bottom: 1px solid var(--dl-border); border-radius: 0; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"]:not(.leslie-chat-layout-disabled) #chat { background: var(--dl-surface); gap: 24px; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"]:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { border: 0; border-bottom: 1px solid var(--dl-border); border-radius: 0; background: transparent; max-width: min(90%, 780px); }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"]:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block { border-left: 3px solid var(--dl-accent); background: var(--dl-soft); }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"] .mes_text { line-height: 2; font-size: 16px; }
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="paper"] .leslie-chat-name { font-family: var(--dl-reading-font); }
-
 /* Existing imported backgrounds stay owned by SillyTavern. Only visibility changes. */
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background]:not([data-dreamland-background="off"]) #bg1 { background-color: var(--dl-canvas); background-size: cover; background-position: center; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background]:not([data-dreamland-background="off"]) #bg1 { background-color: var(--dl-canvas); }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background]:not([data-dreamland-background="off"]):not(.leslie-chat-layout-disabled) #sheld { background: transparent; }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background="soft"]:not(.leslie-chat-layout-disabled) #chat { background: color-mix(in srgb, var(--dl-canvas) 94%, transparent); }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background="visible"]:not(.leslie-chat-layout-disabled) #chat { background: color-mix(in srgb, var(--dl-canvas) 72%, transparent); }

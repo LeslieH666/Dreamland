@@ -64,9 +64,9 @@ FLE 分为两种模式：
 
 <div class="flex flex-row gap-4">
 
-![之前](./assets/structure-before.avif)
+![之前](../../../en/blog/DevLog-2025.07.18/assets/structure-before.avif)
 
-![之后](./assets/structure-after.avif)
+![之后](../../../en/blog/DevLog-2025.07.18/assets/structure-after.avif)
 
 </div>
 

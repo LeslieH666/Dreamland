@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { promisify } from 'node:util';
 
 import storage from 'node-persist';
 import express from 'express';
@@ -11,17 +12,30 @@ import { flushUserStats, loadUserStats } from './stats.js';
 import { migrateGroupChatsMetadataFormat } from './groups.js';
 import { checkForNewContent } from './content-manager.js';
 import { migrateFlatSecrets } from './secrets.js';
+import { readLoginAppearance, readPreferences, saveLoginAppearance } from '../leslie-user-spaces/preferences.js';
 
 const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false, 'boolean');
 const PREFER_REAL_IP_HEADER = getConfigValue('rateLimiting.preferRealIpHeader', false, 'boolean');
 const LOGIN_POINTS = getConfigValue('rateLimiting.accountsLoginMaxAttempts', 5, 'number');
 const RECOVER_POINTS = getConfigValue('rateLimiting.accountsRecoverMaxAttempts', 5, 'number');
 const MFA_CACHE = new Cache(5 * 60 * 1000);
+const passwordHash = promisify(crypto.scrypt);
+const loginProgress = new Map();
+let openingSpace = false;
 
 const generateRecoveryCode = () => Array.from({ length: 6 }, () => crypto.randomInt(0, 10)).join('');
 
 export const router = express.Router();
-router.get('/mode', (_request, response) => response.json({ encryptedSpaces: areLeslieUserSpacesEnabled() }));
+router.get('/mode', (_request, response) => {
+    response.set('Cache-Control', 'no-store');
+    return response.json({ encryptedSpaces: areLeslieUserSpacesEnabled(), appearance: readLoginAppearance(globalThis.DATA_ROOT) });
+});
+router.get('/login-progress', (request, response) => {
+    response.set('Cache-Control', 'no-store');
+    const progress = loginProgress.get(request.query.operation);
+    if (!progress || progress.expires < Date.now()) return response.sendStatus(404);
+    return response.json(progress.value);
+});
 const loginLimiter = new RateLimiterMemory({
     points: LOGIN_POINTS > 0 ? LOGIN_POINTS : Number.MAX_SAFE_INTEGER,
     duration: 60,
@@ -51,6 +65,7 @@ router.post('/list', async (_request, response) => {
                         created: user.created,
                         avatar: avatar,
                         password: !!user.password,
+                        appearance: readLoginAppearance(globalThis.DATA_ROOT, user.handle),
                     }),
                 );
             }));
@@ -66,6 +81,12 @@ router.post('/list', async (_request, response) => {
 
 router.post('/login', async (request, response) => {
     let openedSpace = false;
+    let transition = false;
+    let progressStarted = false;
+    const operation = typeof request.body?.operation === 'string' && /^[a-f0-9-]{36}$/i.test(request.body.operation) ? request.body.operation : null;
+    const report = value => {
+        if (operation && progressStarted) loginProgress.set(operation, { value, expires: Date.now() + 5 * 60_000 });
+    };
     try {
         if (!request.body.handle) {
             console.warn('Login failed: Missing required fields');
@@ -92,7 +113,7 @@ router.post('/login', async (request, response) => {
             return response.status(403).json({ error: 'This user needs a password before login.' });
         }
 
-        if (user.password && (typeof request.body.password !== 'string' || user.password !== getPasswordHash(request.body.password, user.salt))) {
+        if (user.password && (typeof request.body.password !== 'string' || user.password !== (await passwordHash(request.body.password.normalize(), user.salt, 64)).toString('base64'))) {
             console.warn('Login failed: Incorrect password for', user.handle);
             return response.status(403).json({ error: 'Incorrect credentials' });
         }
@@ -104,10 +125,17 @@ router.post('/login', async (request, response) => {
 
         const sessionVersion = getAccountVersion(user);
         if (areLeslieUserSpacesEnabled()) {
+            if (openingSpace) return response.status(409).json({ error: '另一个空间正在打开，请稍后重试。' });
+            openingSpace = transition = true;
+            progressStarted = true;
+            for (const [id, progress] of loginProgress) if (progress.expires < Date.now()) loginProgress.delete(id);
+            if (loginProgress.size >= 64) loginProgress.delete(loginProgress.keys().next().value);
+            report({ phase: 'sealing', completed: 0, total: 0 });
             await flushUserStats();
             const alreadyOpen = getUnlockedUserSpace() === user.handle;
-            unlockUserSpace(globalThis.DATA_ROOT, user.handle, request.body.password);
+            await unlockUserSpace(globalThis.DATA_ROOT, user.handle, request.body.password, report);
             openedSpace = !alreadyOpen;
+            report({ phase: 'loading', completed: 0, total: 0 });
             const directories = getUserDirectories(user.handle);
             try {
                 await migrateSystemPrompts();
@@ -121,12 +149,17 @@ router.post('/login', async (request, response) => {
         }
 
         await loginLimiter.delete(ip);
+        try {
+            saveLoginAppearance(globalThis.DATA_ROOT, user.handle, readPreferences(getUserDirectories(user.handle).root).values);
+        } catch { /* Optional appearance recovery must not prevent login. */ }
         request.session.handle = user.handle;
         request.session.version = sessionVersion;
         stampLeslieLoginSession(request.session);
         console.info('Login successful:', user.handle, 'from', ip, 'at', new Date().toLocaleString());
+        report({ phase: 'ready', completed: 1, total: 1 });
         return response.json({ handle: user.handle });
     } catch (error) {
+        report({ phase: 'failed', completed: 0, total: 0 });
         if (error instanceof RateLimiterRes) {
             console.error('Login failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
             return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
@@ -135,13 +168,15 @@ router.post('/login', async (request, response) => {
         if (openedSpace) {
             try {
                 await flushUserStats();
-                sealActiveUserSpace(globalThis.DATA_ROOT);
+                await sealActiveUserSpace(globalThis.DATA_ROOT);
             } catch (sealError) {
                 console.error('Could not reseal the user space after login failed:', sealError);
             }
         }
         console.error('Login failed:', error);
         return response.status(500).json({ error: 'Could not open the user space. Please check the server log and retry.' });
+    } finally {
+        if (transition) openingSpace = false;
     }
 });
 

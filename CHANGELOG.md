@@ -6,6 +6,8 @@ All notable LeslieTavern-specific changes are documented in this file. The forma
 
 ### Added
 
+- Shared glass appearance sliders in Settings: transparency (0–100%) and Gaussian backdrop blur (0–48 px), with scrollable live previews and reset. Login cards and functional page headers share both values; chat headers keep the theme pink tint while other headers use the neutral surface. Real page content scrolls beneath the header and supplies its changing backdrop; functional headers no longer expose a static page wallpaper. Settings persist in the existing validated account preference map with login appearance hints and previous-record rollback; older records use defaults without migration.
+
 - Added a default-off experimental group-chat smart-speaker mode for existing permanent members. It combines explicit mentions, bounded character-card relevance, turn balance, recent-speaker penalties, existing talkativeness, and configurable reply caps while preserving forced replies, Swipe, native generation, and a fail-open natural-order fallback.
 - Added manually created current-chat temporary group roles backed only by versioned JSONL metadata. Active roles join normal prompt and speaker selection through hidden runtime adapters; dormant and archived roles retain Swipe, branch, and shared-memory attribution while remaining absent from the character library and permanent group data.
 - Added default-off model-assisted temporary-role review. One isolated bounded structured call can propose an editable new-role draft, an optionally immediate confirmed reply, and evidence-based retirement candidates, while schema validation, cooldowns, current-chat identity checks, and explicit confirmation prevent direct model creation or archival.

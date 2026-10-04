@@ -34,7 +34,7 @@ import {
     syncLesliePrivacyModeControls,
 } from './leslie-privacy-mode.js';
 import './leslie-voice-settings.js';
-import { presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from './dreamland-pages.js';
+import { navigateDreamlandPage, presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from './dreamland-pages.js';
 
 let settingsPageVisited = false;
 
@@ -1766,6 +1766,10 @@ function createSettingsOverlay() {
                     </div>
                     <div class="leslie-settings-navigation-group leslie-settings-navigation-advanced">
                         <span class="leslie-settings-navigation-label">${copy.advancedGroup}</span>
+                        <button type="button" class="leslie-settings-nav-item" data-leslie-settings-about>
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            <span><strong>关于 DreamLand</strong><small>版本、项目介绍与素材说明</small></span>
+                        </button>
                         <button type="button" class="leslie-settings-nav-item" data-leslie-settings-anchor="advanced" data-leslie-settings-page="advanced">
                             <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
                             <span><strong>${copy.advancedTitle}</strong><small>${copy.advancedBody}</small></span>
@@ -1814,13 +1818,34 @@ function createSettingsOverlay() {
                                     <select id="dreamland-decoration-select" data-dreamland-preference="decoration"><option value="subtle">显示</option><option value="off">关闭</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="dreamland-background-select">
-                                    <span><strong>聊天背景显示</strong><small>使用“背景”中导入的图片；角色图沿用角色卡</small></span>
+                                    <span><strong>聊天背景显示</strong><small>在下方“背景素材”选择图片；选择后自动开启显示</small></span>
                                     <select id="dreamland-background-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰背景</option></select>
                                 </label>
                                 <label class="leslie-quick-control" for="leslie-display-mode-select">
                                     <span><strong>明暗模式</strong><small>亮色、暗色或跟随系统；与登录页同步</small></span>
                                     <select id="leslie-display-mode-select"><option value="auto">跟随系统</option><option value="light">亮色</option><option value="dark">暗色</option></select>
                                 </label>
+                                <section class="dreamland-glass-settings" aria-labelledby="dreamland-glass-title">
+                                    <h4 id="dreamland-glass-title">磨砂玻璃效果</h4>
+                                    <p id="dreamland-glass-help">登录卡片与标题栏同步调节透明度和模糊；聊天栏保留主题粉色，其他标题栏使用白色。滚动内容从标题栏后方透出。</p>
+                                    <label for="dreamland-glass-transparency">标题栏透明度 <output for="dreamland-glass-transparency" data-dreamland-glass-value="glassTransparency">28%</output></label>
+                                    <input id="dreamland-glass-transparency" type="range" min="0" max="100" step="1" value="28" data-dreamland-preference="glassTransparency" aria-describedby="dreamland-glass-help dreamland-glass-transparency-help">
+                                    <small id="dreamland-glass-transparency-help">0% 为不透明，100% 为全透明；暗色模式对应深色底。</small>
+                                    <label for="dreamland-glass-blur">高斯模糊 <output for="dreamland-glass-blur" data-dreamland-glass-value="glassBlur">24 px</output></label>
+                                    <input id="dreamland-glass-blur" type="range" min="0" max="48" step="1" value="24" data-dreamland-preference="glassBlur" aria-describedby="dreamland-glass-help">
+                                    <div class="dreamland-glass-preview" role="group" aria-label="实时预览：滚动示例内容，查看白色功能页栏、粉色聊天栏与登录卡片">
+                                        <div class="dreamland-glass-preview-sample">
+                                            <div class="dreamland-glass-preview-white">功能页标题栏</div>
+                                            <div class="dreamland-glass-preview-scroll" tabindex="0" aria-label="白色标题栏滚动预览"><p>向上滚动，内容会经过标题栏后方。</p><p>朋友圈 · 今天的小小记录</p><p>透过玻璃看到的是当前页面内容。</p><p>调节模糊，比较文字与色块的变化。</p></div>
+                                        </div>
+                                        <div class="dreamland-glass-preview-sample">
+                                            <div class="dreamland-glass-preview-color">聊天标题栏 · 主题粉色</div>
+                                            <div class="dreamland-glass-preview-scroll" tabindex="0" aria-label="粉色聊天栏滚动预览"><p>聊天消息也会从标题栏后方经过。</p><p>透明度改变，主题粉色保持不变。</p><p>向上滚动观察高斯模糊效果。</p><p>文字和色块随滚动实时变化。</p></div>
+                                        </div>
+                                        <div class="dreamland-glass-preview-login-scene"><div class="dreamland-glass-preview-login"><strong>DreamLand</strong><span>登录卡片预览</span></div></div>
+                                    </div>
+                                    <button type="button" class="leslie-settings-secondary-button" data-dreamland-glass-reset>恢复默认效果</button>
+                                </section>
                                 <label class="leslie-quick-control" for="leslie-language-select">
                                     <span>
                                         <strong>${copy.language}</strong>
@@ -1843,6 +1868,7 @@ function createSettingsOverlay() {
                                     <input id="leslie-fast-ui" type="checkbox" role="switch">
                                 </label>
                             </div>
+                            ${renderSettingsRow({ target: 'backgrounds-button', icon: 'fa-solid fa-panorama', title: copy.backgroundTitle, body: copy.backgroundBody })}
                             <div class="dreamland-asset-health"><strong>BA 游戏素材</strong><p class="dreamland-ba-status" data-ba-asset-status aria-live="polite">正在检测本机素材…</p><button type="button" class="leslie-settings-secondary-button" data-ba-asset-retry>重新检测</button></div>
                         </section>
 
@@ -1898,7 +1924,6 @@ function createSettingsOverlay() {
                         <div class="leslie-advanced-preview" aria-hidden="true">
                             ${renderSettingsRow({ target: 'advanced-formatting-button', icon: 'fa-solid fa-code-branch', title: copy.promptTitle, body: copy.promptBody })}
                             ${renderSettingsRow({ target: 'extensions-settings-button', icon: 'fa-solid fa-cubes', title: copy.extensionsTitle, body: copy.extensionsBody })}
-                            ${renderSettingsRow({ target: 'backgrounds-button', icon: 'fa-solid fa-panorama', title: copy.backgroundTitle, body: copy.backgroundBody })}
                             ${renderSettingsRow({ target: 'user-settings-button', icon: 'fa-solid fa-sliders', title: copy.fullSettingsTitle, body: copy.fullSettingsBody })}
                         </div>
                         <div class="leslie-advanced-lock">
@@ -2104,6 +2129,10 @@ function closeSettings() {
  * @param {string} [afterOpenId] Optional original control to click after opening.
  */
 function openOriginalDrawer(targetId, afterOpenId) {
+    if (targetId === 'backgrounds-button' && usesDreamlandPages()) {
+        void navigateDreamlandPage('background');
+        return;
+    }
     const target = document.getElementById(targetId);
     const drawer = target?.querySelector('.drawer-content');
     const toggle = target?.querySelector('.drawer-toggle');
@@ -3041,6 +3070,11 @@ function initLeslieSettings() {
     });
     settingsOverlay.addEventListener('click', async (event) => {
         const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest('[data-leslie-settings-about]')) {
+            event.preventDefault();
+            navigateDreamlandPage('about');
+            return;
+        }
         const spaceAction = target?.closest('[data-leslie-space-activate], [data-leslie-space-create], [data-leslie-space-switch]');
         if (spaceAction) {
             event.preventDefault();

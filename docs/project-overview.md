@@ -58,6 +58,8 @@ Integrated source workspace
 
 ## Current maturity
 
+For UI work, read the [current UI design specification draft](ui-design-spec.md) alongside the implementation. It records the current MomoTalk layout, component semantics and the explicit rollback of raised settings menu tiles. The original design and appearance documents remain preserved as historical references; new visual changes require reconciliation with the user's latest accepted direction.
+
 The repository contains a runnable prototype with significant local verification. It is suitable for continued development and test distribution, but it is not yet a signed installer or a stable public release.
 
 See [roadmap.md](roadmap.md) for planned work and [data-and-packaging.md](data-and-packaging.md) for repository boundaries.

@@ -193,12 +193,12 @@ test('versioned writing skill uses one chat API for four quality-first stages', 
     const draft = buildDraftRequest({ mode: 'original' }, {}, blueprint);
     const review = buildReviewRequest({ mode: 'original' }, buildCompleteCard(), {}, { score: 100 }, { positive: 'adult portrait' }, blueprint);
 
-    assert.equal(LESLIE_CHARACTER_WRITING_SKILL.version, '1.2.0');
+    assert.equal(LESLIE_CHARACTER_WRITING_SKILL.version, '1.5.0');
     assert.match(brief.prompt, /阶段 1\/4/);
     assert.match(knowledge.prompt, /阶段 2\/4/);
     assert.match(knowledge.systemPrompt, /严禁编造网址/);
     assert.match(draft.prompt, /只创作一张/);
-    assert.match(draft.prompt, /4～8 组正例/);
+    assert.match(draft.prompt, /6～8 组正例/);
     assert.match(draft.prompt, /avatar_prompt/);
     assert.match(draft.prompt, /不生成图片数据/);
     assert.match(draft.prompt, /structuredInput/);

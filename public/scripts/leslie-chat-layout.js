@@ -183,12 +183,11 @@ function createSidebar() {
             <div class="leslie-sidebar-actions"></div>
         </header>
         <nav class="dreamland-navigation" aria-label="DreamLand 导航">
-            <button type="button" data-action="home" title="归处"><i class="fa-solid fa-house" aria-hidden="true"></i><span>归处</span></button>
+            <button type="button" data-action="home" title="首页"><i class="fa-solid fa-house" aria-hidden="true"></i><span>首页</span></button>
+            <button type="button" data-action="chat" title="继续最近的聊天"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i><span>聊天</span></button>
             <button type="button" data-action="moments" title="朋友圈"><i class="fa-solid fa-camera-retro" aria-hidden="true"></i><span>朋友圈</span></button>
             <button type="button" data-action="workshop" title="角色工坊"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>工坊</span></button>
-            <button type="button" data-action="background" title="导入或选择背景"><i class="fa-solid fa-image" aria-hidden="true"></i><span>背景</span></button>
             <button type="button" data-action="settings" title="设置"><i class="fa-solid fa-sliders" aria-hidden="true"></i><span>设置</span></button>
-            <button type="button" data-action="about" title="关于 DreamLand"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>关于</span></button>
         </nav>
         <div class="leslie-sidebar-tools">
             <label class="leslie-conversation-search" for="leslie-conversation-search">
@@ -980,13 +979,22 @@ function updateConnectionState() {
         detail.textContent = checking ? '正在读取设置并验证服务，请稍候' : connected ? '点击查看当前模型设置' : configured ? '点击连接或检查模型' : '点击选择 API 并完成配置';
     }
     const sendTextarea = document.getElementById('send_textarea');
-    if (sendTextarea instanceof HTMLTextAreaElement) {
+    if (sendTextarea instanceof HTMLTextAreaElement && usesDreamlandPages()) {
+        syncComposerPlaceholder();
+    } else if (sendTextarea instanceof HTMLTextAreaElement) {
         sendTextarea.dataset.leslieConnectedPlaceholder ||= sendTextarea.placeholder;
         sendTextarea.placeholder = connected
             ? sendTextarea.dataset.leslieConnectedPlaceholder
             : checking ? '正在检测 API 连接…' : configured ? 'API 已配置，请先连接模型' : '尚未配置 API，点击左下角开始设置';
     }
     updateHeader();
+}
+
+function syncComposerPlaceholder() {
+    const textarea = document.getElementById('send_textarea');
+    if (usesDreamlandPages() && textarea instanceof HTMLTextAreaElement && textarea.placeholder !== '输入消息…') {
+        textarea.placeholder = '输入消息…';
+    }
 }
 
 function relocateMemoryLauncher() {
@@ -1116,9 +1124,9 @@ async function selectConversation(button) {
 }
 
 async function handleAction(action) {
-    if (usesDreamlandPages() && ['home', 'moments', 'workshop', 'background', 'settings', 'about'].includes(action)) {
+    if (usesDreamlandPages() && ['home', 'chat', 'moments', 'workshop', 'background', 'settings', 'about'].includes(action)) {
         if (navigateDreamlandPage(action)) {
-            if (action === 'home' && getActiveEntity() && isMobileLayout()) setMobileView('chat', { historyMode: 'replace' });
+            if (action === 'chat' && isMobileLayout()) setMobileView('chat', { historyMode: 'replace' });
             return;
         }
     }
@@ -1291,6 +1299,13 @@ function bindShellEvents() {
     if (connectionIcon) {
         new MutationObserver(updateConnectionState).observe(connectionIcon, { attributes: true, attributeFilter: ['class', 'title'] });
     }
+    const composer = document.getElementById('send_textarea');
+    if (composer) {
+        // Keep upstream generation/connection checks intact; only the BA input
+        // hint stays neutral when those checks rewrite its placeholder.
+        new MutationObserver(syncComposerPlaceholder).observe(composer, { attributes: true, attributeFilter: ['placeholder'] });
+        syncComposerPlaceholder();
+    }
     document.addEventListener('input', (event) => {
         if (event.target instanceof HTMLElement && event.target.closest('#openai_api, #textgenerationwebui_api, #kobold_api')) {
             updateConnectionState();
@@ -1302,6 +1317,9 @@ function bindShellEvents() {
         }
     });
     document.addEventListener('leslie:home-state-changed', updateHeader);
+    document.addEventListener('dreamland:chat-resumed', () => {
+        if (isMobileLayout()) setMobileView('chat', { historyMode: 'replace' });
+    });
     const chat = document.getElementById('chat');
     if (chat) {
         new MutationObserver(readLatestMessagePreview).observe(chat, { childList: true, subtree: true, characterData: true });

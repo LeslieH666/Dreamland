@@ -24,7 +24,7 @@ def download(url):
         return response.read()
 
 
-def install(bundle_path=None, originals=None):
+def install(bundle_path=None, originals=None, library=None):
     from PIL import Image, ImageChops, ImageOps
     import UnityPy
 
@@ -37,6 +37,7 @@ def install(bundle_path=None, originals=None):
         if digest(bundle) != manifest['bundle']['sha256']:
             raise ValueError('The downloaded bundle does not match the pinned artwork version.')
         env = UnityPy.load(bundle)
+        extra_bundles = {}
         textures, atlases = {}, {}
         for obj in env.objects:
             if obj.type.name == 'Texture2D':
@@ -54,11 +55,46 @@ def install(bundle_path=None, originals=None):
                 raise ValueError('Asset names must be plain file names.')
             destination = stage / file
             if asset['kind'] == 'game-sprite':
-                sprite = atlases[asset['atlas']][asset['sprite']['name']]
+                asset_atlases, asset_textures = atlases, textures
+                if asset.get('bundle'):
+                    source = asset['bundle']
+                    if source['sha256'] not in extra_bundles:
+                        local = Path(library) / 'bundles' / source['path'] if library else None
+                        data = local.read_bytes() if local else download(source['url'])
+                        if digest(data) != source['sha256']:
+                            raise ValueError(f'Atlas bundle checksum mismatch: {file}')
+                        extra_bundles[source['sha256']] = UnityPy.load(data)
+                    asset_atlases, asset_textures = {}, {}
+                    for obj in extra_bundles[source['sha256']].objects:
+                        if obj.type.name == 'Texture2D':
+                            texture = obj.read()
+                            asset_textures[texture.m_Name] = texture.image
+                        elif obj.type.name == 'MonoBehaviour':
+                            atlas = obj.read_typetree()
+                            if atlas.get('m_Name') == asset['atlas'] and 'mSprites' in atlas:
+                                asset_atlases[asset['atlas']] = {s['name']: s for s in atlas['mSprites']}
+                sprite = asset_atlases[asset['atlas']][asset['sprite']['name']]
                 if sprite != asset['sprite']:
                     raise ValueError(f'Sprite metadata changed: {file}')
                 x, y, w, h = (sprite[key] for key in ('x', 'y', 'width', 'height'))
-                textures[asset['atlas']].crop((x, y, x+w, y+h)).save(destination)
+                asset_textures[asset['atlas']].crop((x, y, x+w, y+h)).save(destination)
+            elif asset['kind'] == 'project-generated':
+                # Generated project artwork ships in Git, not the game CDN.
+                # Validate/preserve that tracked source during a pack restoration.
+                destination.write_bytes((target / file).read_bytes())
+            elif asset['kind'] == 'game-texture':
+                source = asset['bundle']
+                if source['sha256'] not in extra_bundles:
+                    local = Path(library) / 'bundles' / source['path'] if library else None
+                    data = local.read_bytes() if local else download(source['url'])
+                    if digest(data) != source['sha256']:
+                        raise ValueError(f'Texture bundle checksum mismatch: {file}')
+                    extra_bundles[source['sha256']] = UnityPy.load(data)
+                texture = next(obj for obj in extra_bundles[source['sha256']].objects
+                               if obj.type.name == 'Texture2D' and str(obj.path_id) == asset['pathId']).read()
+                if texture.m_Name != asset['texture']:
+                    raise ValueError(f'Texture identity mismatch: {file}')
+                texture.image.save(destination)
             elif asset['kind'] == 'game-background':
                 data = (Path(originals) / file).read_bytes() if originals else download(asset['url'])
                 if digest(data, 'md5') != asset['md5']:
@@ -116,6 +152,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bundle', help='Use an already downloaded pinned bundle (checksum verified).')
     parser.add_argument('--originals', help='Use already downloaded backgrounds (checksum verified).')
+    parser.add_argument('--library', help='Use additional texture bundles from the pinned local UI library (checksum verified).')
     args = parser.parse_args()
     (ROOT / 'Cache').mkdir(exist_ok=True)
-    install(args.bundle, args.originals)
+    install(args.bundle, args.originals, args.library)

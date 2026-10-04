@@ -43,8 +43,10 @@ function synchronizeAccessibility() {
     shell?.setAttribute('aria-hidden', String(!chatVisible));
     sidebar?.toggleAttribute('inert', mobile && Boolean(active || chatVisible));
     sidebar?.setAttribute('aria-hidden', String(mobile && Boolean(active || chatVisible)));
+    const navigationPage = ['background', 'about'].includes(active?.name) ? 'settings'
+        : (active?.name ?? (document.body.classList.contains('leslie-home-open') ? 'home' : 'chat'));
     navigation?.querySelectorAll('[data-action]').forEach(button => {
-        const selected = button.dataset.action === (active?.name ?? 'home');
+        const selected = button.dataset.action === navigationPage;
         if (selected) button.setAttribute('aria-current', 'page');
         else button.removeAttribute('aria-current');
     });
@@ -110,7 +112,12 @@ export function returnToDreamlandChat(name, { historyMode = 'replace' } = {}) {
 
 export function navigateDreamlandPage(name, { historyMode = 'push' } = {}) {
     if (!usesDreamlandPages()) return false;
-    if (name === 'home' || name === 'chat') return returnToDreamlandChat(undefined, { historyMode });
+    if (name === 'chat') {
+        returnToDreamlandChat(undefined, { historyMode });
+        void import('./welcome-screen.js').then(module => module.resumeLeslieRecentChat(() => !active))
+            .catch(() => globalThis.toastr?.error('无法打开最近的聊天，请从左侧选择角色。'));
+        return true;
+    }
     const open = pages.get(name);
     if (!open) return false;
     try {
@@ -140,15 +147,66 @@ function restoreMountedViews() {
 }
 
 function setupStaticPages() {
+    const home = document.createElement('section');
+    home.className = 'dreamland-content-page dreamland-home-page';
+    home.hidden = true;
+    home.innerHTML = '<header><h1>首页</h1></header><div class="dreamland-home-content"></div>';
+    document.body.append(home);
+    let homeRequest = 0;
+    registerDreamlandPage('home', () => {
+        presentDreamlandPage('home', home);
+        const request = ++homeRequest;
+        void import('./welcome-screen.js')
+            .then(module => module.renderLeslieNavigationHome(home.querySelector('.dreamland-home-content'), () => active?.name === 'home' && request === homeRequest))
+            .catch(() => {
+                if (active?.name === 'home' && request === homeRequest) {
+                    returnToDreamlandChat();
+                    globalThis.toastr?.error('首页暂时无法加载，已返回聊天。');
+                }
+            });
+    });
     const about = document.createElement('section');
     about.className = 'dreamland-content-page';
     about.hidden = true;
     about.innerHTML = `<header><h1>关于 DreamLand</h1></header><article class="dreamland-about"><img src="${DREAMLAND_BRAND.icon}" width="64" height="64" alt=""><h2>DreamLand</h2><p>${DREAMLAND_BRAND.tagline}</p><p>${DREAMLAND_BRAND.introduction}</p><h3>MomoTalk · Blue Archive</h3><p>${BLUE_ARCHIVE_NOTICE}</p><a href="${DREAMLAND_BRAND.feedback}" target="_blank" rel="noopener noreferrer">项目反馈与素材联系</a></article>`;
     document.body.append(about);
+    const aboutBack = document.createElement('button');
+    aboutBack.type = 'button';
+    aboutBack.className = 'leslie-settings-secondary-button';
+    aboutBack.textContent = '返回设置';
+    aboutBack.addEventListener('click', () => navigateDreamlandPage('settings'));
+    about.querySelector('header').append(aboutBack);
     registerDreamlandPage('about', () => presentDreamlandPage('about', about));
     const background = document.getElementById('Backgrounds');
+    if (background) {
+        const toolbar = document.createElement('div');
+        toolbar.className = 'dreamland-background-toolbar';
+        toolbar.innerHTML = '<button type="button" class="leslie-settings-secondary-button" data-background-back><i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>返回外观设置</span></button><label for="dreamland-background-page-select">聊天背景显示<select id="dreamland-background-page-select" data-dreamland-preference="background"><option value="off">纯色界面</option><option value="soft">柔和遮罩</option><option value="visible">清晰背景</option></select></label><button type="button" class="leslie-settings-primary-button" data-background-preview>查看聊天</button>';
+        toolbar.querySelector('[data-background-back]').addEventListener('click', () => void navigateDreamlandPage('settings'));
+        toolbar.querySelector('[data-background-preview]').addEventListener('click', () => void navigateDreamlandPage('chat'));
+        background.prepend(toolbar);
+        // Native controls keep owning image selection, uploads and chat locks.
+        // Observe their actual result rather than duplicating their click logic.
+        const layer = document.getElementById('bg1');
+        const notifyBackgroundSelected = () => {
+            if (usesDreamlandPages() && active?.name === 'background' && layer.style.backgroundImage) {
+                document.dispatchEvent(new CustomEvent('dreamland:background-selected'));
+            }
+        };
+        if (layer) {
+            new MutationObserver(notifyBackgroundSelected).observe(layer, { attributes: true, attributeFilter: ['style'] });
+            // Re-selecting the same image may not mutate its inline style.
+            background.addEventListener('click', event => {
+                const target = event.target instanceof Element ? event.target : null;
+                if (!target?.closest('.bg_example[bgfile]') || target.closest('.jg-button, .mobile-only-menu-toggle') || background.classList.contains('bg-selection-mode')) return;
+                queueMicrotask(notifyBackgroundSelected);
+            });
+        }
+    }
     registerDreamlandPage('background', () => {
         if (!background) throw new Error('Background controls unavailable');
+        const mode = background.querySelector('[data-dreamland-preference="background"]');
+        if (mode) mode.value = document.body.dataset.dreamlandBackground || 'off';
         presentDreamlandPage('background', background);
     });
 }
@@ -161,6 +219,9 @@ export function syncDreamlandPages() {
         navigationAnchor = document.createComment('DreamLand navigation');
         navigation.before(navigationAnchor);
         setupStaticPages();
+        document.addEventListener('leslie:home-state-changed', () => {
+            if (usesDreamlandPages()) synchronizeAccessibility();
+        });
         window.addEventListener('popstate', event => {
             if (usesDreamlandPages()) navigateDreamlandPage(event.state?.dreamlandPage ?? 'chat', { historyMode: 'none' });
         });
@@ -180,8 +241,8 @@ export function syncDreamlandPages() {
     const home = navigation.querySelector('[data-action="home"]');
     if (usesDreamlandPages()) {
         if (navigation.parentElement !== document.body) document.body.append(navigation);
-        home.querySelector('span').textContent = '聊天';
-        home.title = '聊天与首页';
+        home.querySelector('span').textContent = '首页';
+        home.title = '首页';
         synchronizeAccessibility();
     } else {
         leaveCurrent();
@@ -189,8 +250,8 @@ export function syncDreamlandPages() {
         delete document.body.dataset.dreamlandPage;
         restoreMountedViews();
         navigationAnchor.after(navigation);
-        home.querySelector('span').textContent = '归处';
-        home.title = '归处';
+        home.querySelector('span').textContent = '首页';
+        home.title = '首页';
         // Let the shared mobile layout reapply its accessibility state.
         document.dispatchEvent(new CustomEvent('dreamland:page-layout-changed'));
     }

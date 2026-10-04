@@ -1,8 +1,9 @@
 /** One MomoTalk layout with rose controls, scenery and display mode. */
-import { APPEARANCE_KEYS, readAppearance, writeAppearance } from './dreamland-appearance-core.js';
+import { APPEARANCE_KEYS, GLASS_RANGES, readAppearance, writeAppearance } from './dreamland-appearance-core.js';
 import { normalizePalette, applyDreamlandPalette } from './dreamland-palette.js';
 import { syncBaAppearance } from './dreamland-ba-assets.js';
 import { syncDreamlandPages } from './dreamland-pages.js';
+import { applyGlassAppearance, clearGlassAppearance } from './dreamland-glass.js';
 
 const MODE_KEY = 'leslie.theme.preference';
 const PALETTE_KEY = 'leslie.color.palette';
@@ -93,6 +94,7 @@ function toggleMenu(anchor) {
     menu.style.top = Math.max(8, Math.min(bounds.bottom + 6, innerHeight - size.height - 8)) + 'px';
 }
 function syncControls() {
+    applyGlassAppearance(document.body, storage());
     syncBaAppearance();
     syncDreamlandPages();
     const mode = document.body.dataset.leslieThemePreference || readMode();
@@ -110,8 +112,9 @@ function syncControls() {
         if (select) select.value = value;
     }
     for (const key of Object.keys(APPEARANCE_KEYS)) {
-        const select = document.getElementById('dreamland-' + key + '-select');
-        if (select) select.value = document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] || readAppearance(storage(), key);
+        for (const select of document.querySelectorAll(`[data-dreamland-preference="${key}"]`)) {
+            select.value = document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] || readAppearance(storage(), key);
+        }
     }
 }
 function initialize() {
@@ -143,11 +146,31 @@ document.addEventListener('change', event => {
 document.addEventListener('pointerdown', event => {
     if (event.target instanceof Element && !event.target.closest('#leslie-theme-menu, .leslie-theme-toggle')) closeMenu();
 }, true);
+document.addEventListener('input', event => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !GLASS_RANGES[target.dataset.dreamlandPreference]) return;
+    const key = target.dataset.dreamlandPreference;
+    document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] = writeAppearance(storage(), key, target.value);
+    applyGlassAppearance(document.body, storage());
+}, true);
+document.addEventListener('click', event => {
+    if (!(event.target instanceof Element) || !event.target.closest('[data-dreamland-glass-reset]')) return;
+    for (const [key, range] of Object.entries(GLASS_RANGES)) {
+        document.body.dataset['dreamland' + key[0].toUpperCase() + key.slice(1)] = writeAppearance(storage(), key, range.default);
+    }
+    applyGlassAppearance(document.body, storage());
+});
 document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
 document.addEventListener('dreamland:appearance-ready', syncControls);
+document.addEventListener('dreamland:background-selected', () => {
+    if (document.body.dataset.dreamlandBackground !== 'off') return;
+    document.body.dataset.dreamlandBackground = writeAppearance(storage(), 'background', 'visible');
+    syncControls();
+});
 window.addEventListener('resize', closeMenu);
 window.addEventListener('storage', event => {
     if (event.key === null || event.key?.startsWith('leslie.') || event.key?.startsWith('dreamland.appearance.')) {
+        clearGlassAppearance(document.body);
         for (const key of ['leslieThemePreference', 'leslieColorPalette', 'dreamlandDecoration', 'dreamlandBackground']) delete document.body.dataset[key];
         applyAppearance();
     }

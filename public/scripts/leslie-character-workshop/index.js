@@ -24,7 +24,6 @@ import {
     formatAvatarPrompt,
     normalizeAvatarPrompt,
     normalizeCharacterCard,
-    normalizeCreativeBrief,
     normalizeKnowledgeCheck,
     parseStructuredResponse,
     protectRoleMacrosForGeneration,
@@ -37,6 +36,7 @@ import {
     buildReviewRequest,
     LESLIE_CHARACTER_WRITING_SKILL,
 } from './writing-skill.js';
+import { buildRehearsalScenesRequest, createRehearsalSession, validateRehearsalReply, buildRehearsalFollowupRequest, normalizeRehearsalFollowup, buildRehearsalAuditRequest, normalizeRehearsalAudit, withRehearsalExamples, preserveRehearsalExamples } from './rehearsal.js';
 import { parseCharacterCardJsonText } from './importer.js';
 import {
     WORKSHOP_PROVIDER,
@@ -48,12 +48,21 @@ import {
     probeLocalWorkshopProvider,
 } from './provider.js';
 import {
+    CHARACTER_BLUEPRINT_SECTIONS,
     assessBlueprintFidelity,
     buildCharacterBlueprintPrompt,
     normalizeCharacterBlueprint,
     renderCharacterBlueprintMarkup,
 } from './blueprint.js';
 import { isLocalModelLoadingEnabled } from '../leslie-local-model-core.js';
+import { accountStorage } from '../util/AccountStorage.js';
+import { buildRandomWorkshopInput, RANDOM_FIELDS, readRandomPreferences, saveRandomPreferences } from './random.js';
+import { createWorkshopNameHistory, generateUniqueWorkshopBrief, withChosenWorkshopName, assertChosenWorkshopName } from './names.js';
+import { initializeBlueprintSteps } from './blueprint-steps.js';
+import { toggleAppearanceChoice, syncAppearanceChoices } from './appearance.js';
+import { buildRevisionRequest, prepareRevision, assertRevisionCurrent } from './revision.js';
+
+const workshopNameHistory = createWorkshopNameHistory();
 
 const STAGES = ['brief', 'research', 'draft', 'review', 'ready'];
 const PREVIEW_FIELDS = [
@@ -91,11 +100,55 @@ const state = {
     abortController: null,
     blueprint: normalizeCharacterBlueprint({}),
     manuallyEdited: false,
+    rehearsal: null,
     avatarFiles: null,
     avatarPreviewUrl: '',
+    chosenName: '',
+    revisionProposal: null,
 };
 
 let overlay;
+let blueprintSteps;
+
+function createRandomControls() {
+    const controls = document.createElement('div');
+    controls.className = 'leslie-workshop-random';
+    controls.innerHTML = '<button type="button" data-workshop-action="random" class="leslie-random-card" title="随机角色卡" aria-label="随机生成角色卡"><img src="/img/blue-archive/bundled/Event_Icon_CardShop.png" alt=""></button><button type="button" data-workshop-action="random-preferences" class="leslie-random-options" title="角色偏好 / XP" aria-label="设置随机角色偏好"><img src="/img/blue-archive/bundled/Event_Icon_MinigameOption.png" alt=""></button>';
+    const panel = document.createElement('section');
+    panel.className = 'leslie-random-preferences';
+    panel.hidden = true;
+    panel.setAttribute('aria-label', '随机角色偏好 / XP');
+    panel.innerHTML = '<header><strong>角色偏好 / XP</strong><button type="button" data-workshop-action="random-preferences-close" aria-label="关闭偏好">×</button></header><p>选择的内容必须保留，其余随机构思。与下方创作表单独立。</p><div class="leslie-random-fields"></div><label>必须包含<textarea data-random-include maxlength="1200" rows="2"></textarea></label><label>排除内容<textarea data-random-exclude maxlength="1200" rows="2"></textarea></label><footer><button type="button" data-workshop-action="random-preferences-reset">恢复默认</button><button type="button" data-workshop-action="random-preferences-save">保存偏好</button></footer>';
+    for (const field of RANDOM_FIELDS) {
+        const label = document.createElement('label');
+        label.textContent = field.label;
+        const input = document.createElement(field.options ? 'select' : 'input');
+        input.dataset.randomField = field.key;
+        if (field.options) {
+            input.add(new Option('不限，随机构思', ''));
+            for (const option of field.options) input.add(new Option(option, option));
+        } else { input.maxLength = 300; input.placeholder = '不限，随机构思'; }
+        label.append(input);
+        panel.querySelector('.leslie-random-fields').append(label);
+    }
+    overlay.querySelector('.leslie-character-workshop-panel').append(controls, panel);
+}
+
+function openRandomPreferences() {
+    const preferences = readRandomPreferences(accountStorage);
+    overlay.querySelectorAll('[data-random-field]').forEach(input => { input.value = preferences.fields[input.dataset.randomField] || ''; });
+    query('[data-random-include]').value = preferences.mustInclude;
+    query('[data-random-exclude]').value = preferences.exclude;
+    query('.leslie-random-preferences').hidden = false;
+    query('[data-random-field]').focus();
+}
+
+function saveRandomControls(reset = false) {
+    const fields = Object.fromEntries([...overlay.querySelectorAll('[data-random-field]')].map(input => [input.dataset.randomField, input.value]));
+    saveRandomPreferences(accountStorage, reset ? {} : { version: 1, fields, mustInclude: query('[data-random-include]').value, exclude: query('[data-random-exclude]').value });
+    query('.leslie-random-preferences').hidden = true;
+    query('[data-workshop-action="random"]').focus();
+}
 
 function createWorkshopMarkup() {
     const element = document.createElement('section');
@@ -220,6 +273,11 @@ function createWorkshopMarkup() {
                         <div class="leslie-character-workshop-knowledge" data-workshop-knowledge></div>
                     </section>
 
+                    <section class="leslie-character-workshop-result" data-workshop-section="rehearsal" hidden>
+                        <div class="leslie-character-workshop-section-heading"><div><span>演</span><div><h3>你来演这个角色</h3><p>AI 当玩家，你写角色的回应。三组各聊两轮；你的原话会保留在终版示例里。</p></div></div></div>
+                        <div data-workshop-rehearsal></div>
+                    </section>
+
                     <section class="leslie-character-workshop-result" data-workshop-section="quality" hidden>
                         <div class="leslie-character-workshop-section-heading"><div><span>04</span><div><h3>质量审校</h3><p>模型复审与本地硬规则同时通过，才会进入最终预览。</p></div></div></div>
                         <div data-workshop-quality></div>
@@ -230,6 +288,20 @@ function createWorkshopMarkup() {
                         <div class="leslie-character-workshop-preview" data-workshop-preview></div>
                     </section>
 
+                    <section class="leslie-character-workshop-result" data-workshop-section="revision" hidden>
+                        <details class="leslie-workshop-revision">
+                            <summary>局部修改 · 外貌 / 图片提示词</summary>
+                            <p>先生成修改方案，确认后才更新草稿。外貌只替换角色描述中的对应片段，其他角色字段保留。</p>
+                            <label>修改范围<select data-revision-scope><option value="appearance">外貌与图片提示词</option><option value="avatar">仅图片提示词</option></select></label>
+                            <label>想怎么改<textarea data-revision-instruction rows="3" maxlength="2000" placeholder="例如：把黑色短发改成银白长发，衣服换成深蓝外套；其他设定不动。"></textarea></label>
+                            <button type="button" class="leslie-character-workshop-button is-primary" data-workshop-action="propose-revision" title="仅生成所选范围的修改方案，查看前后差异后再决定是否应用">生成局部修改方案</button>
+                            <div data-revision-proposal hidden></div>
+                            <div class="leslie-workshop-revision-actions" data-revision-confirm hidden>
+                                <button type="button" class="leslie-character-workshop-button is-primary" data-workshop-action="accept-revision">应用这次局部修改</button>
+                                <button type="button" class="leslie-character-workshop-button is-quiet" data-workshop-action="reject-revision">撤回方案，保留原稿</button>
+                            </div>
+                        </details>
+                    </section>
                     <section class="leslie-character-workshop-result" data-workshop-section="avatar" hidden>
                         <div class="leslie-character-workshop-section-heading"><div><span>IMG</span><div><h3>角色头像</h3><p>可以直接上传照片，也可以复制 AI 提供的提示词去其他图片工具生成。</p></div></div></div>
                         <div class="leslie-character-workshop-avatar-upload">
@@ -255,12 +327,14 @@ function createWorkshopMarkup() {
             <footer class="leslie-character-workshop-footer">
                 <span data-workshop-footer-note>写作规则 ${LESLIE_CHARACTER_WRITING_SKILL.version} · 只生成一张</span>
                 <div>
+                    <button type="button" class="leslie-character-workshop-button is-danger" data-workshop-action="discard" title="放弃当前未保存草稿，清空填写内容并重新开始">放弃并清空</button>
                     <button type="button" class="leslie-character-workshop-button is-quiet" data-workshop-action="manual">改用手动创建</button>
                     <button type="button" class="leslie-character-workshop-button is-quiet" data-workshop-action="download" hidden>下载 JSON 草稿</button>
                     <button type="button" class="leslie-character-workshop-button is-quiet" data-workshop-action="copy-avatar" hidden>复制头像提示词</button>
                     <button type="button" class="leslie-character-workshop-button is-quiet" data-workshop-action="review" hidden>可选：让 AI 再审校</button>
                     <button type="button" class="leslie-character-workshop-button is-danger" data-workshop-action="cancel" hidden>停止创作</button>
-                    <button type="button" class="leslie-character-workshop-button is-primary" data-workshop-action="generate">开始深度创作</button>
+                    <button type="button" class="leslie-character-workshop-button is-primary" data-workshop-action="generate">全自动创作</button>
+                    <button type="button" class="leslie-character-workshop-button is-primary" data-workshop-action="rehearse">先试演三个场景</button>
                     <button type="button" class="leslie-character-workshop-button is-primary" data-workshop-action="apply" hidden>带入角色编辑器</button>
                 </div>
             </footer>
@@ -280,7 +354,7 @@ function setHidden(selector, hidden) {
 }
 
 function assessWorkshopCard(card, context = {}) {
-    const review = assessCharacterCard(card, context);
+    const review = assessCharacterCard(card, { ...context, requireWorkshopExamples: !state.manuallyEdited && Boolean(context.brief) });
     if (state.manuallyEdited) {
         return review;
     }
@@ -369,23 +443,36 @@ function clearError() {
 
 function setRunning(running) {
     state.running = running;
-    query('[data-workshop-action="generate"]').hidden = running || Boolean(state.finalCard);
+    const rehearsing = Boolean(state.rehearsal && !state.finalCard);
+    overlay.querySelectorAll('[data-workshop-action^="random"]').forEach(button => { button.disabled = running || rehearsing; });
+    query('[data-workshop-action="random"]').setAttribute('aria-busy', String(running));
+    query('[data-workshop-action="generate"]').hidden = running || rehearsing || Boolean(state.finalCard);
+    query('[data-workshop-action="rehearse"]').hidden = running || rehearsing || Boolean(state.finalCard);
+    overlay.querySelectorAll('[data-rehearsal-action], [data-rehearsal-reply]').forEach(control => { control.disabled = running; });
     query('[data-workshop-action="cancel"]').hidden = !running;
     query('[data-workshop-action="manual"]').disabled = running;
     query('[data-workshop-action="close"]').disabled = running;
-    query('[data-workshop-prompt]').disabled = running;
-    query('[data-workshop-mode]').disabled = running;
-    query('[data-workshop-provider]').disabled = running;
-    query('[data-workshop-knowledge-check]').disabled = running;
+    query('[data-workshop-prompt]').disabled = running || rehearsing;
+    query('[data-workshop-mode]').disabled = running || rehearsing;
+    query('[data-workshop-provider]').disabled = running || rehearsing;
+    query('[data-workshop-knowledge-check]').disabled = running || rehearsing;
     overlay.querySelectorAll('[data-workshop-field]').forEach(field => {
-        field.disabled = running;
+        field.disabled = running || rehearsing;
     });
-    query('[data-workshop-import-json]').disabled = running;
-    query('[data-workshop-action="paste-json"]').disabled = running;
-    query('[data-workshop-action="inspect-json"]').disabled = running;
+    overlay.querySelectorAll('[data-blueprint-complete]').forEach(button => { button.disabled = running || rehearsing; });
+    overlay.querySelectorAll('[data-appearance-choice], [data-revision-scope], [data-revision-instruction], [data-workshop-card-field], [data-avatar-field], [data-workshop-action$="revision"]').forEach(control => { control.disabled = running || rehearsing; });
+    overlay.querySelectorAll('[data-blueprint-section] > summary').forEach(summary => { summary.setAttribute('aria-disabled', String(running || rehearsing)); });
+    query('[data-workshop-import-json]').disabled = running || rehearsing;
+    query('[data-workshop-action="paste-json"]').disabled = running || rehearsing;
+    query('[data-workshop-action="inspect-json"]').disabled = running || rehearsing;
 }
 
 function resetResults() {
+    state.chosenName = '';
+    state.revisionProposal = null;
+    query('[data-revision-instruction]').value = '';
+    setHidden('[data-revision-proposal]', true);
+    setHidden('[data-revision-confirm]', true);
     clearAvatarSelection();
     state.brief = null;
     state.knowledgeCheck = null;
@@ -398,7 +485,8 @@ function resetResults() {
     state.importNotices = [];
     state.blueprint = normalizeCharacterBlueprint({});
     state.manuallyEdited = false;
-    ['brief', 'knowledge', 'quality', 'preview', 'avatar'].forEach(section => setHidden(`[data-workshop-section="${section}"]`, true));
+    state.rehearsal = null;
+    ['brief', 'knowledge', 'rehearsal', 'quality', 'preview', 'revision', 'avatar'].forEach(section => setHidden(`[data-workshop-section="${section}"]`, true));
     setHidden('[data-workshop-action="download"]', true);
     setHidden('[data-workshop-action="review"]', true);
     setHidden('[data-workshop-action="apply"]', true);
@@ -430,6 +518,7 @@ function openWorkshop() {
 }
 
 function closeWorkshop() {
+    saveRehearsalReplies();
     if (returnToDreamlandChat('workshop')) return;
     if (state.running) {
         return;
@@ -597,16 +686,20 @@ function renderAvatarPrompt() {
     }
 
     const fields = [
-        ['正向提示词', avatarPrompt.positive],
-        ['负向提示词', avatarPrompt.negative || '无额外负向提示词'],
+        ['正向提示词（可直接修改）', avatarPrompt.positive, 'positive'],
+        ['负向提示词（可直接修改）', avatarPrompt.negative, 'negative'],
     ];
-    for (const [label, value] of fields) {
+    for (const [label, value, key] of fields) {
         const block = document.createElement('div');
         block.className = 'leslie-character-workshop-avatar-field';
         const heading = document.createElement('strong');
         heading.textContent = label;
-        const content = document.createElement('pre');
-        content.textContent = value;
+        const content = document.createElement('textarea');
+        content.value = value;
+        content.dataset.avatarField = key;
+        content.setAttribute('aria-label', label);
+        content.rows = 4;
+        content.maxLength = key === 'positive' ? 2400 : 1200;
         block.append(heading, content);
         container.append(block);
     }
@@ -702,6 +795,11 @@ function syncManualCardEdits({ refreshQuality = false, markEdited = false } = {}
         }
     }
     state.finalCard = normalizeCharacterCard(nextCard);
+    if (state.chosenName && state.finalCard.data.name !== state.chosenName) {
+        // A human rename becomes authoritative, including on subsequent review.
+        state.chosenName = state.finalCard.data.name;
+        workshopNameHistory.remember(state.chosenName);
+    }
     if (markEdited) {
         state.manuallyEdited = true;
     }
@@ -769,6 +867,7 @@ function renderPreview() {
     }
 
     setHidden('[data-workshop-section="preview"]', false);
+    setHidden('[data-workshop-section="revision"]', false);
     setHidden('[data-workshop-action="download"]', false);
     setHidden('[data-workshop-action="review"]', false);
     refreshDraftActions();
@@ -933,8 +1032,9 @@ function updateBlueprintFieldState(control) {
     }
 }
 
-async function runWorkshop() {
-    const freeform = query('[data-workshop-prompt]').value.trim();
+async function runWorkshop(randomInput = null, rehearse = false) {
+    if (state.running || (state.rehearsal && !state.finalCard)) return;
+    const freeform = randomInput?.freeform ?? query('[data-workshop-prompt]').value.trim();
     state.provider = getSelectedProvider();
     if (state.provider === WORKSHOP_PROVIDER.LOCAL && !isLocalModelLoadingEnabled()) {
         showError('本地模型加载已关闭，请先到“设置 → 模型连接”打开开关。');
@@ -966,12 +1066,18 @@ async function runWorkshop() {
             updateProviderStatus(`已连接：${localConnection.model}`, true);
         }
         showStatus('正在整理创作简报', 'AI 会先区分硬要求和可补全部分，避免一上来就堆设定。', 'brief');
-        const selectedMode = query('[data-workshop-mode]').value;
-        state.blueprint = collectCharacterBlueprint();
+        const selectedMode = randomInput?.mode ?? query('[data-workshop-mode]').value;
+        state.blueprint = randomInput?.blueprint ?? collectCharacterBlueprint();
         const structuredPrompt = buildCharacterBlueprintPrompt({ blueprint: state.blueprint, freeform, mode: selectedMode });
         const modelSafePrompt = protectRoleMacrosForGeneration(structuredPrompt);
-        const briefResponse = await generateStructured(buildBriefRequest(modelSafePrompt, selectedMode), runId);
-        state.brief = normalizeCreativeBrief(briefResponse);
+        const namedBrief = await generateUniqueWorkshopBrief({
+            request: buildBriefRequest(modelSafePrompt, selectedMode), mode: selectedMode, blueprint: state.blueprint,
+            history: workshopNameHistory, generate: request => generateStructured(request, runId),
+            ensureActive: () => ensureRunActive(runId),
+            onRetry: () => showStatus('这个名字刚用过，正在换一个', 'AI 会重新取名，再继续写角色卡。', 'brief'),
+        });
+        state.brief = namedBrief.brief;
+        state.chosenName = namedBrief.chosenName;
         if (selectedMode !== 'auto') {
             state.brief.mode = selectedMode;
             state.brief.requiresKnowledgeCheck = selectedMode === 'adaptation' || state.brief.requiresKnowledgeCheck;
@@ -996,45 +1102,138 @@ async function runWorkshop() {
         }
         renderKnowledgeCheck();
 
-        showStatus('正在创作完整角色卡', '只生成一个候选；同时附带一份可复制的头像图片提示词，但不会调用图片生成。', 'draft');
-        const draftResponse = await generateStructured(buildDraftRequest(state.brief, state.knowledgeCheck, state.blueprint), runId);
-        ensureRunActive(runId);
-        state.draft = canonicalizeDialogueRoleLabels(draftResponse, {
-            userLabel: name1,
-            characterLabels: [name2],
-        });
-        state.avatarPrompt = normalizeAvatarPrompt(draftResponse);
-        const draftReview = assessWorkshopCard(state.draft, { brief: state.brief, knowledgeCheck: state.knowledgeCheck });
-
-        showStatus('正在进行独立审校', 'AI 会重新检查硬事实、知识置信边界、人物一致性、用户控制权、关系节奏和头像提示词，再交付修订稿。', 'review');
-        const reviewResponse = await generateStructured(buildReviewRequest(state.brief, state.draft, state.knowledgeCheck, draftReview, state.avatarPrompt, state.blueprint), runId);
-        ensureRunActive(runId);
-        state.finalCard = canonicalizeDialogueRoleLabels(reviewResponse.card ?? reviewResponse, {
-            userLabel: name1,
-            characterLabels: [name2, state.draft.data.name],
-        });
-        const reviewedAvatarPrompt = normalizeAvatarPrompt(reviewResponse);
-        if (reviewedAvatarPrompt.positive) {
-            state.avatarPrompt = reviewedAvatarPrompt;
+        if (rehearse) {
+            showStatus('正在准备三个试演场景', 'AI 只出玩家台词，角色怎么说由你决定。', 'draft');
+            state.rehearsal = createRehearsalSession(await generateStructured(buildRehearsalScenesRequest(state.brief, state.blueprint, state.knowledgeCheck), runId));
+            renderRehearsal();
+            hideStatus();
+            query('[data-workshop-section="rehearsal"]').scrollIntoView({ block: 'start' });
+            return;
         }
-        state.modelReview = reviewResponse.review ?? {};
-        state.manuallyEdited = false;
-        state.localReview = assessWorkshopCard(state.finalCard, { brief: state.brief, knowledgeCheck: state.knowledgeCheck });
-        renderQuality();
-        renderPreview();
-        renderAvatarPrompt();
-        hideStatus();
-        setStage('ready', 'complete');
+        await createWorkshopCard(runId, Boolean(randomInput));
     } catch (error) {
-        hideStatus();
-        if (!state.cancelled) {
+        if (runId === state.runId && !state.cancelled) {
+            hideStatus();
             console.error('Leslie character workshop failed', error);
             showError(error?.message || '角色创作没有完成。你的正式角色卡和聊天没有受到影响，可以修改提示词后重试。');
         }
     } finally {
-        state.abortController = null;
-        setRunning(false);
+        if (runId === state.runId) {
+            state.abortController = null;
+            setRunning(false);
+        }
     }
+}
+
+async function createWorkshopCard(runId, scrollToPreview = false) {
+    showStatus('正在创作完整角色卡', '只生成一个候选；同时附带一份可复制的头像图片提示词，但不会调用图片生成。', 'draft');
+    const draftResponse = await generateStructured(withChosenWorkshopName(withRehearsalExamples(buildDraftRequest(state.brief, state.knowledgeCheck, state.blueprint), state.rehearsal), state.chosenName), runId);
+    ensureRunActive(runId);
+    state.draft = canonicalizeDialogueRoleLabels(draftResponse, {
+        userLabel: name1,
+        characterLabels: [name2],
+    });
+    state.draft = preserveRehearsalExamples(state.draft, state.rehearsal);
+    assertChosenWorkshopName(state.draft, state.chosenName);
+    state.avatarPrompt = normalizeAvatarPrompt(draftResponse);
+    const draftReview = assessWorkshopCard(state.draft, { brief: state.brief, knowledgeCheck: state.knowledgeCheck });
+
+    showStatus('正在进行独立审校', 'AI 会重新检查硬事实、知识置信边界、人物一致性、用户控制权、关系节奏和头像提示词，再交付修订稿。', 'review');
+    const reviewResponse = await generateStructured(withChosenWorkshopName(withRehearsalExamples(buildReviewRequest(state.brief, state.draft, state.knowledgeCheck, draftReview, state.avatarPrompt, state.blueprint), state.rehearsal), state.chosenName), runId);
+    ensureRunActive(runId);
+    assertChosenWorkshopName(normalizeCharacterCard(reviewResponse.card ?? reviewResponse), state.chosenName);
+    state.finalCard = canonicalizeDialogueRoleLabels(reviewResponse.card ?? reviewResponse, {
+        userLabel: name1,
+        characterLabels: [name2, state.draft.data.name],
+    });
+    state.finalCard = preserveRehearsalExamples(state.finalCard, state.rehearsal);
+    const reviewedAvatarPrompt = normalizeAvatarPrompt(reviewResponse);
+    if (reviewedAvatarPrompt.positive) {
+        state.avatarPrompt = reviewedAvatarPrompt;
+    }
+    state.modelReview = reviewResponse.review ?? {};
+    state.manuallyEdited = false;
+    state.localReview = assessWorkshopCard(state.finalCard, { brief: state.brief, knowledgeCheck: state.knowledgeCheck });
+    renderQuality();
+    renderPreview();
+    renderAvatarPrompt();
+    hideStatus();
+    setStage('ready', 'complete');
+    if (scrollToPreview) query('[data-workshop-section="preview"]').scrollIntoView({ block: 'start' });
+}
+
+function clearRevisionProposal() {
+    state.revisionProposal = null;
+    setHidden('[data-revision-proposal]', true);
+    setHidden('[data-revision-confirm]', true);
+}
+
+async function proposeRevision() {
+    if (!state.finalCard || state.running || isGenerating()) return;
+    const instruction = query('[data-revision-instruction]').value.trim();
+    if (!instruction) { showError('先写下你想改的外貌或图片提示词。'); return; }
+    state.provider = getSelectedProvider();
+    if (state.provider === WORKSHOP_PROVIDER.LOCAL && !isLocalModelLoadingEnabled()) { showError('请先打开本地模型加载开关。'); return; }
+    if (state.provider === WORKSHOP_PROVIDER.CHAT && (!online_status || online_status === 'no_connection')) { showError('请先连接当前聊天模型。原草稿仍然保留。'); return; }
+    syncManualCardEdits();
+    clearRevisionProposal();
+    clearError();
+    state.cancelled = false;
+    state.abortController = new AbortController();
+    const runId = ++state.runId;
+    setRunning(true);
+    try {
+        if (state.provider === WORKSHOP_PROVIDER.LOCAL) {
+            const connection = await probeLocalWorkshopProvider({ signal: state.abortController.signal });
+            state.localProviderModel = connection.model;
+        }
+        showStatus('正在生成局部修改方案', '原草稿保留，确认方案后才更新。', 'review');
+        const scope = query('[data-revision-scope]').value;
+        const base = structuredClone(state.finalCard);
+        const avatar = structuredClone(state.avatarPrompt ?? {});
+        const blueprint = structuredClone(state.blueprint);
+        const response = await generateStructured(buildRevisionRequest(base, avatar, blueprint, scope, instruction), runId);
+        ensureRunActive(runId);
+        const proposal = prepareRevision(base, avatar, blueprint, scope, response);
+        assertRevisionCurrent(proposal, state.finalCard, state.avatarPrompt ?? {}, state.blueprint);
+        state.revisionProposal = proposal;
+        const container = query('[data-revision-proposal]');
+        container.replaceChildren();
+        appendTextList(container, '外貌片段：修改前 → 修改后', proposal.patches.map(patch => `${patch.old}\n→ ${patch.new}`), '角色描述保持原样。');
+        appendTextList(container, '图片提示词：修改前 → 修改后', [`正向：${avatar.positive ?? ''}\n→ ${proposal.avatar.positive}`, `负向：${avatar.negative ?? ''}\n→ ${proposal.avatar.negative}`, `比例：${avatar.aspectRatio ?? '2:3'} → ${proposal.avatar.aspectRatio}`]);
+        const labels = CHARACTER_BLUEPRINT_SECTIONS.find(section => section.id === 'appearance').fields;
+        appendTextList(container, '同步到外貌表单', Object.entries(proposal.fields).map(([key, value]) => `${labels.find(field => field.key === key).label}：${value}`), '外貌表单保持原样。');
+        setHidden('[data-revision-proposal]', false);
+        setHidden('[data-revision-confirm]', false);
+        container.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        hideStatus();
+    } catch (error) {
+        if (runId === state.runId && !state.cancelled) { hideStatus(); showError(error.message || '局部修改失败，原草稿仍然保留。'); }
+    } finally {
+        if (runId === state.runId) { state.abortController = null; setRunning(false); }
+    }
+}
+
+function acceptRevision() {
+    if (!state.revisionProposal || state.running) return;
+    try {
+        assertRevisionCurrent(state.revisionProposal, state.finalCard, state.avatarPrompt ?? {}, state.blueprint);
+        const proposal = state.revisionProposal;
+        state.finalCard = proposal.card;
+        state.avatarPrompt = proposal.avatar;
+        for (const [key, value] of Object.entries(proposal.fields)) {
+            if (value) state.blueprint.fields[key] = value;
+            else delete state.blueprint.fields[key];
+            const control = query(`[data-workshop-field="${key}"]`);
+            control.value = value;
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        clearRevisionProposal();
+        state.manuallyEdited = true;
+        state.modelReview = { summary: '局部修改已应用，其他角色字段保持原样。' };
+        state.localReview = assessWorkshopCard(state.finalCard, { brief: state.brief, knowledgeCheck: state.knowledgeCheck });
+        renderQuality(); renderPreview(); renderAvatarPrompt(); clearError();
+    } catch (error) { showError(error.message); }
 }
 
 async function rerunReview() {
@@ -1070,12 +1269,14 @@ async function rerunReview() {
         }
         showStatus('正在进行第二次审校', '这次会把上一版最终稿当作待审稿，只修复问题，不扩写无关设定。', 'review');
         const currentReview = assessWorkshopCard(state.finalCard, { brief: state.brief, knowledgeCheck: state.knowledgeCheck });
-        const response = await generateStructured(buildReviewRequest(state.brief, state.finalCard, state.knowledgeCheck, currentReview, state.avatarPrompt, state.blueprint), runId);
+        const response = await generateStructured(withChosenWorkshopName(withRehearsalExamples(buildReviewRequest(state.brief, state.finalCard, state.knowledgeCheck, currentReview, state.avatarPrompt, state.blueprint), state.rehearsal), state.chosenName), runId);
         ensureRunActive(runId);
+        assertChosenWorkshopName(normalizeCharacterCard(response.card ?? response), state.chosenName);
         state.finalCard = canonicalizeDialogueRoleLabels(response.card ?? response, {
             userLabel: name1,
             characterLabels: [name2, state.finalCard.data.name],
         });
+        state.finalCard = preserveRehearsalExamples(state.finalCard, state.rehearsal);
         const reviewedAvatarPrompt = normalizeAvatarPrompt(response);
         if (reviewedAvatarPrompt.positive) {
             state.avatarPrompt = reviewedAvatarPrompt;
@@ -1089,13 +1290,15 @@ async function rerunReview() {
         hideStatus();
         setStage('ready', 'complete');
     } catch (error) {
-        hideStatus();
-        if (!state.cancelled) {
+        if (runId === state.runId && !state.cancelled) {
+            hideStatus();
             showError(error?.message || '第二次审校没有完成，上一版草稿仍然保留。');
         }
     } finally {
-        state.abortController = null;
-        setRunning(false);
+        if (runId === state.runId) {
+            state.abortController = null;
+            setRunning(false);
+        }
     }
 }
 
@@ -1200,6 +1403,227 @@ function cancelWorkshopRun() {
     setRunning(false);
 }
 
+function discardWorkshopDraft() {
+    // Invalidate late model responses before clearing any UI or state.
+    if (state.running) cancelWorkshopRun();
+    else state.runId++;
+    state.cancelled = true;
+    resetResults();
+    overlay.querySelectorAll('[data-workshop-field]').forEach(control => {
+        control.value = '';
+        updateBlueprintFieldState(control);
+    });
+    query('[data-workshop-prompt]').value = '';
+    query('[data-workshop-import-json]').value = '';
+    query('[data-workshop-mode]').value = 'auto';
+    query('[data-workshop-knowledge-check]').checked = true;
+    blueprintSteps.reset();
+    syncAppearanceChoices(overlay);
+    query('[data-workshop-footer-note]').textContent = '已清空，可以重新填写或直接生成。';
+    hideStatus();
+    clearError();
+    setRunning(false);
+    query('.leslie-character-workshop-main').scrollTo({ top: 0 });
+    query('[data-workshop-field="name"]').focus({ preventScroll: true });
+}
+
+function saveRehearsalReplies() {
+    const session = state.rehearsal;
+    if (!session || state.finalCard) return;
+    const scene = session.scenes[session.index];
+    const first = query('[data-rehearsal-reply="0"]')?.value ?? scene.replies[0];
+    const second = query('[data-rehearsal-reply="1"]')?.value ?? scene.replies[1];
+    if (first === scene.replies[0] && second === scene.replies[1]) return;
+    if (first !== scene.replies[0]) {
+        scene.replies = [first, ''];
+        scene.followup = '';
+    } else {
+        scene.replies[1] = second;
+    }
+    session.audit = null;
+    session.confirmed = false;
+}
+
+function renderRehearsal() {
+    const session = state.rehearsal;
+    if (!session) return;
+    const container = query('[data-workshop-rehearsal]');
+    container.replaceChildren();
+    setHidden('[data-workshop-section="rehearsal"]', false);
+    const add = (tag, text, className = '') => {
+        const element = document.createElement(tag);
+        element.textContent = text;
+        if (className) element.className = className;
+        container.append(element);
+        return element;
+    };
+    const button = (text, action, title, parent = container) => {
+        const element = add('button', text, 'leslie-character-workshop-button is-quiet');
+        element.type = 'button';
+        element.dataset.rehearsalAction = action;
+        element.title = title;
+        parent.append(element);
+        return element;
+    };
+    if (state.finalCard) {
+        add('p', '试演原话已带入下方示例。你可以在角色卡编辑区继续修改。');
+        return;
+    }
+    add('p', '你写角色，AI 写玩家。可以随时关闭页面暂停，回来继续；刷新页面会丢失未保存的试演。');
+    const navigation = add('div', '', 'leslie-rehearsal-scenes');
+    navigation.setAttribute('aria-label', '切换试演场景');
+    session.scenes.forEach((scene, index) => {
+        const nav = document.createElement('button');
+        nav.type = 'button';
+        nav.className = 'leslie-rehearsal-scene';
+        nav.dataset.rehearsalAction = 'scene';
+        nav.dataset.rehearsalScene = String(index);
+        nav.textContent = `${index + 1}. ${scene.title}${scene.replies[1]?.trim() ? ' ✓' : ''}`;
+        nav.title = `切换到第 ${index + 1} 组：${scene.title}。已写的台词会保留；✓ 表示本组两句已填写。`;
+        nav.setAttribute('aria-pressed', String(index === session.index));
+        navigation.append(nav);
+    });
+    const scene = session.scenes[session.index];
+    add('h4', scene.title);
+    add('p', scene.setting, 'leslie-rehearsal-setting');
+    for (let turn = 0; turn < (scene.followup ? 2 : 1); turn++) {
+        add('p', `玩家：${turn ? scene.followup : scene.playerLine}`, 'leslie-rehearsal-player');
+        const label = add('label', `角色的第 ${turn + 1} 句`);
+        const input = document.createElement('textarea');
+        input.dataset.rehearsalReply = String(turn);
+        input.rows = 3;
+        input.maxLength = 1200;
+        input.placeholder = '写这个角色当场会说的话……';
+        input.value = scene.replies[turn];
+        label.append(input);
+    }
+    add('small', '改第一句会重新生成玩家接话，第二句需要重写；其他场景的原话仍保留。');
+    const canFinish = session.ready || (session.index === session.scenes.length - 1 && scene.followup)
+        || session.scenes.every(item => item.followup && item.replies.every(text => text.trim()));
+    if (canFinish) {
+        if (session.audit) {
+            add('h4', 'AI 从你的原话里看到的说话习惯');
+            if (!session.audit.habits.length) add('p', '没有可靠的总结，仍直接以你的原话为准。');
+            for (const habit of session.audit.habits) add('p', `${habit.habit}（第 ${habit.scene + 1} 组：「${habit.quote}」）`);
+            for (const conflict of session.audit.conflicts) add('p', `第 ${conflict.scene + 1} 组第 ${conflict.turn + 1} 句：${conflict.message}；锁定设定：「${conflict.fact}」`, 'leslie-rehearsal-conflict');
+            if (session.audit.conflicts.length) {
+                add('p', '可以点击上方场景重写台词，或返回修改人设。若 AI 判断有误，也可以明确保留原话；锁定事实不会因此被改写。');
+            }
+        }
+    }
+    add('p', canFinish ? '写完后点黄色按钮，保留试演原话生成角色卡。分析人设冲突是可选操作。' : '先写角色的回应，再点蓝色按钮继续。每组聊两轮。', 'leslie-rehearsal-next-hint');
+    const actions = add('div', '', 'leslie-rehearsal-actions');
+    const primary = button(canFinish ? '用试演原话生成角色卡' : scene.followup ? '下一组场景' : '让 AI 接下一句',
+        canFinish ? 'confirm' : scene.followup ? 'next' : 'followup',
+        canFinish ? '保留你写的所有有效台词，生成并审校角色卡，不要求先做分析。若已有冲突提示，点击代表选择保留原话；锁定设定仍须保留。'
+            : scene.followup ? '保存本组两句角色台词，进入下一组场景。' : '保存你写的第一句，让 AI 只扮演玩家接话，再由你写角色的第二句。', actions);
+    primary.classList.add('is-primary');
+    if (canFinish) primary.classList.add('is-finish');
+    const more = document.createElement('details');
+    more.className = 'leslie-rehearsal-more';
+    const summary = document.createElement('summary');
+    summary.className = 'leslie-character-workshop-button is-quiet';
+    summary.textContent = '更多操作 ▾';
+    summary.title = '展开跳过、换场景、可选分析及放弃试演等操作。正常完成试演只需主按钮。';
+    more.append(summary);
+    actions.append(more);
+    const tools = document.createElement('div');
+    tools.className = 'leslie-rehearsal-tools';
+    more.append(tools);
+    button('跳过本组', 'skip', session.index === session.scenes.length - 1 ? '保留已经写下的台词，跳过本组未写完的部分，进入生成准备。' : '保留本组已经写下的台词，继续下一组；不要求补完这组。', tools);
+    button('重新出本组场景', 'replace', '清空本组的台词并重新出题，其他两组的原话保留。', tools);
+    if (canFinish) button('分析口吻与人设冲突（可选）', 'audit', '只总结原话中的说话习惯并提示可能的人设冲突，不生成角色卡，也不改写你的台词。', tools).classList.add('is-primary');
+    button('返回修改人设', 'back', '结束这次试演，保留人设表单。修改后需要重新开始试演，当前试演台词会清除。', tools);
+    button('舍弃试演，交给 AI 重写', 'automatic', '放弃全部人工试演台词，按当前人设由 AI 自动生成角色卡及新的对话示例。', tools).classList.add('is-danger');
+    query('[data-workshop-section="rehearsal"]').scrollIntoView({ block: 'start' });
+}
+
+async function handleRehearsalAction(button) {
+    saveRehearsalReplies();
+    const session = state.rehearsal;
+    if (!session || state.finalCard || state.running) return;
+    const action = button.dataset.rehearsalAction;
+    if (action === 'scene') {
+        session.index = Number(button.dataset.rehearsalScene);
+        renderRehearsal();
+        return;
+    }
+    if (action === 'back') {
+        state.rehearsal = null;
+        setHidden('[data-workshop-section="rehearsal"]', true);
+        setRunning(false);
+        query('[data-workshop-blueprint]').scrollIntoView({ block: 'start' });
+        return;
+    }
+    if (action === 'next' || action === 'skip') {
+        try {
+            const scene = session.scenes[session.index];
+            if (action === 'next') {
+                validateRehearsalReply(scene.replies[0]);
+                validateRehearsalReply(scene.replies[1]);
+                if (!scene.followup) throw new Error('先让 AI 接第二句，再写角色回应。');
+            }
+            session.ready = session.index === 2;
+            if (!session.ready) session.index++;
+            clearError();
+            renderRehearsal();
+        } catch (error) { renderRehearsal(); showError(error.message); }
+        return;
+    }
+    if (isGenerating()) { showError('当前正在生成聊天回复，请先停止回复再继续试演。'); return; }
+    clearError();
+    state.cancelled = false;
+    state.abortController = new AbortController();
+    const runId = ++state.runId;
+    setRunning(true);
+    try {
+        const scene = session.scenes[session.index];
+        if ((action === 'confirm' || action === 'audit') && !session.ready) {
+            validateRehearsalReply(scene.replies[0]);
+            validateRehearsalReply(scene.replies[1]);
+            if (!scene.followup) throw new Error('先让 AI 接下一句，再写角色的第二句。');
+            session.ready = true;
+        }
+        if (action === 'followup') {
+            validateRehearsalReply(scene.replies[0]);
+            showStatus('AI 正在接话', '只生成玩家下一句，角色回应由你写。', 'draft');
+            scene.followup = normalizeRehearsalFollowup(await generateStructured(buildRehearsalFollowupRequest(state.brief, state.blueprint, scene), runId));
+        } else if (action === 'replace') {
+            showStatus('正在换场景', '其他场景的原话仍然保留。', 'draft');
+            const replacement = createRehearsalSession(await generateStructured(buildRehearsalScenesRequest(state.brief, state.blueprint, state.knowledgeCheck), runId));
+            const newScene = replacement.scenes[session.index];
+            session.scenes[session.index] = newScene;
+            session.ready = false;
+            session.audit = null;
+        } else if (action === 'audit') {
+            showStatus('正在核对你的试演', '只总结有原话依据的习惯，不改写台词。', 'draft');
+            session.audit = normalizeRehearsalAudit(await generateStructured(buildRehearsalAuditRequest(state.brief, state.blueprint, session), runId), session, state.brief, state.blueprint);
+        } else if (action === 'confirm' || action === 'automatic') {
+            if (action === 'automatic') state.rehearsal = null;
+            else {
+                for (const item of session.scenes) for (const text of item.replies) {
+                    if (text.trim()) validateRehearsalReply(text);
+                }
+                session.confirmed = true;
+            }
+            await createWorkshopCard(runId, true);
+        }
+        ensureRunActive(runId);
+        hideStatus();
+        if (state.rehearsal) renderRehearsal();
+    } catch (error) {
+        if (runId === state.runId && !state.cancelled) {
+            hideStatus();
+            showError(error?.message || '试演没有完成，已经写下的原话仍保留，可以重试或直接生成。');
+        }
+    } finally {
+        if (runId === state.runId) {
+            state.abortController = null;
+            setRunning(false);
+        }
+    }
+}
+
 function bindWorkshopEvents() {
     document.addEventListener('click', event => {
         const createButton = event.target instanceof Element ? event.target.closest('#rm_button_create') : null;
@@ -1216,12 +1640,38 @@ function bindWorkshopEvents() {
     }, true);
 
     overlay.addEventListener('click', event => {
+        const choice = event.target instanceof Element ? event.target.closest('[data-appearance-choice]') : null;
+        if (choice && !state.running && !(state.rehearsal && !state.finalCard)) {
+            const field = query(`[data-workshop-field="${choice.dataset.appearanceField}"]`);
+            const value = toggleAppearanceChoice(field.value, choice.dataset.appearanceField, Number(choice.dataset.appearanceGroup), choice.dataset.appearanceChoice);
+            if (value.length > field.maxLength) { showError('描述已经很长了，请先删减一些再添加选项。'); return; }
+            field.value = value;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+        }
         const action = event.target instanceof Element ? event.target.closest('[data-workshop-action]')?.dataset.workshopAction : '';
         if (action === 'close') closeWorkshop();
         if (action === 'manual') openOriginalCreateEditor();
         if (action === 'generate') runWorkshop();
+        if (action === 'rehearse') runWorkshop(null, true);
+        const rehearsalButton = event.target instanceof Element ? event.target.closest('[data-rehearsal-action]') : null;
+        if (rehearsalButton && !state.running) handleRehearsalAction(rehearsalButton);
+        if (action === 'random') {
+            query('.leslie-random-preferences').hidden = true;
+            runWorkshop(buildRandomWorkshopInput(readRandomPreferences(accountStorage), crypto.randomUUID()));
+        }
+        if (action === 'random-preferences') openRandomPreferences();
+        if (action === 'random-preferences-close') {
+            query('.leslie-random-preferences').hidden = true;
+            query('[data-workshop-action="random"]').focus();
+        }
+        if (action === 'random-preferences-save') saveRandomControls();
+        if (action === 'random-preferences-reset') saveRandomControls(true);
         if (action === 'cancel') cancelWorkshopRun();
+        if (action === 'discard') discardWorkshopDraft();
         if (action === 'review') rerunReview();
+        if (action === 'propose-revision') proposeRevision();
+        if (action === 'accept-revision') acceptRevision();
+        if (action === 'reject-revision') clearRevisionProposal();
         if (action === 'apply') applyDraft();
         if (action === 'download') downloadDraft();
         if (action === 'copy-avatar') copyAvatarPrompt();
@@ -1232,17 +1682,29 @@ function bindWorkshopEvents() {
     });
 
     overlay.addEventListener('input', event => {
+        if (event.target instanceof HTMLTextAreaElement && event.target.matches('[data-avatar-field]')) {
+            state.avatarPrompt = { ...normalizeAvatarPrompt(state.avatarPrompt ?? {}), [event.target.dataset.avatarField]: event.target.value };
+            clearRevisionProposal();
+            setHidden('[data-workshop-action="copy-avatar"]', !state.avatarPrompt.positive.trim());
+        }
+        if (event.target instanceof Element && event.target.matches('[data-workshop-field], [data-revision-instruction]')) {
+            clearRevisionProposal();
+            syncAppearanceChoices(overlay);
+        }
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
             if (event.target.matches('[data-workshop-field]')) {
                 updateBlueprintFieldState(event.target);
             }
             if (event.target.matches('[data-workshop-card-field]')) {
+                clearRevisionProposal();
+                if (event.target.dataset.workshopCardField === 'mes_example') state.rehearsal = null;
                 syncManualCardEdits({ markEdited: true });
             }
         }
     });
 
     overlay.addEventListener('change', event => {
+        if (event.target instanceof Element && event.target.matches('[data-revision-scope], [data-workshop-field]')) clearRevisionProposal();
         if (event.target instanceof HTMLInputElement && event.target.matches('[data-workshop-avatar-file]')) {
             handleAvatarSelection(event.target);
             return;
@@ -1261,6 +1723,11 @@ function bindWorkshopEvents() {
 
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && !overlay.hidden && !state.running) {
+            if (!query('.leslie-random-preferences').hidden) {
+                query('.leslie-random-preferences').hidden = true;
+                query('[data-workshop-action="random"]').focus();
+                return;
+            }
             closeWorkshop();
         }
     });
@@ -1268,7 +1735,9 @@ function bindWorkshopEvents() {
 
 function initializeWorkshop() {
     overlay = createWorkshopMarkup();
+    createRandomControls();
     document.body.append(overlay);
+    blueprintSteps = initializeBlueprintSteps(overlay, { isLocked: () => state.running || Boolean(state.rehearsal && !state.finalCard) });
     registerDreamlandPage('workshop', openWorkshop);
     bindWorkshopEvents();
     setStage('brief');

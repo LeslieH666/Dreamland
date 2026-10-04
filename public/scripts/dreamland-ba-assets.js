@@ -11,17 +11,26 @@ export const BA_ASSETS = Object.freeze({
     popupDark: 'Common_Popup_Bg_Dark.png',
     title: 'Common_Title_Bg.png',
     titleDark: 'Common_Title_Bg_Dark.png',
-    primaryPattern: 'Common_Btn_Rose_Primary.png',
-    primaryPatternDark: 'Common_Btn_Rose_Primary_Dark.png',
-    softPattern: 'Common_Btn_Rose_Soft.png',
-    softPatternDark: 'Common_Btn_Rose_Soft_Dark.png',
+    buttonBase: 'Common_Btn_BG.png',
+    buttonDark: 'Common_Btn_Base_Neutral_Dark.png',
+    buttonBlue: 'Common_Btn_Base_Blue.png',
+    buttonYellow: 'Common_Btn_Base_Yellow.png',
+    bluePattern: 'Common_Btn_Normal_B_S_Pt.png',
+    yellowPattern: 'Common_Btn_Normal_Y_S_Pt.png',
+    menuDeco: 'Common_Reward_Deco.png',
+    logo: 'ImgFont_Momotalk.png',
+    paper: 'Common_Bg_Paper.png',
+    cardFrame: 'Card_Line_Char.png',
     back: 'Common_Icon_Back.png',
     close: 'Common_Icon_Close.png',
-    settings: 'Nav_Settings.png',
-    moments: 'Nav_Moments.png',
-    workshop: 'Nav_Workshop.png',
+    settings: 'Common_Icon_Setting_Game.png',
+    moments: 'Common_Icon_Social.png',
+    workshop: 'Event_Icon_Replay.png',
+    chat: 'Event_Icon_Message.png',
+    randomCard: 'Event_Icon_CardShop.png',
+    randomOptions: 'Event_Icon_MinigameOption.png',
     background: 'Nav_Background.png',
-    home: 'Nav_Chat.png',
+    home: 'Dreamland_Nav_Home.png',
     about: 'Nav_About.png',
     search: 'Common_Icon_Search.png',
     plus: 'Common_Icon_Plus.png',
@@ -120,16 +129,20 @@ function applyImages() {
         heading: dark ? 'titleDark' : 'title',
         scenery: dark ? 'sceneDark' : 'scene',
         outgoing: dark ? 'outgoingDark' : 'outgoing',
-        primaryPattern: dark ? 'primaryPatternDark' : 'primaryPattern',
-        softPattern: dark ? 'softPatternDark' : 'softPattern',
+        neutralButton: dark ? 'buttonDark' : 'buttonBase',
     })) {
         document.body.style.setProperty('--ba-' + alias, loaded[key] ? 'url("' + loaded[key] + '")' : 'none');
     }
+    for (const [alias, key, fallback] of [
+        ['neutralFill', dark ? 'buttonDark' : 'buttonBase', 'var(--dl-surface)'],
+        ['blueFill', 'buttonBlue', '#79ddf9'],
+        ['yellowFill', 'buttonYellow', '#fae94b'],
+    ]) document.body.style.setProperty('--ba-' + alias, loaded[key] ? 'transparent' : fallback);
     document.body.toggleAttribute('data-ba-bubbles', Boolean(loaded[dark ? 'incomingDark' : 'incoming'] && loaded[dark ? 'outgoingDark' : 'outgoing']));
     document.body.toggleAttribute('data-ba-panels', Boolean(loaded[dark ? 'popupDark' : 'popup']));
-    for (const key of ['search', 'plus', 'copy', 'heart', 'home', 'workshop']) document.body.toggleAttribute('data-ba-' + key, Boolean(loaded[key]));
+    for (const key of ['search', 'plus', 'copy', 'heart', 'home', 'workshop', 'logo', 'paper', 'cardFrame', 'close']) document.body.toggleAttribute('data-ba-' + key, Boolean(loaded[key]));
     // Each available icon can be used even when an unrelated picture fails.
-    for (const [action, key] of Object.entries({ home: 'home', moments: 'moments', workshop: 'workshop', background: 'background', settings: 'settings', about: 'about' })) {
+    for (const [action, key] of Object.entries({ home: 'home', chat: 'chat', moments: 'moments', workshop: 'workshop', background: 'background', settings: 'settings', about: 'about' })) {
         for (const icon of document.querySelectorAll('.dreamland-navigation [data-action="' + action + '"] i')) icon.toggleAttribute('data-ba-icon', Boolean(loaded[key]));
     }
 }

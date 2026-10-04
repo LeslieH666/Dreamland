@@ -3,6 +3,17 @@ import { APPEARANCE_KEYS, readAppearance, writeAppearance } from '../public/scri
 import { readDesignLanguagePreference, writeDesignLanguagePreference } from '../public/scripts/leslie-design-language-core.js';
 
 describe('DreamLand appearance isolation and recovery', () => {
+    test('glass values reject invalid ranges and recover without storage', () => {
+        for (const [key, fallback, maximum] of [['glassTransparency', '28', '100'], ['glassBlur', '24', '48']]) {
+            expect(readAppearance(null, key)).toBe(fallback);
+            for (const value of ['-1', '101', 'NaN', '1.5', '', '2px']) {
+                expect(readAppearance({ getItem: () => value }, key)).toBe(fallback);
+            }
+            expect(writeAppearance(null, key, '0')).toBe('0');
+            expect(writeAppearance(null, key, maximum)).toBe(maximum);
+            expect(readAppearance({ getItem: () => { throw new Error('denied'); } }, key)).toBe(fallback);
+        }
+    });
     test('normalizes old layouts while preserving unrelated preferences', () => {
         const values = new Map([['leslie.design.language', 'classic'], [APPEARANCE_KEYS.style, 'blue']]);
         const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };

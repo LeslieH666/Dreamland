@@ -1,6 +1,7 @@
 /* The BA navigation owns pages; original controls and their listeners stay live. */
 #dreamland-page-host { display: none; }
 .dreamland-native-editor-header { display: none; }
+.dreamland-background-toolbar { display: none; }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
     --ba-nav-height: 78px;
     & #UI-presets-block, & #UI-Theme-Block > [name="themeElements"] { display: none; }
@@ -38,6 +39,9 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     & #dreamland-page-host #Backgrounds:not([hidden]) { display: flex !important; flex-direction: column; color: var(--dl-text); }
     & #dreamland-page-host #Backgrounds #bg-header-fixed { position: static; padding: 16px; background: var(--dl-surface); }
     & #dreamland-page-host #Backgrounds :is(#bg_menu_content, #bg_custom_content) { padding: 16px; }
+    & .dreamland-background-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 20px; background: var(--dl-surface); border-bottom: 1px solid var(--dl-border); }
+    & .dreamland-background-toolbar label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1; min-width: 180px; }
+    & .dreamland-background-toolbar select { width: auto; min-width: 120px; }
     & #dreamland-page-host #rm_ch_create_block:not([hidden]) { display: flex !important; opacity: 1 !important; overflow-y: auto; color: var(--dl-text); }
     & #dreamland-page-host #form_create { padding: 16px 24px; width: 100%; box-sizing: border-box; }
     & #dreamland-page-host .leslie-character-workshop { display: grid; }
@@ -100,6 +104,9 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
         & #dreamland-page-host .leslie-character-workshop-steps li { min-width: 0; padding: 6px 3px; }
         & #dreamland-page-host .leslie-character-workshop-steps strong { font-size: 11px; }
         & #dreamland-page-host #form_create { padding: 12px; }
+        /* Large enough to select the image separately from its context menu. */
+        & #dreamland-page-host #Backgrounds :is(#bg_menu_content, #bg_custom_content) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); }
+        & .dreamland-background-toolbar { padding: 12px; gap: 12px; }
         & .dreamland-native-editor-header { padding: 12px; flex-wrap: wrap; }
         & .dreamland-content-page > header, & .dreamland-content-page article { padding: 18px; }
     }

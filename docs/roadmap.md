@@ -1,5 +1,113 @@
 # Roadmap
 
+## Workshop appearance choices and scoped revisions (2026-10-04)
+
+- Appearance fields offer compact, optional presets for measurements, build, posture, hair, eyes, clothing and distinctive features. Choices remain editable as text; alternatives in a group replace each other, with selected choices removable by clicking again.
+- Before editor handoff, a local revision panel can change appearance with image prompts or image prompts alone. It previews exact before/after fragments and requires explicit application; withdrawing keeps the draft. Only description fragments and the appearance blueprint can change, while other card fields and opaque extensions are preserved. Image prompts are directly editable without a model call.
+- Invalid, overlapping or ambiguous patches, out-of-scope fields and stale proposals are rejected. This is page-only draft state with no persistent schema or chat changes. The patch protocol can support additional explicitly bounded fields later; currently AI revision is restricted to appearance and image prompts.
+- Validation: 52 relevant unit checks and a mocked synthetic browser flow cover preset selection, preview/apply/withdraw, independent prompt editing, unchanged other modules and mobile layout. Repository hygiene and source/test lint passed without errors. Actual DeepSeek output quality still needs acceptance with the configured provider.
+
+## Progressive workshop blueprint (2026-10-04)
+
+- Each blueprint category has an explicit confirmation action. Confirmation adds a round check indicator on the right, collapses the current category and opens the next in order; the final confirmation focuses supplemental notes. Empty fields remain delegated to AI and generation does not require every category to be confirmed.
+- Manual reopening preserves values; editing invalidates only that category's confirmation. Clearing resets checks and opens the first category. Generation/rehearsal locks category controls. Height/opacity animations handle rapid toggling and cancellation; reduced-motion preferences receive immediate transitions. Confirmation state is page-local with no persistent schema change.
+- Validation: 46 related unit checks and the synthetic browser flow passed, covering all seven confirmations in order, local edit invalidation, value preservation, rapid toggles, reset, generation locks and reduced motion. The browser verifies the 260 ms animation and desktop/mobile check indicators. Repository and source/test lint passed without errors; existing unrelated test warnings remain.
+
+## Rehearsal action simplification (2026-10-04)
+
+- Rehearsal exposes one stage-specific primary action and an optional “更多操作” disclosure. The final scene can directly generate a card with human originals; optional analysis and destructive AI rewriting have distinct labels and explanatory titles. Skipping, replacing and returning to the blueprint remain available in the disclosure.
+- Functional controls use inclined neutral/blue/yellow game bases; scene switching uses thin borders and no raised shadow. Labels and hit areas stay upright. No schema, saved-card or chat changes.
+- Validation: 46 related unit checks and the synthetic browser flow passed. The browser verifies the single visible primary button, explicit retention/discard titles, optional analysis under the disclosure, flat scene switches, inclined functional controls, human-line preservation and desktop/mobile layouts. Repository and source/test lint passed without errors; existing unrelated test warnings remain.
+
+## Workshop draft discard and footer controls (2026-10-04)
+
+- A persistent “放弃并清空” action clears unsaved drafts, rehearsal, avatar selection, blueprint fields and notes, and restores the empty creation flow. Pending generations are invalidated before clearing; stopping generation remains separate and retains inputs. Saved cards, connection selection, random preferences and recent-name history are preserved.
+- Footer controls share the game's inclined base: neutral utility/discard controls, blue review and yellow editor handoff. Labels and hit areas remain upright, with wrapping on narrow screens. This workshop exception is recorded in the control-shape specification.
+- Validation: 46 related unit checks and the synthetic browser flow passed, including clearing a completed card and inputs, preserving provider selection, cancelling a pending generation without late-result restoration, and desktop/mobile footer layout. Repository and source/test lint passed without errors; existing unrelated test warnings remain.
+
+## Workshop name deduplication (2026-10-04)
+
+- Original characters without an entered name exclude the 30 most recently generated names in the current page session. Local checks detect whitespace and temporary-name suffix variants, with up to two retries for empty or repeated names; persistent duplicates stop before card creation.
+- Drafts and reviews must retain the selected name; human renames remain authoritative. Entered names, adaptations and imported cards retain their existing behavior. History is in memory only, clears on refresh, and does not read saved cards or chats or introduce a persistent schema.
+- Validation: 9 focused name tests, 37 related unit checks and the synthetic browser flow passed, including a repeated name followed by automatic retry and a new final name. Repository and source/test lint passed without errors. Live DeepSeek rerun was unavailable because the previous local connection settings file was no longer at its original path; no live-model success is claimed.
+
+## Human-authored workshop voice rehearsal (2026-10-04)
+
+- Writing workflow v1.5.0 adds optional three-scene rehearsal after the brief/knowledge stages. The model plays the blueprint's player; users write two character responses per scene. Followups depend on the actual response, without character reference answers. Automatic and random generation remain available.
+- Scene navigation, rewriting, skipping, replacement and pause preserve the current in-memory workflow; changing the first reply resets dependent second turns. Model analysis requires quoted character evidence and traceable locked facts. Users resolve flagged conflicts; the model cannot silently rewrite human lines or locked settings.
+- Draft and review requests use human originals plus supplemental examples; deterministic merging keeps originals first through repeated AI review. Editing final examples manually releases old rehearsal protection. No chat, memory, account-storage or persistent schema changes; refresh discards unsaved rehearsal.
+- Validation: 42 focused unit checks and the synthetic browser flow passed, covering context-dependent second turns, invalidation after rewriting the first turn, pause/navigation, traceable conflict display, verbatim originals through draft/review, manual release of protection, and desktop/mobile layout. Repository/source/test lint passed without errors (existing unrelated test warnings remain). The browser used an isolated synthetic data root on localhost and mocked model calls; real voice-quality comparison still requires human-written examples and independent evaluation.
+
+## Character workshop spoken dialogue (2026-10-04)
+
+- Writing rules v1.4.0 separate workshop guidance from compact positive runtime contracts; short replies usually use 1–3 spoken sentences with optional brief actions. Detailed replies and higher action ratios retain user-selected controls. The brief defines a concrete voice, with 6–8 examples and at least two continuous two-round exchanges; original unedited workshop cards now enforce that structure while imported and manual cards retain compatibility.
+- Dialogue controls offer restrained, expressive and theatrical intensity, with expressive as the unspecified generation default. Character identity, cultural register and relationship pace remain authoritative; imported cards retain their existing voice and valid examples unless changed explicitly.
+- Writing and review share spoken-language guidance. Review preserves character-specific flaws, sharpness and emotional intensity instead of smoothing every response into polite explanatory prose.
+- Local checks validate roles and nonempty turns per example, accept length-aware output contracts and report repeated longer replies without lowering the score. CCV3 macros, preview/manual saving, model adapters and persistent schemas are unchanged.
+- Verification uses synthetic fixtures for legacy/imported cards, user controls, multi-round examples and compatibility. A controlled live DeepSeek Flash pilot generated 12 synthetic cards and 72 replies: v1.3.0 did not meet colloquial-style acceptance. The author's anonymous assessment preferred the baseline in 23/30 probe pairs (20/25 after excluding a baseline card with missing required fields). Emotional continuity improved, but prose length and persona drift need another revision; only 3/6 revised cards met the requested example structure. The harness recorded blueprint fidelity separately rather than enforcing the full UI review gate, so this is not end-to-end acceptance. Independent human review, the complete UI pipeline and local-model acceptance remain pending; reality-line personality extraction is outside this change.
+- A fresh v1.4.0 vs v1.2.0 controlled repeat generated 12 synthetic cards and 96 replies, including two additional probe inputs. Author-rated fixed probes preferred v1.4.0 in 22/30 pairs; all six new cards met example structure without JSON repairs. Additional inputs tied 6:6; impatient-role grounding and fixed-opening task repetition remain problems. The baseline's rating also varied substantially across rounds. Strict acceptance remains unmet on persona fidelity; these small subjective samples are not independent human or full UI acceptance.
+
+## Header decoration rollback (2026-10-04)
+
+- Restored the subtle gradient/pattern and original title insets across feature headers, including Settings. Removed the Settings-specific triangle experiment and shared-header strip experiment; aligned heights, flat settings controls and functional changes remain.
+- The supplied title sprite remains archived as unused artwork. Original design documents remain unchanged.
+
+## Function title artwork refinement (2026-10-04)
+
+- Applied the user-selected original Common_Top_Menu_Bg artwork to feature headers, replacing faint button-pattern decoration. Reserved a modest left inset (52 px desktop / 20 px mobile) while retaining aligned 60 px headers and upright text.
+- Artwork provenance and portable-pack validation include the new original sprite; existing settings surfaces and original design documents remain unchanged.
+
+## Aligned headers, random cards and feed-first Moments (2026-10-04)
+
+- Fixed desktop page headers to the same 60 px frame as the sidebar; restored the original MomoTalk wordmark's 4:1 display ratio without scaling the whole UI.
+- Added the supplied CardShop / MinigameOption assets and a workshop random entry with account-scoped, validated preferences and a previous-value backup. Reuses the three-stage writing/review pipeline, preserves the ordinary form, and requires preview plus manual saving.
+- Moments opens directly on its feed; model, enthusiasm and permission controls moved into a settings panel. Publishing expands on demand and keeps the draft when collapsed or navigating away.
+- Updated the current UI specification; the original design documents and reverted flat settings surfaces remain unchanged. Generation verification uses synthetic model responses; live model content quality remains for user acceptance.
+- Validation: repository hygiene and source lint passed; random-preference, existing workshop and artwork unit checks passed. A synthetic browser scenario checks desktop header alignment, the three-stage mocked generation, preserved drafts and 320/390 px layouts; all 72 runtime image hashes verified.
+
+## Colored navigation and compact spacing (2026-10-03)
+
+- The accepted home icon is upright; navigation now reads Home, Chat, Moments, Workshop, Settings. The four specified original colored sprites retain their aspect ratios and colors. About moves into Settings with a return action.
+- Home renders the existing greeting/activity template in its own page, preserving the active chat DOM and draft. Chat resumes the current session or opens the newest native recent chat after login, including group chats.
+- Desktop headers shrink to 60 px, contacts to 68 px and navigation to 68 px; mobile navigation is 64 px plus the safe area. Artwork/text are never stretched, and mobile chat tools retain their existing touch layout. Flat settings surfaces and original design documents remain preserved.
+- The text-only UI specification is updated to v0.2. Runtime artwork provenance distinguishes four original game sprites from the generated home icon.
+- Validation: repository hygiene and source lint passed; 19 relevant unit checks, five browser scenarios and all 70 runtime image hashes passed. Synthetic desktop/light/dark/320–390 px checks cover navigation, recent-session loading, live draft/chat preservation, background cleanup and the original editor save flow. Live desktop acceptance remains with the user.
+
+## Current UI specification draft (2026-10-03)
+
+- The [v0.1 UI specification](ui-design-spec.md) documents the current MomoTalk structure, semantic colors, component shapes, flat settings rollback, mobile layout and development acceptance checklist. Existing behavior is distinguished from proposed constraints; original design documents are preserved.
+- The draft is text-only at the user's request. The project overview links future UI work to this reference; no runtime interface or user-data behavior changes are introduced.
+
+## Settings menu tiles fully reverted (2026-10-03)
+
+- Settings categories, quick controls, feature rows and section cards return to their original flat styling before the game-menu reference was introduced. Both the first-pass white rims/raised edges and the subsequent darker-material pilot are removed; secondary settings actions regain their preceding neutral game base.
+- The original downloaded title ornament remains applied; home rounding, circular chat tools and other existing changes remain intact. Original design documents are preserved.
+- Validation: repository hygiene, lint, eight relevant unit tests and four browser scenarios passed. Light/dark/mobile previews confirmed flat category and section surfaces without the added white rims or raised edges; 29 other changed files and CSS outside the settings block were verified unchanged.
+
+## MomoTalk control shapes and menu tiles (2026-10-03)
+
+- Home activity entries share a rounded frame; conversation entries have consistent rounded selection/hover backgrounds and inset spacing.
+- Everyday chat-header tools use circular, upright targets. Confirmation, submission and primary configuration actions retain the inclined game base; cancellation and secondary utilities use upright neutral tiles.
+- Settings categories, quick controls and feature entries use pale menu tiles with a bright rim and a shallow bottom shadow in both display modes. Native fields, switches and mobile line labels retain their usable shapes.
+- The original design/appearance documents are preserved. See [the supplementary shape rules](ui-control-shapes.md); no user-data schema or chat behavior changes are involved.
+- Validation: repository and source lint passed, as did 15 relevant unit checks and seven desktop/mobile browser scenarios. Synthetic previews verify both display modes, activity frames, menu tiles, distinct confirmation/cancellation shapes and mobile settings; test lint has no errors.
+
+## MomoTalk chat tools, background visibility and desktop width (2026-10-03)
+
+- Header tool icons now contrast with their neutral game button bases in both display modes. Font Awesome aliases retain their icon font.
+- Backgrounds move from the bottom navigation into Settings > Appearance. This entry opens the existing full-area controls without a drawer overlay. A toolbar exposes display mode, return to settings and chat preview; picking an image (including the current image) enables display when it was off.
+- Translucent chat/composer canvases reveal native global and chat-specific backgrounds. Native fitting options remain usable, background settings retain their existing persistence format, and mobile thumbnails leave enough space for selection beside the context menu.
+- Desktop messages and composer share a 1280 px reading area, with longer bubbles up to 1160 px. Mobile sizing, drafts, world-line selection and ordinary chat remain intact.
+- Validation: 23 desktop/mobile browser scenarios and 15 relevant unit checks passed against an isolated synthetic data root on localhost. Final focused checks also cover fitting controls, same-image selection, background navigation and the mobile back icon. Repository hygiene and source/test lint passed without errors; existing test lint warnings remain. A live Electron acceptance and portable rebuild remain release checks.
+
+## Classic BA button geometry and rounded typography (2026-10-02)
+
+- MomoTalk retains its pink header and one default rose selection accent. Confirmation/continue controls use classic yellow; creation/generation/publishing controls use blue; secondary and icon tools use neutral game bases. Complete nine-slice visual bases incline while text, icons and hit targets stay upright. Missing artwork preserves usable fallbacks.
+- The real game wordmark, continuous contact rows, round avatars, segmented filters/world-line tabs, compact bubbles, cut-corner portrait frames, notebook details, subtle triangular headers and yellow title rules follow the supplied game references. Feature pages retain full-area navigation.
+- The runtime allowlist contains 64 verified images, including an independently pinned Texture2D wordmark bundle and declared blue/yellow/dark button adaptations. Restoration supports the source CDN and checked local UI-library bundles.
+- A local OFL Resource Han Rounded CN subset supplies the UI/login rounded font with immediate system fallback. Source/license/checksums and a reproducible builder ship with the font. Blueaka is not bundled because its redistribution license remains unverified.
+- Validation: 15 relevant unit checks, 19 desktop/mobile browser scenarios, live font loading and blocked-font navigation passed. Game bases and upright labels were visually reviewed in light/dark UI; repository/source lint and all 64 artwork hashes passed. Verification uses an isolated synthetic data root and localhost listener; a full portable rebuild and live Electron acceptance remain release checks.
+
 ## Consistent rose buttons and game UI controls (2026-10-02)
 
 - MomoTalk keeps the default rose accent; other palette selectors and quick-menu choices are removed. Valid legacy palettes migrate to rose with an exact, one-time `.before-rose` backup, without changing the v1 preference schema or the saved display/background settings.

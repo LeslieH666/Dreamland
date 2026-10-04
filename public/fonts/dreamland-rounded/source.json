@@ -1,0 +1,13 @@
+{
+  "family": "DreamLand UI Rounded CN",
+  "upstream": "Resource Han Rounded CN",
+  "version": "1.910",
+  "license": "SIL Open Font License 1.1",
+  "source": "https://github.com/CyanoHao/Resource-Han-Rounded/releases/download/v1.910/RHR-CFF2-CN-1.910.7z",
+  "archiveSha256": "4ad7b141535a1f11831287b0a6f71ddcec8daa92dc1d82c59892068f8ae5df09",
+  "sourceSha256": "ee3f276c9f9ee77c726d4e9c88350a3de73fb297633c54d510971ee636dceb1e",
+  "modifications": "Original variable axes retained (rounded default 100); GB2312, Latin, punctuation, kana and UI symbols; renamed; WOFF2.",
+  "file": "DreamLandUIRoundedCN.woff2",
+  "bytes": 4741832,
+  "sha256": "930030c08057e99b24e9e01a7c9c366a2470959a26ceb096feb44794961d47d5"
+}

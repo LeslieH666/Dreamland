@@ -7,9 +7,16 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     --dl-text: #354252; --dl-muted: #687584; --dl-border: #d7dce2;
     --dl-outgoing: #b94362; --dl-radius: 8px; --ba-header: #f28ca2; --ba-primary-bg: #b94362;
     --leslie-sidebar-width: clamp(326px, 28vw, 390px);
+    --ba-chat-width: 1280px;
+
+    /* Undo the old canvas shorthand so native fitting options keep working. */
+    & #bg1 { background-size: cover; background-position: center; background-repeat: no-repeat; }
+    & #bg1.contain { background-size: contain; }
+    & #bg1.stretch { background-size: 100% 100%; }
+    & #bg1.center { background-size: auto; }
 
     & #leslie-conversation-sidebar { padding: 0 0 78px; background: var(--dl-soft); }
-    & .leslie-sidebar-header { min-height: 84px; padding: 0 12px 0 18px; background: var(--ba-header); border: 0; gap: 6px; }
+    & .leslie-sidebar-header { min-height: 72px; padding: 0 12px 0 18px; background: var(--ba-header); border: 0; gap: 6px; }
     & .leslie-brand { min-width: 0; }
     & .leslie-brand > :is(.leslie-brand-mark, .leslie-brand-copy) { display: none; }
     & .dreamland-momotalk-brand { display: flex; align-items: center; gap: 10px; min-width: 0; color: white; }
@@ -53,25 +60,30 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     & .leslie-conversation-filters { gap: 4px; padding-top: 10px; }
     & .leslie-conversation-filters button { flex: 1; min-height: 38px; border-radius: 4px; font-size: 12px; }
     & .leslie-conversation-filters button.is-active { background: var(--cu-blue-soft); color: var(--dl-accent); box-shadow: none; }
-    & .leslie-conversation-item { width: calc(100% - 20px); margin: 5px 10px; min-height: 84px; padding: 12px; background: var(--dl-surface); border: 0; border-radius: 6px; box-shadow: 0 1px 3px #2334470a; }
-    & .leslie-conversation-item.is-active { background: var(--dl-surface); box-shadow: inset 4px 0 var(--dl-accent), 0 1px 3px #2334470a; }
-    & .leslie-conversation-avatar, & .leslie-conversation-avatar img { border-radius: 8px; }
+    & .leslie-conversation-item { width: 100%; margin: 0; min-height: 80px; padding: 12px 16px; background: var(--dl-surface); border: 0; border-bottom: 1px solid var(--dl-border); border-radius: 0; box-shadow: none; }
+    & .leslie-conversation-item.is-active { background: color-mix(in srgb, var(--dl-accent) 12%, var(--dl-surface)); box-shadow: inset 3px 0 var(--dl-accent); }
+    & .leslie-conversation-avatar, & .leslie-conversation-avatar img { border-radius: 50%; }
     & .leslie-sidebar-footer { background: var(--dl-soft); padding: 8px 12px; }
-    & #leslie-chat-header { min-height: 84px; flex-basis: 84px; padding-inline: 24px; background: var(--ba-header); border: 0; }
+    & #leslie-chat-header { min-height: 72px; flex-basis: 72px; padding-inline: 24px; background: var(--ba-header); border: 0; }
     & #leslie-chat-name, & #leslie-chat-status, & #leslie-chat-actions > *, & .leslie-mobile-back { color: white; }
     & .leslie-chat-heading strong { font-size: 18px; }
     & .leslie-chat-heading small { opacity: .95; }
     & .leslie-world-line-switch { background: #ffffff24; border: 0; border-radius: 5px; }
     & .leslie-world-line-switch button { color: #fff; background: transparent; min-width: 64px; border-radius: 4px; }
     & .leslie-world-line-switch button.is-active { background: #fff; color: var(--dl-accent); box-shadow: none; }
-    & .leslie-chat-avatar { border-radius: 8px; }
-    &:not(.leslie-chat-layout-disabled) #chat { background: var(--dl-canvas); gap: 18px; padding: 30px max(22px, calc((100% - 860px) / 2)) 28px; }
-    &:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { position: relative; isolation: isolate; max-width: min(85%, 780px); padding: 14px 20px 16px 24px; border: 0; border-radius: 14px; box-shadow: none; }
-    &:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block { background: var(--dl-outgoing); padding: 14px 24px 16px 20px; border-radius: 14px; }
+    & .leslie-chat-avatar { border-radius: 50%; }
+    &:not(.leslie-chat-layout-disabled) #chat { background: var(--dl-canvas); gap: 12px; padding: 20px max(22px, calc((100% - var(--ba-chat-width)) / 2)) 18px; }
+    &:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { position: relative; isolation: isolate; max-width: min(90%, 1160px); padding: 10px 16px 12px 20px; border: 0; border-radius: 8px; box-shadow: none; }
+    &:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block { background: var(--dl-outgoing); padding: 10px 20px 12px 16px; border-radius: 8px; }
     &:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] :is(.mes_text, .ch_name, .timestamp, .mes_timer, .mesIDDisplay, .tokenCounterDisplay, a, .mes_buttons, .mes_button) { color: #f6fbff; }
     & .mes_text { line-height: 1.75; font-size: 15px; }
-    &:not(.leslie-chat-layout-disabled) #form_sheld { padding: 12px max(22px, calc((100% - 860px) / 2)) 18px; background: var(--dl-canvas); }
-    &:not(.leslie-chat-layout-disabled) #send_form { border-radius: 6px; box-shadow: none; background: var(--dl-surface) !important; }
+    &:not(.leslie-chat-layout-disabled) #form_sheld { padding: 8px max(22px, calc((100% - var(--ba-chat-width)) / 2)) 12px; background: var(--dl-canvas); }
+    /* Keep native background images visible through every chat canvas layer. */
+    &[data-dreamland-background]:not([data-dreamland-background="off"]):not(.leslie-chat-layout-disabled) #sheld { background: transparent; }
+    &[data-dreamland-background="soft"]:not(.leslie-chat-layout-disabled) :is(#chat, #form_sheld) { background: color-mix(in srgb, var(--dl-canvas) 82%, transparent); }
+    &[data-dreamland-background="visible"]:not(.leslie-chat-layout-disabled) :is(#chat, #form_sheld) { background: color-mix(in srgb, var(--dl-canvas) 42%, transparent); }
+    &:not(.leslie-chat-layout-disabled) #send_form { min-height: 50px; border-radius: 6px; box-shadow: none; background: var(--dl-surface) !important; }
+    &:not(.leslie-chat-layout-disabled) #send_textarea { min-height: 48px; height: 48px; padding: 10px 9px 8px; }
     & #send_but { color: #fff; background: var(--dl-accent); border-radius: 5px; min-width: 44px; }
     & .dreamland-ba-status { display: block; grid-column: 1 / -1; margin: 0; padding: 12px 16px; color: var(--dl-muted); background: var(--dl-soft); border-radius: 5px; font-size: 12px; }
     & .leslieHomeIntro { min-height: 300px; padding: 30px; background: linear-gradient(90deg, var(--dl-surface) 12%, color-mix(in srgb, var(--dl-surface) 93%, transparent) 42%, transparent 85%), var(--ba-scenery, none) center / cover no-repeat; border: 0; }
@@ -81,26 +93,12 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     & .leslieHomeIntro h1 { font-size: clamp(22px, 2.7vw, 30px); }
     & .leslieHomeIntro > :not(.dreamland-home-art) { max-width: 68%; }
     & .leslieHomeCharacter { border-radius: 5px; }
-    & :is(.leslieHomeQuickActions button, .leslieHomePrimaryActions button, .leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .leslie-moments-button, .leslie-memory-button, .popup-button) {
-        min-height: 44px; padding: 10px 16px; gap: 8px; border: 1px solid var(--dl-border); border-image: none;
-        border-radius: 5px 5px 14px 5px; background-color: var(--dl-surface); color: var(--dl-text);
-        background-image: var(--ba-softPattern, none); background-position: right bottom; background-size: auto 100%; background-repeat: no-repeat;
-        box-shadow: 0 2px 0 color-mix(in srgb, var(--dl-text) 10%, transparent); text-shadow: none;
-    }
-    & :is(.leslieHomeContinueButton, .leslieHomePrimaryActions .is-primary, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .leslie-moments-button.primary, .leslie-memory-button.primary, .popup-button-ok) {
-        background-color: var(--ba-primary-bg); border-color: var(--ba-primary-bg); background-image: var(--ba-primaryPattern, none); color: #fff;
-    }
-    & :is(.leslieHomeQuickActions button, .leslieHomePrimaryActions button, .leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-settings-secondary-button, .leslie-character-workshop-button, .leslie-moments-button, .leslie-memory-button, .popup-button):hover:not(:disabled) { filter: brightness(.96); }
-    & :is(.leslieHomeContinueButton, .leslie-settings-primary-button, .leslie-character-workshop-button.is-primary, .leslie-moments-button.primary, .leslie-memory-button.primary, .popup-button-ok):hover:not(:disabled) { color: #fff; background-color: var(--ba-primary-bg); }
     & .leslie-memory-button.danger { color: var(--dl-accent); }
-    & :is(.leslie-settings-header, .leslie-memory-header, .leslie-moments-header, .leslie-character-workshop-header) { background-image: var(--ba-softPattern, none); background-position: right bottom; background-repeat: no-repeat; background-size: auto 100%; border-bottom: 3px solid var(--dl-accent); }
     & :is(.leslie-settings-heading, .leslie-memory-title-wrap, .leslie-workshop-title) { color: var(--dl-text); }
     & :is(.leslie-settings-panel, .leslie-character-workshop-panel, #leslie-memory-panel, .popup) { border-radius: 8px; }
     & .leslie-settings-overlay { background: transparent; }
     & .leslie-settings-backdrop { backdrop-filter: none; background: #26394770; }
     & .leslie-settings-nav-item.active { background: var(--cu-blue-soft); color: var(--dl-accent); }
-    & :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) { background-color: var(--ba-primary-bg); background-image: var(--ba-close, none); background-position: center; background-size: 18px; background-repeat: no-repeat; border-radius: 5px; }
-    &[data-ba-assets="ready"] :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) > i { visibility: hidden; }
     &[data-dreamland-decoration="off"] .leslieHomeIntro { background: var(--dl-surface); }
 }
 
@@ -122,10 +120,8 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
     --dl-accent: #f2b2c5; --dl-accent-strong: #ffd2de;
     --dl-canvas: #211f23; --dl-surface: #2d292f; --dl-soft: #28242a; --dl-outgoing: #6e4858;
     --dl-text: #f4edf0; --dl-muted: #c8bcc3; --dl-border: #4c424a; --ba-header: #5d3d4a; --ba-primary-bg: #6e4858;
-    & .leslie-conversation-filters button.is-active, & .leslie-settings-nav-item.active { color: #f4edf0; background: var(--dl-outgoing); }
-    & .leslie-world-line-switch button.is-active { background: #6e4858; color: #f4edf0; }
+    & .leslie-settings-nav-item.active { color: #f4edf0; background: var(--dl-outgoing); }
     & #send_but { background-color: var(--dl-outgoing); }
-    & :is(.leslie-settings-close, .leslie-moments-close, [data-workshop-action="close"]) { background-color: #6e4858; }
 }
 @media (max-width: 1000px) and (min-width: 701px) {
     body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
@@ -138,7 +134,7 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
 @media (max-width: 700px) {
     body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] {
         & #leslie-conversation-sidebar { padding-bottom: max(76px, calc(70px + env(safe-area-inset-bottom))); }
-        & .leslie-sidebar-header { padding-inline: 18px 12px; min-height: 78px; }
+        & .leslie-sidebar-header { padding-inline: 18px 12px; min-height: 72px; }
         & .leslie-sidebar-actions .leslie-icon-button { width: 38px; min-width: 38px; }
         & .dreamland-navigation { height: max(76px, calc(70px + env(safe-area-inset-bottom))); padding-bottom: max(6px, env(safe-area-inset-bottom)); }
         & .dreamland-navigation button { width: 46px; }
@@ -146,7 +142,7 @@ body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-style
         & #leslie-chat-name { font-size: 15px; }
         & .leslieHomeIntro { min-height: 275px; padding: 22px 18px; background: linear-gradient(90deg, var(--dl-surface) 5%, color-mix(in srgb, var(--dl-surface) 88%, transparent) 60%, transparent), var(--ba-scenery, none) center / cover no-repeat; }
         & .leslieHomeIntro > :not(.dreamland-home-art) { max-width: 100%; }
-        &:not(.leslie-chat-layout-disabled) #chat { padding: 20px 8px; gap: 16px; }
+        &:not(.leslie-chat-layout-disabled) #chat { padding: 16px 8px; gap: 12px; }
         &:not(.leslie-chat-layout-disabled) #chat > .mes .mes_block { max-width: calc(100% - 48px); padding: 12px 14px 14px 20px; }
         &:not(.leslie-chat-layout-disabled) #chat > .mes[is_user="true"] .mes_block { padding: 12px 20px 14px 14px; }
         &:not(.leslie-chat-layout-disabled) #form_sheld { padding: 8px 10px max(10px, env(safe-area-inset-bottom)); }

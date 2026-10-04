@@ -314,6 +314,10 @@ body.leslie-modern .leslie-character-workshop-blueprint-section {
 }
 
 body.leslie-modern .leslie-character-workshop-blueprint-section > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    list-style: none;
     min-height: 55px;
     box-sizing: border-box;
     padding: 11px 15px;
@@ -324,9 +328,46 @@ body.leslie-modern .leslie-character-workshop-blueprint-section > summary {
 body.leslie-modern .leslie-character-workshop-blueprint-section > summary > span {
     display: inline-grid;
     gap: 3px;
-    width: calc(100% - 24px);
+    flex: 1;
+    min-width: 0;
     vertical-align: middle;
 }
+
+body.leslie-modern .leslie-character-workshop-blueprint-section > summary::-webkit-details-marker { display: none; }
+body.leslie-modern .leslie-character-workshop-blueprint-section > summary::before {
+    content: '›';
+    font-size: 20px;
+    transition: transform 260ms ease;
+}
+body.leslie-modern .leslie-character-workshop-blueprint-section[open] > summary::before { transform: rotate(90deg); }
+body.leslie-modern .leslie-character-workshop-blueprint-section > summary > .leslie-blueprint-check {
+    display: grid;
+    place-items: center;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: color-mix(in srgb, #319e72 18%, var(--leslie-surface-solid));
+    color: var(--workshop-success-text);
+    font-size: 16px;
+    font-weight: 800;
+}
+body.leslie-modern .leslie-blueprint-check[hidden] { display: none !important; }
+body.leslie-modern .leslie-blueprint-body { overflow: hidden; }
+body.leslie-modern .leslie-blueprint-step-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 15px 16px;
+    background: var(--workshop-raised);
+}
+body.leslie-modern .leslie-blueprint-step-actions > small {
+    color: var(--leslie-text-soft);
+    font-size: 10px;
+}
+body.leslie-modern .leslie-character-workshop-blueprint-section > summary[aria-disabled="true"] { cursor: default; }
 
 body.leslie-modern .leslie-character-workshop-blueprint-section > summary strong {
     font-size: 12px;
@@ -1044,7 +1085,11 @@ body.leslie-modern .leslie-character-workshop-avatar-field > strong {
     font-size: 11px;
 }
 
-body.leslie-modern .leslie-character-workshop-avatar-field pre {
+body.leslie-modern .leslie-character-workshop-avatar-field textarea {
+    display: block;
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
     max-height: 240px;
     margin: 0;
     padding: 13px 14px;
@@ -1056,6 +1101,106 @@ body.leslie-modern .leslie-character-workshop-avatar-field pre {
     font-size: 10px;
     line-height: 1.6;
     white-space: pre-wrap;
+}
+
+body.leslie-modern .leslie-character-workshop-blueprint-field > label {
+    display: grid;
+    gap: 8px;
+}
+
+body.leslie-modern .leslie-character-workshop-blueprint-field {
+    align-content: start;
+}
+
+body.leslie-modern .leslie-character-workshop-blueprint-field > label > span {
+    color: var(--leslie-text);
+    font-size: 11px;
+    font-weight: 750;
+}
+
+body.leslie-modern .leslie-appearance-choice-group > small {
+    color: var(--leslie-text-soft);
+    font-size: 10px;
+}
+
+body.leslie-modern .leslie-appearance-choices {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+body.leslie-modern .leslie-appearance-choice-group > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+body.leslie-modern .leslie-appearance-choice {
+    min-height: 30px;
+    padding: 4px 10px;
+    color: var(--leslie-text);
+    background: var(--workshop-card);
+    border: 1px solid var(--leslie-border);
+    border-radius: 7px;
+    box-shadow: none;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease;
+}
+
+body.leslie-modern .leslie-appearance-choice[aria-pressed="true"] {
+    background: #d9f3fc;
+    color: #214d69;
+    border-color: #64c8e8;
+}
+
+body.leslie-modern .leslie-appearance-choice:focus-visible {
+    outline: 2px solid #64c8e8;
+    outline-offset: 2px;
+}
+
+body.leslie-modern .leslie-appearance-choice:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+body.leslie-modern .leslie-workshop-revision {
+    padding: 16px;
+    border: 1px solid var(--leslie-border);
+    border-radius: 14px;
+    background: var(--workshop-card);
+}
+
+body.leslie-modern .leslie-workshop-revision summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+body.leslie-modern .leslie-workshop-revision label {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+body.leslie-modern .leslie-workshop-revision :is(select, textarea) {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--leslie-border);
+    border-radius: 10px;
+    background: var(--leslie-surface-subtle);
+    color: var(--leslie-text);
+}
+
+body.leslie-modern .leslie-workshop-revision textarea {
+    resize: vertical;
+}
+
+body.leslie-modern .leslie-workshop-revision-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
 }
 
 body.leslie-modern .leslie-character-workshop-avatar-meta {
@@ -1083,6 +1228,8 @@ body.leslie-modern .leslie-character-workshop-footer > span {
 
 body.leslie-modern .leslie-character-workshop-footer > div {
     display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
     gap: 8px;
     justify-content: flex-end;
 }
@@ -1212,7 +1359,8 @@ body.leslie-modern .leslie-character-workshop-button:disabled {
 
     body.leslie-modern .leslie-character-workshop-footer > div {
         width: 100%;
-        overflow-x: auto;
+        justify-content: center;
+        overflow: visible;
     }
 
     body.leslie-modern .leslie-character-workshop-button {
@@ -1254,7 +1402,126 @@ body.leslie-modern .leslie-character-workshop-button:disabled {
     }
 }
 
+body.leslie-modern [data-workshop-rehearsal] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-width: 0;
+}
+
+body.leslie-modern [data-workshop-rehearsal] :is(p, h4, label, small) {
+    flex-basis: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+body.leslie-modern [data-workshop-rehearsal] label {
+    display: grid;
+    gap: 8px;
+}
+
+body.leslie-modern [data-workshop-rehearsal] textarea {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    resize: vertical;
+    padding: 12px;
+    color: var(--leslie-text);
+    background: var(--leslie-panel);
+    border: 1px solid var(--leslie-border);
+    border-radius: 8px;
+    font: inherit;
+}
+
+body.leslie-modern .leslie-rehearsal-player {
+    padding: 10px;
+    border-left: 3px solid var(--leslie-accent);
+}
+
+body.leslie-modern .leslie-rehearsal-conflict {
+    color: var(--workshop-danger);
+}
+
+body.leslie-modern .leslie-rehearsal-scenes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+body.leslie-modern .leslie-rehearsal-scene {
+    flex: 1 1 150px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--leslie-border);
+    border-radius: 8px;
+    background: var(--leslie-surface-solid);
+    color: var(--leslie-text);
+    box-shadow: none;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.leslie-modern .leslie-rehearsal-scene[aria-pressed="true"] {
+    color: var(--workshop-accent-text);
+    background: var(--leslie-accent-soft);
+    border-color: var(--leslie-accent);
+}
+
+body.leslie-modern .leslie-rehearsal-scene:focus-visible {
+    outline: 2px solid var(--leslie-accent);
+    outline-offset: 2px;
+}
+
+body.leslie-modern .leslie-rehearsal-actions,
+body.leslie-modern .leslie-rehearsal-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+}
+
+body.leslie-modern .leslie-rehearsal-actions .leslie-character-workshop-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100% - 10px);
+    box-sizing: border-box;
+    white-space: normal;
+}
+
+body.leslie-modern .leslie-rehearsal-more {
+    flex: 1 1 170px;
+    min-width: 0;
+}
+
+body.leslie-modern .leslie-rehearsal-more > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+body.leslie-modern .leslie-rehearsal-more > summary::-webkit-details-marker {
+    display: none;
+}
+
+body.leslie-modern .leslie-rehearsal-tools {
+    padding-top: 14px;
+}
+
+body.leslie-modern [data-workshop-section="rehearsal"] .leslie-character-workshop-section-heading :is(h3, p) {
+    color: #fff;
+}
+
+body.leslie-modern [data-workshop-section="rehearsal"] .leslie-character-workshop-section-heading :is(h3, p) {
+    color: #fff;
+}
+
 @media (prefers-reduced-motion: reduce) {
+    body.leslie-modern .leslie-character-workshop-blueprint-section > summary::before { transition: none; }
     body.leslie-modern .leslie-character-workshop,
     body.leslie-modern .leslie-character-workshop-panel {
         transition: none;

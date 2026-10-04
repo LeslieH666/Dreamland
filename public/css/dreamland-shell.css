@@ -67,7 +67,7 @@ body.leslie-modern[data-leslie-design-language="dreamland"]:not(.leslie-chat-lay
 body.leslie-modern[data-leslie-design-language="dreamland"]:not(.leslie-chat-layout-disabled) #send_form { border-radius: var(--dl-radius); min-height: 56px; }
 
 /* Existing imported backgrounds stay owned by SillyTavern. Only visibility changes. */
-body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background]:not([data-dreamland-background="off"]) #bg1 { background-color: var(--dl-canvas); background-size: cover; background-position: center; }
+body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background]:not([data-dreamland-background="off"]) #bg1 { background-color: var(--dl-canvas); }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background]:not([data-dreamland-background="off"]):not(.leslie-chat-layout-disabled) #sheld { background: transparent; }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background="soft"]:not(.leslie-chat-layout-disabled) #chat { background: color-mix(in srgb, var(--dl-canvas) 94%, transparent); }
 body.leslie-modern[data-leslie-design-language="dreamland"][data-dreamland-background="visible"]:not(.leslie-chat-layout-disabled) #chat { background: color-mix(in srgb, var(--dl-canvas) 72%, transparent); }

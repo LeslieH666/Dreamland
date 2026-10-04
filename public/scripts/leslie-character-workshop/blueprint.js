@@ -1,3 +1,6 @@
+import { DIALOGUE_EXPRESSION_OPTIONS } from './dialogue-style.js';
+import { APPEARANCE_CHOICES } from './appearance.js';
+
 const SELECT_OPTIONS = Object.freeze({
     gender: ['女性', '男性', '非二元', '自定义', '不指定'],
     adultStatus: ['明确成年', '未成年', '年龄不适用', '暂不指定'],
@@ -92,10 +95,11 @@ export const CHARACTER_BLUEPRINT_SECTIONS = Object.freeze([
     {
         id: 'dialogue',
         title: '对话风格',
-        description: '控制表达习惯，不会限制角色根据场景产生真实情绪。',
+        description: '让角色说话更顺口、情绪更有区别；不填表达张力时默认鲜明，仍按人设反应。',
         fields: [
             { key: 'addressUser', label: '对玩家的称呼', placeholder: '称呼或称呼变化规则' },
-            { key: 'tone', label: '语言与口吻', placeholder: '例如：简洁、克制、偶尔冷幽默' },
+            { key: 'tone', label: '语言与口吻', placeholder: '例如：直来直去，烦了就顶嘴，认错还嘴硬' },
+            { key: 'expressionIntensity', label: '表达张力', type: 'select', options: DIALOGUE_EXPRESSION_OPTIONS },
             { key: 'replyLength', label: '默认回复长度', type: 'select', options: SELECT_OPTIONS.replyLength },
             { key: 'actionRatio', label: '动作描写比例', type: 'select', options: SELECT_OPTIONS.actionRatio },
             { key: 'verbalHabits', label: '口癖与用词习惯', placeholder: '没有则留空' },
@@ -137,12 +141,13 @@ const FIELD_TARGETS = Object.freeze({
     addressUser: ['personality', 'system_prompt', 'mes_example'], tone: ['personality', 'system_prompt', 'mes_example'], replyLength: ['post_history_instructions'],
     actionRatio: ['post_history_instructions'], verbalHabits: ['personality', 'mes_example'],
     forbiddenStyle: ['post_history_instructions', 'personality', 'system_prompt'],
+    expressionIntensity: ['personality', 'mes_example', 'post_history_instructions'],
     worldType: ['scenario'], era: ['scenario'], worldSetting: ['scenario'], openingPlace: ['scenario', 'first_mes'],
     openingTime: ['scenario', 'first_mes'], openingTrigger: ['scenario', 'first_mes'],
 });
 const SEMANTIC_CONTROL_FIELDS = new Set([
     'adultStatus', 'ageStage', 'occupationCategory', 'familiarity', 'trust', 'relationshipPace',
-    'replyLength', 'actionRatio', 'worldType', 'era',
+    'replyLength', 'actionRatio', 'expressionIntensity', 'worldType', 'era',
 ]);
 
 function escapeHtml(value) {
@@ -165,14 +170,21 @@ function renderField(field) {
     } else {
         control = `<input ${attributes} type="text" placeholder="${escapeHtml(field.placeholder || '留空则由 AI 补全')}">`;
     }
+    if (APPEARANCE_CHOICES[field.key]) {
+        const choices = APPEARANCE_CHOICES[field.key].map(([label, values], group) => `<div class="leslie-appearance-choice-group"><small>${escapeHtml(label)}</small><div>${values.map(value => `<button type="button" class="leslie-appearance-choice" data-appearance-field="${field.key}" data-appearance-group="${group}" data-appearance-choice="${escapeHtml(value)}" aria-pressed="false" title="选择${escapeHtml(value)}；再次点击取消，可继续在输入框里补充">${escapeHtml(value)}</button>`).join('')}</div></div>`).join('');
+        return `<div class="leslie-character-workshop-blueprint-field${className}"><label><span>${escapeHtml(field.label)}</span>${control}</label><small>可选常用项，也可以自由填写；留空交给 AI。</small><div class="leslie-appearance-choices">${choices}</div></div>`;
+    }
     return `<label class="leslie-character-workshop-blueprint-field${className}"><span>${escapeHtml(field.label)}</span>${control}<small>留空则由 AI 生成</small></label>`;
 }
 
 export function renderCharacterBlueprintMarkup() {
     return CHARACTER_BLUEPRINT_SECTIONS.map(section => `
         <details class="leslie-character-workshop-blueprint-section" data-blueprint-section="${escapeHtml(section.id)}"${section.open ? ' open' : ''}>
-            <summary><span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(section.description)}</small></span></summary>
-            <div class="leslie-character-workshop-blueprint-grid">${section.fields.map(renderField).join('')}</div>
+            <summary><span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(section.description)}</small></span><span class="leslie-blueprint-check" data-blueprint-check hidden aria-label="本项已确认">✓</span></summary>
+            <div class="leslie-blueprint-body">
+                <div class="leslie-character-workshop-blueprint-grid">${section.fields.map(renderField).join('')}</div>
+                <div class="leslie-blueprint-step-actions"><small>留空项交给 AI 补全，确认后继续下一项。</small><button type="button" class="leslie-character-workshop-button is-primary" data-blueprint-complete title="确认本分类的填写内容，显示完成勾标并展开下一分类；留空项仍可由 AI 补全。">✓ ${section === CHARACTER_BLUEPRINT_SECTIONS.at(-1) ? '确认并完成填写' : '确认本项，继续下一项'}</button></div>
+            </div>
         </details>`).join('');
 }
 

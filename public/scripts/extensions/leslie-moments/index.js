@@ -55,6 +55,8 @@ const pageState = {
     replyingTo: null,
     replyDraft: '',
     settingsOpen: false,
+    preferencesOpen: false,
+    composerOpen: false,
     publisherSettingsLoaded: false,
     availableOnlineModels: [],
     selectedOnlineProvider: '',
@@ -452,6 +454,11 @@ function setActivityStatus(status) {
         element.className = `leslie-moments-activity-status ${copy.className}`;
         element.innerHTML = `<i class="fa-solid ${copy.icon}"></i><span>${escapeHtml(copy.label)}</span>`;
         element.title = pageState.activityStatus.lastError || copy.label;
+    }
+    const headerStatus = overlay?.querySelector('[data-moments-header-status]');
+    if (headerStatus) {
+        headerStatus.textContent = copy.label;
+        headerStatus.title = copy.label;
     }
     globalThis.leslieDesktopMoments?.reportStatus?.({
         state: pageState.activityStatus.state,
@@ -905,12 +912,8 @@ function renderPage({ preserveScroll = false } = {}) {
         ${renderDesktopRail()}
         <div class="leslie-moments-content-pane">
             <div class="leslie-moments-content-inner">
-                <div class="leslie-moments-notice"><i class="fa-solid fa-wand-magic-sparkles"></i><span><strong>角色会在后台选择性互动</strong>模型真正处理动态后才会显示已读；关闭窗口转入系统托盘后仍会继续运行。</span><span id="leslie-moments-activity-status" class="leslie-moments-activity-status ${activityCopy.className}" title="${escapeHtml(pageState.activityStatus.lastError || activityCopy.label)}"><i class="fa-solid ${activityCopy.icon}"></i><span>${escapeHtml(activityCopy.label)}</span></span></div>
-                ${renderOnlineModelControl()}
-                ${renderEnthusiasmControl()}
-                ${renderPublisherControl()}
                 ${pageState.error ? `<div class="leslie-moments-error"><i class="fa-solid fa-circle-exclamation"></i><span>${escapeHtml(pageState.error)}</span><button type="button" data-moments-action="retry">重试</button></div>` : ''}
-                ${renderComposer()}
+                ${pageState.composerOpen ? '<button type="button" class="leslie-moments-compose-close" data-moments-action="compose-close">收起发布</button>' + renderComposer() : ''}
                 <section class="leslie-moments-timeline" aria-label="朋友圈时间线">
                     <div class="leslie-moments-timeline-title"><div><strong>${pageState.roleFilter ? `${escapeHtml(getContentSources().find(item => item.sourceKey === pageState.roleFilter)?.label || '角色')} 的动态` : '动态时间线'}</strong><small>${escapeHtml(personaLabel)} 的视角 · ${pageState.filter === 'reality' ? '现实世界' : pageState.filter === 'story' ? '故事世界' : '全部世界'}</small></div><span>${pageState.timelineRevision ? `版本 ${pageState.timelineRevision}` : '尚未写入数据'}</span></div>
                     ${renderFilterBar()}
@@ -921,11 +924,16 @@ function renderPage({ preserveScroll = false } = {}) {
         ${pageState.busy ? '<div class="leslie-moments-busy" aria-live="polite"><i class="fa-solid fa-spinner fa-spin"></i><span>正在保存到本机……</span></div>' : ''}
     </div>`;
     if (dialogHost) {
-        dialogHost.innerHTML = `${renderAudiencePicker()}
+        dialogHost.innerHTML = `${pageState.preferencesOpen ? '<section class="leslie-moments-preferences" role="region" aria-label="朋友圈设置"><header><strong>朋友圈设置</strong><button type="button" data-moments-action="preferences-close" aria-label="关闭朋友圈设置">×</button></header><p>角色会在后台选择性互动；真正处理后才会显示已读。托盘后台运行沿用已有设置。</p>' + renderOnlineModelControl() + renderEnthusiasmControl() + renderPublisherControl() + '</section>' : ''}${renderAudiencePicker()}
             ${renderLikesDialog()}
             ${renderPublisherSettingsDialog()}
             ${renderMemoryPicker()}
             ${renderMemorySourcePicker()}`;
+    }
+    const headerStatus = overlay.querySelector('[data-moments-header-status]');
+    if (headerStatus) {
+        headerStatus.textContent = activityCopy.label;
+        headerStatus.title = activityCopy.label;
     }
     if (preserveScroll) {
         const contentPane = pageMain.querySelector('.leslie-moments-content-pane');
@@ -974,6 +982,8 @@ function openPage() {
         pageState.audienceOpen = false;
         pageState.likesPostId = null;
         pageState.settingsOpen = false;
+        pageState.preferencesOpen = false;
+        pageState.composerOpen = false;
         pageState.memoryPickerOpen = false;
         pageState.memorySourceOpen = false;
         overlay.classList.remove('is-open');
@@ -991,6 +1001,8 @@ function closePage() {
     pageState.audienceOpen = false;
     pageState.likesPostId = null;
     pageState.settingsOpen = false;
+    pageState.preferencesOpen = false;
+    pageState.composerOpen = false;
     pageState.memoryPickerOpen = false;
     pageState.memorySourceOpen = false;
     document.body.classList.remove('leslie-moments-page-open');
@@ -1263,6 +1275,7 @@ function beginEditing(postId) {
         return;
     }
     pageState.editingId = post.id;
+    pageState.composerOpen = true;
     pageState.draftContent = post.content;
     pageState.mode = post.mode;
     pageState.visibilityType = post.visibility?.type === 'selected' ? 'selected' : 'all';
@@ -1379,6 +1392,27 @@ async function handlePageClick(event) {
         return;
     }
     switch (action) {
+        case 'preferences':
+            pageState.preferencesOpen = true;
+            renderPage({ preserveScroll: true });
+            overlay.querySelector('[data-moments-action="preferences-close"]')?.focus();
+            break;
+        case 'preferences-close':
+            pageState.preferencesOpen = false;
+            renderPage({ preserveScroll: true });
+            overlay.querySelector('[data-moments-action="preferences"]')?.focus();
+            break;
+        case 'compose':
+            pageState.composerOpen = true;
+            renderPage({ preserveScroll: true });
+            overlay.querySelector('.leslie-moments-content-pane')?.scrollTo({ top: 0 });
+            overlay.querySelector('#leslie-moments-content')?.focus();
+            break;
+        case 'compose-close':
+            pageState.composerOpen = false;
+            renderPage({ preserveScroll: true });
+            overlay.querySelector('[data-moments-action="compose"]')?.focus();
+            break;
         case 'close':
             closePage();
             break;
@@ -1443,6 +1477,7 @@ async function handlePageClick(event) {
         }
         case 'compose-focus':
             pageState.roleFilter = '';
+            pageState.composerOpen = true;
             renderPage();
             requestAnimationFrame(() => {
                 pageMain.querySelector('.leslie-moments-content-pane')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1546,7 +1581,7 @@ async function handlePageClick(event) {
 function handlePageChange(event) {
     if (event.target instanceof HTMLSelectElement && event.target.hasAttribute('data-moments-online-provider')) {
         pageState.selectedOnlineProvider = event.target.value;
-        const configureButton = pageMain.querySelector('[data-moments-action="configure-online-model"]');
+        const configureButton = overlay.querySelector('[data-moments-action="configure-online-model"]');
         if (configureButton instanceof HTMLButtonElement) configureButton.disabled = !event.target.value;
     } else if (event.target instanceof HTMLInputElement && event.target.dataset.momentsAction === 'enthusiasm') {
         const index = Math.max(0, Math.min(MOMENT_ENTHUSIASM_LEVELS.length - 1, Number(event.target.value) || 0));
@@ -1587,7 +1622,7 @@ function installPage() {
             <button type="button" data-moments-action="close" aria-label="返回聊天"><i class="fa-solid fa-arrow-left"></i></button>
             <span class="leslie-moments-header-icon"><i class="fa-solid fa-camera-retro"></i></span>
             <div><strong id="leslie-moments-title">朋友圈</strong><small>分享近况，也为角色互动留出空间</small></div>
-            <span class="leslie-moments-local"><i class="fa-solid fa-shield-halved"></i>仅保存在本机</span>
+            <div class="leslie-moments-header-tools"><span data-moments-header-status></span><button type="button" data-moments-action="compose">发动态</button><button type="button" data-moments-action="preferences">设置</button></div>
         </header>
         <main class="leslie-moments-main"></main>
         <div class="leslie-moments-dialog-host"></div>
@@ -1980,13 +2015,16 @@ function bindLifecycleEvents() {
         if (event.key !== 'Escape' || !pageState.open) {
             return;
         }
-        if (pageState.audienceOpen || pageState.likesPostId || pageState.settingsOpen || pageState.memoryPickerOpen || pageState.memorySourceOpen) {
+        if (pageState.audienceOpen || pageState.likesPostId || pageState.settingsOpen || pageState.preferencesOpen || pageState.memoryPickerOpen || pageState.memorySourceOpen) {
+            const returnToPreferences = pageState.preferencesOpen;
             pageState.audienceOpen = false;
             pageState.likesPostId = null;
             pageState.settingsOpen = false;
+            pageState.preferencesOpen = false;
             pageState.memoryPickerOpen = false;
             pageState.memorySourceOpen = false;
-            renderPage();
+            renderPage({ preserveScroll: true });
+            if (returnToPreferences) overlay.querySelector('[data-moments-action="preferences"]')?.focus();
         } else {
             closePage();
         }

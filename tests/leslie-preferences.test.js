@@ -11,6 +11,20 @@ let root;
 beforeEach(() => { root = fs.mkdtempSync(path.join(os.tmpdir(), 'dreamland-preferences-')); });
 afterEach(() => { fs.rmSync(root, { recursive: true, force: true }); });
 
+test('glass preferences extend existing v1 records, validate ranges and preserve rollback and login hints', () => {
+    patchPreferences(root, { language: 'zh-cn' });
+    const glass = { 'dreamland.appearance.glassTransparency': '65', 'dreamland.appearance.glassBlur': '36' };
+    patchPreferences(root, glass);
+    expect(readPreferences(root).values).toEqual({ language: 'zh-cn', ...glass });
+    saveLoginAppearance(root, 'synthetic', readPreferences(root).values);
+    expect(readLoginAppearance(root, 'synthetic')).toEqual(glass);
+    for (const value of ['49', '-1', '1.5', 'invalid']) expect(validPreference('dreamland.appearance.glassBlur', value)).toBe(false);
+    expect(() => patchPreferences(root, { 'dreamland.appearance.glassTransparency': '101' })).toThrow();
+    const file = path.join(root, 'leslie', 'browser-preferences.json');
+    fs.copyFileSync(`${file}.previous`, file);
+    expect(readPreferences(root).values).toEqual({ language: 'zh-cn' });
+});
+
 test('keeps each account and demo preference separate, merges changes and retains a rollback record', () => {
     const alice = path.join(root, 'alice');
     const bob = path.join(root, 'bob');

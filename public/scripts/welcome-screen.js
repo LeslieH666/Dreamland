@@ -45,6 +45,7 @@ import {
 } from './leslie-home-core.js';
 import { renderTemplateAsync } from './templates.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { returnToDreamlandChat } from './dreamland-pages.js';
 import { clamp, flashHighlight, isElementInViewport, sortMoments, timestampToMoment } from './utils.js';
 
 const assistantAvatarKey = 'assistant';
@@ -580,6 +581,10 @@ function bindLeslieHomeActions(root) {
             return;
         }
         const action = button.dataset.homeAction;
+        if (['open-chat', 'open-character', 'temporary-chat', 'focus-characters'].includes(action)) {
+            returnToDreamlandChat();
+            if (action !== 'focus-characters') document.dispatchEvent(new CustomEvent('dreamland:chat-resumed'));
+        }
         if (action === 'open-chat') {
             const avatar = button.dataset.avatar;
             const group = button.dataset.group;
@@ -594,7 +599,8 @@ function bindLeslieHomeActions(root) {
         } else if (action === 'toggle-character-pin' && button.dataset.avatar) {
             event.stopPropagation();
             if (PinnedHomeCharactersManager.toggle(button.dataset.avatar)) {
-                void refreshWelcomeScreen();
+                if (root.closest('.dreamland-home-content')) void renderLeslieNavigationHome(root.parentElement);
+                else void refreshWelcomeScreen();
             }
         } else if (action === 'manage-pins') {
             void openHomeCharacterPinManager();
@@ -612,9 +618,9 @@ function bindLeslieHomeActions(root) {
     });
 }
 
-async function sendLeslieHomePanel(chats, momentActivities) {
+async function sendLeslieHomePanel(chats, momentActivities, destination = document.getElementById('chat')) {
     try {
-        const chatElement = document.getElementById('chat');
+        const chatElement = destination;
         if (!chatElement) {
             return;
         }
@@ -632,6 +638,28 @@ async function sendLeslieHomePanel(chats, momentActivities) {
     } catch (error) {
         console.error('Leslie home error:', error);
     }
+}
+
+/** Render the greeting page without closing, clearing or reloading a live chat. */
+export async function renderLeslieNavigationHome(container, isCurrent = () => container.isConnected) {
+    const [chats, activities] = await Promise.all([getRecentChats({ metadata: true }), getRecentMomentActivities()]);
+    if (!isCurrent()) return;
+    container.replaceChildren();
+    await sendLeslieHomePanel(chats, activities, container);
+}
+
+/** Keep the active chat/draft; after login, reopen the latest native JSONL chat. */
+export async function resumeLeslieRecentChat(isCurrent = () => true) {
+    if (!isCurrent()) return;
+    if (getCurrentChatId() === undefined && !is_send_press && !is_group_generating) {
+        const recent = selectHomeContinueChat(await getRecentChats({ metadata: true }));
+        if (!isCurrent() || getCurrentChatId() !== undefined || is_send_press || is_group_generating) return;
+        if (recent?.avatar) {
+            const characterId = characters.findIndex(character => character.avatar === recent.avatar);
+            if (characterId >= 0) await selectCharacterById(characterId, { switchMenu: false, chatFile: recent.chat_name });
+        } else if (recent?.group) await openRecentGroupChat(recent.group, recent.chat_name);
+    }
+    if (isCurrent()) document.dispatchEvent(new CustomEvent('dreamland:chat-resumed'));
 }
 
 /**
@@ -977,6 +1005,11 @@ async function deleteRecentGroupChat(groupId, fileName) {
  * @returns {Promise<void>}
  */
 async function refreshWelcomeScreen({ flashChat = null } = {}) {
+    const navigationHome = document.querySelector('.dreamland-home-page:not([hidden]) .dreamland-home-content');
+    if (navigationHome) {
+        await renderLeslieNavigationHome(navigationHome);
+        return;
+    }
     const chatElement = document.getElementById('chat');
     if (!chatElement) {
         console.error('Chat element not found');

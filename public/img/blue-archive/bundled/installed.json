@@ -975,6 +975,304 @@
       "sha256": "db36b7c3e8a26ba752967feca75e7e553f973ee5eae88f841b70505221ae7c46",
       "shadow": "#342930",
       "highlight": "#4d3843"
+    },
+    {
+      "file": "Common_Bg_Paper.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Bg_Paper",
+        "x": 1635,
+        "y": 1575,
+        "width": 96,
+        "height": 85,
+        "borderLeft": 16,
+        "borderRight": 17,
+        "borderTop": 58,
+        "borderBottom": 22,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "b4914da4d096631136f578aaa136a2cd6bc162ac7f7acbce886ca437bac3f00a"
+    },
+    {
+      "file": "Card_Line_Char.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Card_Line_Char",
+        "x": 2199,
+        "y": 18,
+        "width": 59,
+        "height": 70,
+        "borderLeft": 23,
+        "borderRight": 28,
+        "borderTop": 28,
+        "borderBottom": 35,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "144f7380f7b9a7d67d66ea0b02a5f93aaaf422f2f58c98f9c2dafcd75e97d7f7"
+    },
+    {
+      "file": "Common_Icon_Order.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Order",
+        "x": 514,
+        "y": 667,
+        "width": 118,
+        "height": 55,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "9f8f033dd7577a7bcfbc6ccf591df428334c283ee17839976f8b735df55ab373"
+    },
+    {
+      "file": "Common_Btn_Base_Blue.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_BG.png",
+      "operation": "multiply-rgb-preserve-alpha",
+      "tint": "#79ddf9",
+      "sha256": "56362854360819bf2126cdb36356339e2681dd4281ee15f713df87243bc61f54"
+    },
+    {
+      "file": "Common_Btn_Base_Yellow.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_BG.png",
+      "operation": "multiply-rgb-preserve-alpha",
+      "tint": "#fae94b",
+      "sha256": "fbb49e05fda260cc55da977c27798161daea7169f6221c8c1018ee0d12540402"
+    },
+    {
+      "file": "Common_Btn_Base_Neutral_Dark.png",
+      "kind": "adaptation",
+      "source": "Common_Btn_BG.png",
+      "operation": "multiply-rgb-preserve-alpha",
+      "tint": "#403d46",
+      "sha256": "2d06af3af79c46108d689db01005376db1e898fe47b096855839a76aebc0fb7f"
+    },
+    {
+      "file": "ImgFont_Momotalk.png",
+      "kind": "game-texture",
+      "texture": "ImgFont_Momotalk",
+      "pathId": "7069044326222584334",
+      "sha256": "27528650f17ef349ade837d8f691eff861ae4a9243ddd9d376e16b74a9a220d1",
+      "bundle": {
+        "path": "Preload/Android/prologgroup-assets-_mx-addressableasset-uis-00_images-imagefont-_mxprolog-2024-11-18_000_assets_all_274474007.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/Preload/Android/prologgroup-assets-_mx-addressableasset-uis-00_images-imagefont-_mxprolog-2024-11-18_000_assets_all_274474007.bundle",
+        "sha256": "171ddc4beb166f92c03ff156af011e015ea3607da28d79775efd0f1587046bb4"
+      }
+    },
+    {
+      "file": "Common_Reward_Deco.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Reward_Deco",
+        "x": 0,
+        "y": 1340,
+        "width": 335,
+        "height": 320,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "a0b9ef1cfcc89eb9e1b548d147d35fdb0a823d6f223f29ee6afbbd8927ef57b7"
+    },
+    {
+      "file": "Common_Icon_Setting_Game.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Setting_Game",
+        "x": 926,
+        "y": 922,
+        "width": 148,
+        "height": 110,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "75d62024004f88d2638b8bdd070747e22293e239b867ef864ad6bd271a260171"
+    },
+    {
+      "file": "Common_Icon_Social.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Icon_Social",
+        "x": 940,
+        "y": 1329,
+        "width": 149,
+        "height": 116,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "11157d7d277b5f0cfb0ec82e35ad52639ecedf8ccee2346a66c6eeef0f81674a"
+    },
+    {
+      "file": "Event_Icon_Message.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_Message",
+        "x": 888,
+        "y": 1421,
+        "width": 92,
+        "height": 113,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "9fc4603120803ec6eba18a4e187d1d5eb9ac30458a22155fc9a59ab802cd89c9",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Event_Icon_Replay.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_Replay",
+        "x": 1926,
+        "y": 1949,
+        "width": 116,
+        "height": 99,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 3,
+        "paddingBottom": 0
+      },
+      "sha256": "c5985dae33b46eb61065e30c17b82f5f3b0e41b0bd9da7d28612cdb4881b0781",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Dreamland_Nav_Home.png",
+      "kind": "project-generated",
+      "sha256": "d6bef865519eeb928da4cdc255b54798c52ab4cb5173853bfc1bda217541c3b3",
+      "provenance": "Built-in imagegen; user accepted blue/white home icon, then requested upright walls and horizontal base. 2026-10-03. Not original game artwork."
+    },
+    {
+      "file": "Event_Icon_CardShop.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_CardShop",
+        "x": 1239,
+        "y": 1946,
+        "width": 116,
+        "height": 102,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "99d3ce2618b4ce61814e4b20332407ea784372f6dd2baaa80be4343de2a3f44c",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Event_Icon_MinigameOption.png",
+      "kind": "game-sprite",
+      "atlas": "Event",
+      "sprite": {
+        "name": "Event_Icon_MinigameOption",
+        "x": 669,
+        "y": 1484,
+        "width": 103,
+        "height": 106,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 0
+      },
+      "sha256": "4ca7467014eb790baf72a4139c48fda53371bfc84c69bd205c56cda9914d49d3",
+      "bundle": {
+        "path": "GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/GameData/Android/assets-_mx-uis-atlas-_mxdependency-2024-11-18_000_assets_all_667417509.bundle",
+        "sha256": "2870f3e4bc7c5a9c789612d0f6114997d9f9bf140850fb3dc02ef9bec3e41d64"
+      }
+    },
+    {
+      "file": "Common_Top_Menu_Bg.png",
+      "kind": "game-sprite",
+      "atlas": "Common",
+      "sprite": {
+        "name": "Common_Top_Menu_Bg",
+        "x": 0,
+        "y": 1083,
+        "width": 343,
+        "height": 105,
+        "borderLeft": 310,
+        "borderRight": 20,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "paddingLeft": 0,
+        "paddingRight": 0,
+        "paddingTop": 0,
+        "paddingBottom": 61
+      },
+      "sha256": "2b7aedff6c7d71b171c6d3b3a63a2db1c88bcb68d9976403b08b222fd61746c3",
+      "bundle": {
+        "path": "Preload/Android/prologdepengroup-assets-_mx-uis-atlas-_mxprolog-2024-11-18_assets_all_1611534265.bundle",
+        "url": "https://ba.dn.nexoncdn.co.kr/com.nexon.bluearchive/e3ec4c1e969240ff/Preload/Android/prologdepengroup-assets-_mx-uis-atlas-_mxprolog-2024-11-18_assets_all_1611534265.bundle",
+        "sha256": "0e70ed53933a136bc1d39deee742b283e377355219e4657e46245ef8f2954019"
+      }
     }
   ]
 }

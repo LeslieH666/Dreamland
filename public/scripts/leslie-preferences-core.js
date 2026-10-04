@@ -1,8 +1,12 @@
+import { APPEARANCE_KEYS, validGlassValue } from './dreamland-appearance-core.js';
+
 // Only presentation choices belong here. Credentials and drafts never do.
 export const PREFERENCE_OPTIONS = Object.freeze({
     'dreamland.appearance.style': ['clear', 'moon', 'paper', 'blue'],
     'dreamland.appearance.decoration': ['full', 'subtle', 'off'],
     'dreamland.appearance.background': ['off', 'soft', 'visible'],
+    [APPEARANCE_KEYS.glassTransparency]: null,
+    [APPEARANCE_KEYS.glassBlur]: null,
     'leslie.design.language': ['dreamland', 'cupertino', 'classic'],
     'leslie.theme.preference': ['auto', 'light', 'dark'],
     'leslie.color.palette': ['rose', 'jade', 'iris', 'clay', 'slate'],
@@ -30,6 +34,8 @@ export function validPreference(key, value) {
     if (!Object.hasOwn(PREFERENCE_OPTIONS, key)) return false;
     if (value === null) return true;
     if (typeof value !== 'string' || value.length > 1024) return false;
+    if (key === APPEARANCE_KEYS.glassTransparency) return validGlassValue('glassTransparency', value);
+    if (key === APPEARANCE_KEYS.glassBlur) return validGlassValue('glassBlur', value);
     if (PREFERENCE_OPTIONS[key]) return PREFERENCE_OPTIONS[key].includes(value);
     if (key === 'language') return /^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,2}$/i.test(value);
     try {
@@ -41,6 +47,6 @@ export function validPreference(key, value) {
 }
 
 export function loginAppearance(values = {}) {
-    return Object.fromEntries(['dreamland.appearance.style', 'dreamland.appearance.decoration', 'leslie.design.language', 'leslie.theme.preference', 'leslie.color.palette']
+    return Object.fromEntries(['dreamland.appearance.style', 'dreamland.appearance.decoration', 'leslie.design.language', 'leslie.theme.preference', 'leslie.color.palette', APPEARANCE_KEYS.glassTransparency, APPEARANCE_KEYS.glassBlur]
         .filter(key => values[key] != null && validPreference(key, values[key])).map(key => [key, normalizePreference(key, values[key])]));
 }

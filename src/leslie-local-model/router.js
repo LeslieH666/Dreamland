@@ -1,10 +1,19 @@
 import express from 'express';
 import ipaddr from 'ipaddr.js';
 
-import { getLocalServiceStatus, startManagedLocalModel } from '../electron/local-services.js';
 import { isDirectPrivateNetworkRequest } from '../network-access.js';
 import { serverDirectory } from '../server-directory.js';
 import { detectLeslieLocalModel, probeLeslieLocalRuntime } from '../../public/scripts/leslie-local-model-core.js';
+
+const desktopLocalServices = process.env.DREAMLAND_ANDROID === '1'
+    ? null
+    : await import('../electron/local-services.js');
+const getLocalServiceStatus = desktopLocalServices?.getLocalServiceStatus ?? (() => ({
+    localModels: { models: [] },
+    services: { localModel: { state: 'stopped', configured: false, runtimeInstalled: false, modelId: null } },
+}));
+const startManagedLocalModel = desktopLocalServices?.startManagedLocalModel
+    ?? (async () => { throw new Error('Local model management is disabled on Android.'); });
 
 /** Allow process control only from loopback or the directly connected private subnet. */
 export function isLocalModelControlClient(remoteAddress, localAddress, interfaces) {

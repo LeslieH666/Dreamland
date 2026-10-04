@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dreamland_primary">#F07888</color>
+    <color name="dreamland_on_primary">#321016</color>
+    <color name="dreamland_background">#181516</color>
+    <color name="dreamland_surface">#242022</color>
+    <color name="dreamland_on_surface">#F3E9EB</color>
+    <color name="dreamland_text_secondary">#C6B8BC</color>
+    <color name="dreamland_error">#FFB4AB</color>
+    <style name="Theme.DreamLand" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/dreamland_primary</item>
+        <item name="colorOnPrimary">@color/dreamland_on_primary</item>
+        <item name="android:colorAccent">@color/dreamland_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/dreamland_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@color/dreamland_background</item>
+    </style>
+</resources>

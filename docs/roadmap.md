@@ -1,5 +1,26 @@
 # Roadmap
 
+## Mobile chat fixes (2026-10-04)
+
+- Keep the send button visible at a 44 px touch target on narrow mobile chat layouts while preserving the temporary hidden state used during slash-command execution.
+- Route the model status/configuration card directly to Settings → Model connection.
+- Show a clear, non-sensitive error when model discovery fails or returns an empty list instead of silently returning the connect button to its idle state.
+- The connected and standalone APKs share these frontend fixes; the standalone server asset stamp advances to beta7.
+- Bound model discovery requests to 20 seconds and report failed or empty model lists in the settings UI without exposing provider response bodies or secrets. Android WebView inspection confirmed the saved-key flow reaches the local model-discovery endpoint, which timed out while Node.js fetched the provider list; an unauthenticated WebView probe reached the same provider host. Android Node now prefers IPv4 results for outbound lookups, and diagnostic responses include only a safe failure category, upstream HTTP status, exception type and allowlisted system error code.
+
+## Android standalone runtime beta (2026-10-04)
+
+- Added an arm64 standalone APK that packages the DreamLand server with a hash-verified Node.js 24 Android pre-release runtime. The server listens only on `127.0.0.1:18790`; chat/config data use separate app-private directories and survive app updates. The existing connected-client APK remains a separate build flavor.
+- AIRI, desktop local-model management and local transformer inference are disabled in Android builds. The app does not bundle the computer's `data/`, `Config/`, runtime state or credentials. Beta data remains on the device and is removed by Android when app data is cleared or the app is uninstalled.
+- Validation: connected and standalone debug APKs build; standalone lint and v2 signature verification pass. A real Android 16 arm64 phone exposed a startup crash in the shared Material address field (wrong `LayoutParams` subtype); fixed in both flavors. Standalone mode uses only its fixed loopback origin and fails to a local retry screen rather than the PC connection form. Launch labels and adaptive launcher art use distinct flavors and the existing blue wave/light DreamLand mark; the native title bar hides when the WebView is ready. The standalone staging script now includes its untracked mobile capability module, which was missing from the APK and prevented settings initialization; the Settings page now opens on-device. Both APKs install and launch, and the standalone server returns HTTP 200 through an ADB-forwarded loopback port. Connected-to-PC chat flow, on-device chat/persistence acceptance and desktop-data migration remain unverified. Beta uses a third-party Node mobile pre-release and debug signing.
+
+## Android connected client prototype (2026-10-04)
+
+- Added a native Android phone/tablet shell with a Material-based server connection screen, remembered address, system-bar/keyboard handling, predictive-back support, file selection and responsive WebView display of the existing DreamLand client.
+- Added a reusable `mobile/shared/` module for server-address validation and mobile capability policy. The first connected APK keeps chat and character data on the computer. Android client mode hides AIRI and local-model settings and forces the shared local-model gate off; the WebView blocks requests to other private-network origins.
+- Added debug APK build instructions. The first APK targets Android 8 (API 26) and compiles against API 36. A user-owned release signing key, device acceptance, server TLS and an eventual standalone on-device runtime remain later work.
+- Validation: Android shared address tests, Android lint, APK assembly and v2 APK signature verification passed. On-device launch of both flavors is verified after the shared startup crash fix; connecting to a real desktop server still needs interaction acceptance.
+
 ## Workshop appearance choices and scoped revisions (2026-10-04)
 
 - Appearance fields offer compact, optional presets for measurements, build, posture, hair, eyes, clothing and distinctive features. Choices remain editable as text; alternatives in a group replace each other, with selected choices removable by clicking again.

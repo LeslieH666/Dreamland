@@ -23,6 +23,8 @@ DreamLand 是基于 [SillyTavern](https://github.com/SillyTavern/SillyTavern) �
 
 - 保留 SillyTavern 的角色卡、群聊、World Info、Swipe、模型适配和 JSONL 聊天格式。
 - 提供 Windows Electron 桌面入口、单一 `DreamLand` 启动入口、应用内本地服务控制和便携构建脚本。
+- 提供初版 Android 手机/平板客户端 APK：连接同一可信局域网中的电脑 DreamLand；聊天与角色数据继续保存在电脑，手机端暂不开放 AIRI 和本地大模型功能。构建方法见 [Android 客户端说明](mobile/README.md)。
+- 提供 Android 独立运行 Beta：Node.js 服务在手机应用进程内启动，角色与聊天数据保存在手机应用私有目录；此版本面向 arm64 测试，暂不开放 AIRI 和本地大模型管理。构建方法见 [Android 客户端说明](mobile/README.md)。
 - 提供 Leslie 身份、Persona / 剧情线隔离，以及彼此可产生少量记忆共鸣的故事线与现实线聊天。现实线只提取去剧情核心性格，由当前 API 动态生成开场，并严格保存为普通即时消息；朋友圈另有桌面双栏布局、真实已读、连续评论回复、可查看点赞名单、按角色授权主动发帖、独立记忆和托盘后台运行。
 - 提供火山引擎角色语音配置、试听与回复自动朗读。
 - 提供可选的互动引导输入：围绕当前用户 Persona 生成三个可点击回复，并回到原有聊天生成链路；故事线单角色聊天还可使用“剧情罗盘”生成三个跨场景、跨阶段且具有长期影响的主线篇章、可选轮数建议，并把用户采用的主线固定在聊天界面。手机端使用独立标题条和底部抽屉查看主线，不占用聊天头部按钮空间。
@@ -140,6 +142,7 @@ LeslieTavern/
 │  ├─ leslie-moments/
 │  └─ leslie-tts/
 ├─ tests/          单元测试与端到端测试
+├─ mobile/         Android 手机/平板客户端与可复用共享模块
 ├─ models/         本地模型说明；权重文件不入 Git
 ├─ data/           本地用户数据，仅保留占位文件进入 Git
 └─ README.md       项目入口

@@ -79,6 +79,12 @@ public/vectors/
 /backups/*
 !/backups/!README.md
 /dist/
+/mobile/**/build/
+/mobile/**/.gradle/
+/mobile/**/.cxx/
+/mobile/**/.externalNativeBuild/
+/mobile/**/local.properties
+/mobile/android/.runtime-cache/
 /test-results/
 /tests/test-results/
 /playwright-report/

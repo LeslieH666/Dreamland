@@ -11,6 +11,7 @@ import { clearUserSpaceBrowserState } from './leslie-user-space-browser.js';
 import { flushUserSpacePreferences } from './leslie-user-preferences.js';
 import { extension_settings } from './extensions.js';
 import { getLeslieConnectionState } from './leslie-connection-state.js';
+import { getDreamLandClientCapabilities, isDreamLandAndroidClient } from './leslie-mobile-client.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { selectContextPreset, selectInstructPreset } from './instruct-mode.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
@@ -1069,6 +1070,10 @@ function getDesktopServiceStateCopy(serviceState, copy) {
 }
 
 function renderDesktopServices(copy) {
+    const capabilities = getDreamLandClientCapabilities();
+    if (!capabilities.airiCompanion && !capabilities.localModelManagement) {
+        return '';
+    }
     const desktopApiAvailable = typeof globalThis.leslieDesktopServices?.getStatus === 'function';
     const available = desktopApiAvailable && desktopServiceStatus?.available !== false;
     const rows = [['airi'], ['localModel']].map(([service]) => {
@@ -1129,6 +1134,10 @@ async function requestHostLocalModel(path, body) {
 }
 
 async function refreshDesktopServiceStatus() {
+    if (!getDreamLandClientCapabilities().localModelManagement) {
+        desktopServiceStatus = { available: false, localModels: { models: [] }, services: {} };
+        return;
+    }
     try {
         desktopServiceStatus = typeof globalThis.leslieDesktopServices?.getStatus === 'function'
             ? await globalThis.leslieDesktopServices.getStatus()
@@ -1254,6 +1263,9 @@ function renderModelDetail() {
     const copy = COPY[getCopyLocale()];
     const activeService = getActiveModelService();
     activeModelKind ??= MODEL_SERVICES[activeService]?.kind || 'online';
+    if (isDreamLandAndroidClient() && activeModelKind === 'local') {
+        activeModelKind = 'online';
+    }
     const serviceCopy = {
         deepseek: [copy.serviceDeepSeek, copy.serviceDeepSeekBody],
         custom: [copy.serviceCustom, copy.serviceCustomBody],
@@ -1270,7 +1282,7 @@ function renderModelDetail() {
     const kindOptions = [
         ['online', 'fa-solid fa-cloud', copy.onlineApi, copy.onlineApiBody],
         ['local', 'fa-solid fa-computer', copy.localApi, copy.localApiBody],
-    ].map(([kind, icon, title, body]) => `
+    ].filter(([kind]) => !isDreamLandAndroidClient() || kind === 'online').map(([kind, icon, title, body]) => `
         <button type="button" class="leslie-api-kind-card${kind === activeModelKind ? ' is-active' : ''}" data-leslie-api-kind="${kind}" aria-pressed="${kind === activeModelKind}">
             <span class="${icon}" aria-hidden="true"></span>
             <span><strong>${title}</strong><small>${body}</small></span>
@@ -1326,7 +1338,7 @@ function renderModelDetail() {
             <span><strong>${copy.allProviders}</strong><small>${copy.fullSettingsHelp}</small></span>
             <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
         </button>`;
-    const localContent = `${renderLocalModelSetup(copy)}
+    const localContent = isDreamLandAndroidClient() ? '' : `${renderLocalModelSetup(copy)}
         <details class="leslie-local-advanced" ${localAdvancedOpen ? 'open' : ''}>
             <summary><span><strong>${copy.localModelAdvanced}</strong><small>${copy.localModelAdvancedHelp}</small></span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
             <div class="leslie-local-advanced-content">
@@ -2856,6 +2868,10 @@ async function detectAndApplyLocalModel(button) {
 async function connectSelectedModelService() {
     const serviceId = getActiveModelService();
     const service = MODEL_SERVICES[serviceId];
+    if (isDreamLandAndroidClient() && service?.kind === 'local') {
+        toastr.info('手机端暂不支持本地大模型，请使用在线模型接口。', COPY[getCopyLocale()].modelTitle);
+        return;
+    }
     if (service?.kind === 'local' && !isLocalModelLoadingEnabled()) {
         const copy = COPY[getCopyLocale()];
         toastr.warning(copy.localModelLoadingDisabled, copy.modelTitle);
@@ -3067,6 +3083,10 @@ function initLeslieSettings() {
         event.preventDefault();
         event.stopPropagation();
         openSettings();
+    });
+    document.addEventListener('leslie:open-model-settings', () => {
+        openSettings();
+        showDetail('model');
     });
     settingsOverlay.addEventListener('click', async (event) => {
         const target = event.target instanceof Element ? event.target : null;

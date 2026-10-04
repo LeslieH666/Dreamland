@@ -1270,6 +1270,14 @@ body.leslie-modern:not(.leslie-chat-layout-disabled) #top-settings-holder .fillR
         border-radius: 20px;
     }
 
+    body.leslie-modern:not(.leslie-chat-layout-disabled) #form_sheld:not(.isExecutingCommandsFromChatInput) #send_form #rightSendForm #send_but {
+        display: grid !important;
+        flex: 0 0 44px;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+    }
+
     body.leslie-modern:not(.leslie-chat-layout-disabled) #send_textarea {
         font-size: 16px;
     }

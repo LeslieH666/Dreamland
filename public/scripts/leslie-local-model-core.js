@@ -243,6 +243,10 @@ export function cleanLeslieLocalRoleplayOutput(text, { model = '' } = {}) {
  * @returns {boolean} True when local model loading is enabled.
  */
 export function isLocalModelLoadingEnabled(storage = globalThis.localStorage) {
+    if (globalThis.navigator?.userAgent?.includes('DreamLandAndroidClient/')
+        || globalThis.navigator?.userAgent?.includes('DreamLandAndroidStandalone/')) {
+        return false;
+    }
     try {
         return storage?.getItem(LOCAL_MODEL_LOADING_STORAGE_KEY) !== 'false';
     } catch {

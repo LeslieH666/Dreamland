@@ -205,7 +205,7 @@ function createSidebar() {
         </div>
         <div id="leslie-conversation-list" class="leslie-conversation-list" role="listbox" aria-label="会话列表"></div>
         <footer class="leslie-sidebar-footer">
-            <button type="button" class="leslie-connection-card" data-action="settings">
+            <button type="button" class="leslie-connection-card" data-action="model-settings">
                 <span class="leslie-connection-dot" aria-hidden="true"></span>
                 <span><strong data-leslie-connection-label>模型未连接</strong><small data-leslie-connection-detail>点击配置模型与 API</small></span>
                 <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
@@ -1184,6 +1184,9 @@ async function handleAction(action) {
             break;
         case 'settings':
             openSettings();
+            break;
+        case 'model-settings':
+            document.dispatchEvent(new CustomEvent('leslie:open-model-settings'));
             break;
         case 'character-card':
             if (getActiveEntity()) {

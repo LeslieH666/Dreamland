@@ -2,12 +2,18 @@ import path from 'node:path';
 import process from 'node:process';
 import { Buffer } from 'node:buffer';
 
-import { pipeline, env, RawImage } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
 import { serverDirectory } from './server-directory.js';
 import { migrateLegacyModelCache } from './transformers-cache.js';
 
-configureTransformers();
+let pipeline;
+let env;
+let RawImage;
+
+if (process.env.DREAMLAND_ANDROID !== '1') {
+    ({ pipeline, env, RawImage } = await import('sillytavern-transformers'));
+    configureTransformers();
+}
 
 function configureTransformers() {
     // Keep ONNX WASM single-threaded. The bundled Whisper runtime does not
@@ -56,6 +62,7 @@ const tasks = {
  * @returns {Promise<RawImage|null>} Object representing the image
  */
 export async function getRawImage(image) {
+    if (!RawImage) throw new Error('On-device transformer features are disabled in this Android beta.');
     try {
         const buffer = Buffer.from(image, 'base64');
         const byteArray = new Uint8Array(buffer);
@@ -102,6 +109,7 @@ function migrateCacheToDataDir() {
  * @returns {Promise<import('sillytavern-transformers').Pipeline>} The transformers.js pipeline
  */
 export async function getPipeline(task, forceModel = '') {
+    if (!pipeline) throw new Error('On-device transformer features are disabled in this Android beta.');
     await migrateCacheToDataDir();
 
     if (tasks[task].pipeline) {

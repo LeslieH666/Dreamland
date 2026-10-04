@@ -4378,6 +4378,7 @@ function setToolReasoningControls() {
 }
 
 async function getStatusOpen() {
+    let modelStatusFailureMessage = t`Could not load models. Check your API key and connection settings, then try again.`;
     const noValidateSources = [
         chat_completion_sources.CLAUDE,
         chat_completion_sources.AI21,
@@ -4465,6 +4466,20 @@ async function getStatusOpen() {
         });
 
         if (!response.ok) {
+            const failure = await response.json().catch(() => null);
+            if (failure?.failure === 'timeout') {
+                modelStatusFailureMessage = t`The model-list request timed out. Check your internet connection and provider availability.`;
+            } else if (failure?.failure === 'dns') {
+                modelStatusFailureMessage = t`Could not resolve the model provider. Check your DNS and internet connection.`;
+            } else if (failure?.failure === 'network') {
+                modelStatusFailureMessage = t`Could not reach the model provider. Check your internet connection and firewall.`;
+            } else if (failure?.failure === 'tls') {
+                modelStatusFailureMessage = t`A secure connection to the model provider could not be verified. Check your device date and network certificate settings.`;
+            } else if (failure?.failure === 'provider-response') {
+                modelStatusFailureMessage = failure.upstreamStatus === 401 || failure.upstreamStatus === 403
+                    ? t`The provider rejected the API key or its permissions.`
+                    : t`The provider rejected the model-list request. Check its API settings and try again.`;
+            }
             throw new Error(response.statusText);
         }
 
@@ -4473,18 +4488,25 @@ async function getStatusOpen() {
         if ('data' in responseData && Array.isArray(responseData.data)) {
             saveModelList(responseData.data);
         }
-        if (!('error' in responseData)) {
+        if ('error' in responseData) {
+            setOnlineStatus('no_connection');
+            toastr.error(t`Could not load models. Check your API key and connection settings, then try again.`);
+        } else if (Array.isArray(responseData.data) && responseData.data.length === 0) {
+            setOnlineStatus('no_connection');
+            toastr.warning(t`The API responded, but returned no available models.`);
+        } else {
             setOnlineStatus(t`Valid`);
         }
         if (responseData.bypass) {
             setOnlineStatus(t`Status check bypassed`);
         }
     } catch (error) {
-        console.error(error);
+        console.error('Could not load chat completion models.');
 
         if (!canBypass) {
             setOnlineStatus('no_connection');
         }
+        toastr.error(modelStatusFailureMessage);
     }
 
     updateFeatureSupportFlags();

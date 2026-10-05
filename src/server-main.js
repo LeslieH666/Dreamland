@@ -59,6 +59,7 @@ import {
     leslieBridgeAuthenticationMiddleware,
 } from './leslie-bridge/auth.js';
 import { LESLIE_BRIDGE_API_ROOT } from './leslie-bridge/protocol.js';
+import { LESLIE_MOBILE_API_ROOT, router as leslieMobileRouter } from './leslie-mobile/router.js';
 import {
     getVersion,
     color,
@@ -168,6 +169,9 @@ app.use(cookieSession({
 }));
 
 app.use(LESLIE_BRIDGE_API_ROOT, leslieBridgeAuthenticationMiddleware);
+// Keep only the mobile protocol health probe public. All other paths below this
+// prefix continue through the normal login middleware.
+app.use(LESLIE_MOBILE_API_ROOT, leslieMobileRouter);
 app.use(setUserDataMiddleware);
 
 // CSRF Protection //

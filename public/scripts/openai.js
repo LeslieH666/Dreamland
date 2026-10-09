@@ -91,6 +91,7 @@ import {
     configureChatCompletion,
 } from '/prompt-assembly/chat-completion.js';
 import { prepareOpenAIMessagesCore } from '/prompt-assembly/orchestrate.js';
+import { parseExampleIntoIndividual as parseExampleIntoIndividualCore } from '/prompt-assembly/macro-helpers.js';
 
 export async function prepareOpenAIMessages(input, dryRun) {
     return prepareOpenAIMessagesCore(input, dryRun, openAiAssemblyEnv());
@@ -735,63 +736,13 @@ function setupChatCompletionPromptManager(openAiSettings) {
  * @returns {Message[]} Array of message objects
  */
 export function parseExampleIntoIndividual(messageExampleString, appendNamesForGroup = true) {
-    const groupBotNames = getGroupNames().map(name => `${name}:`);
-
-    let result = []; // array of msgs
-    let tmp = messageExampleString.split('\n');
-    let cur_msg_lines = [];
-    let in_user = false;
-    let in_bot = false;
-    let botName = name2;
-
-    // DRY my cock and balls :)
-    function add_msg(name, role, system_name) {
-        // join different newlines (we split them by \n and join by \n)
-        // remove char name
-        // strip to remove extra spaces
-        let parsed_msg = cur_msg_lines.join('\n').replace(name + ':', '').trim();
-
-        if (appendNamesForGroup && selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
-            parsed_msg = `${name}: ${parsed_msg}`;
-        }
-
-        result.push({ 'role': role, 'content': parsed_msg, 'name': system_name });
-        cur_msg_lines = [];
-    }
-    // skip first line as it'll always be "This is how {bot name} should talk"
-    for (let i = 1; i < tmp.length; i++) {
-        let cur_str = tmp[i];
-        // if it's the user message, switch into user mode and out of bot mode
-        // yes, repeated code, but I don't care
-        if (cur_str.startsWith(name1 + ':')) {
-            in_user = true;
-            // we were in the bot mode previously, add the message
-            if (in_bot) {
-                add_msg(botName, 'system', 'example_assistant');
-            }
-            in_bot = false;
-        } else if (cur_str.startsWith(name2 + ':') || groupBotNames.some(n => cur_str.startsWith(n))) {
-            if (!cur_str.startsWith(name2 + ':') && groupBotNames.length) {
-                botName = cur_str.split(':')[0];
-            }
-
-            in_bot = true;
-            // we were in the user mode previously, add the message
-            if (in_user) {
-                add_msg(name1, 'system', 'example_user');
-            }
-            in_user = false;
-        }
-        // push the current line into the current message array only after checking for presence of user/bot
-        cur_msg_lines.push(cur_str);
-    }
-    // Special case for last message in a block because we don't have a new message to trigger the switch
-    if (in_user) {
-        add_msg(name1, 'system', 'example_user');
-    } else if (in_bot) {
-        add_msg(botName, 'system', 'example_assistant');
-    }
-    return result;
+    // Phase 2.5.3: the helper moved to the shared module; the page supplies its state.
+    return parseExampleIntoIndividualCore(messageExampleString, appendNamesForGroup, {
+        name1,
+        name2,
+        selectedGroup: selected_group,
+        getGroupNames,
+    });
 }
 
 export function formatWorldInfo(value, { wiFormat = null } = {}) {

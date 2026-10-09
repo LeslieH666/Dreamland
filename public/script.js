@@ -298,6 +298,7 @@ import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
+import { parseMesExamples as parseMesExamplesCore } from '/prompt-assembly/macro-helpers.js';
 import { registerExtensionSlashCommands as initExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
 import { ToolManager } from './scripts/tool-calling.js';
 import { addShowdownPatch } from './scripts/util/showdown-patch.js';
@@ -3371,19 +3372,12 @@ export function getCharacterCardFields({ chid = undefined } = {}) {
  * @returns {string[]} Examples array with block heading
  */
 export function parseMesExamples(examplesStr, isInstruct) {
-    if (!examplesStr || examplesStr.length === 0 || examplesStr === '<START>') {
-        return [];
-    }
-
-    if (!examplesStr.startsWith('<START>')) {
-        examplesStr = '<START>\n' + examplesStr.trim();
-    }
-
-    const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-    const blockHeading = (main_api === 'openai' || isInstruct) ? '<START>\n' : exampleSeparator;
-    const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
-
-    return splitExamples;
+    // Phase 2.5.3: the parser moved to the shared module.
+    return parseMesExamplesCore(examplesStr, isInstruct, {
+        powerUser: power_user,
+        substituteParams,
+        mainApi: main_api,
+    });
 }
 
 export function isStreamingEnabled() {

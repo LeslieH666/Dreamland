@@ -589,6 +589,18 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 
 `runGenerationInterceptors` 已在 `script.js` 的 `Generate` 内**先跑一次**（组装之前）。故共享 `prepareOpenAIMessagesCore` 只提供**可选** `await env.runInterceptors?.(...)`（缺省跳过）；**浏览器适配器不传**（保持现行为、避免 CC 路径双重执行）；服务端在钩子里接自己的 memory/reply-style 实现；`reality`/`filter` 永不接入。单测必须覆盖“缺省不调用 / 提供时恰好调用一次”作回归护栏。
 
+---
+
+## 附 O：Phase 2.5.2 收口验收（Lead 已验）
+
+**Phase 2.5.2（提示词组装抬升）验收通过**。核验：工作树干净；红线 3 文件（`chats.js`/`characters.js`/`prompt-converters.js`）在 `refactor-base..HEAD` 全部 commit 中**零触碰、累计 diff 为空**；`src/prompt-assembly/` 16 个共享模块齐备；`test:prompt-baseline` 8/8；validate 全绿（75 suites / 901 tests）。
+
+**流程改进（Lead 已决）**：每单元门槛此前只跑 `npm run lint`（不覆盖 `tests/`），导致 3 个套件累计 11 个 tests-lint 错误直到收口才暴露。**自 Phase 2.5.3 起，每单元门槛 = `npm run lint` + `npm run lint --prefix tests`（或直接 `npm run validate`）**。
+
+**下一步顺序**：
+1. 补附 N.2 第 6/7 项：**真实服务 SSE 冒烟**（注册→登录→建角色→发消息→SSE，mock 模型）+ 结果写入 `docs/roadmap.md`。
+2. 进入 **Phase 2.5.3**（服务端 `/generate` 权威轮次，按 `docs/authoritative-turn-spec.md`）：让 `assertWorldInfoPortable` / `createSeededRandom` / `resolveChatCompletionTokenizerModel` / `configureChatCompletion` 真正被服务端调用（当前尚无服务端调用方）。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

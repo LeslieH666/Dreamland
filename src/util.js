@@ -19,6 +19,7 @@ import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import bytes from 'bytes';
 import { LOG_LEVELS, CHAT_COMPLETION_SOURCES, MEDIA_REQUEST_TYPE } from './constants.js';
+import { findDreamlandEnvOverride } from './config-env.js';
 import { serverDirectory } from './server-directory.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { isFirefox } from './express-common.js';
@@ -87,9 +88,14 @@ export function getConfig() {
  */
 export function getConfigValue(key, defaultValue = null, typeConverter = null) {
     function _getValue() {
+        const needsJsonParse = defaultValue && typeof defaultValue === 'object';
+        // Priority: explicit DREAMLAND_* > legacy SILLYTAVERN_* > config.yaml > default.
+        const dreamlandOverride = findDreamlandEnvOverride(key);
+        if (dreamlandOverride) {
+            return needsJsonParse ? (tryParse(dreamlandOverride.raw) ?? defaultValue) : dreamlandOverride.raw;
+        }
         const envKey = keyToEnv(key);
         if (envKey in process.env) {
-            const needsJsonParse = defaultValue && typeof defaultValue === 'object';
             const envValue = process.env[envKey];
             return needsJsonParse ? (tryParse(envValue) ?? defaultValue) : envValue;
         }

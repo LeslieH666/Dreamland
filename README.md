@@ -98,6 +98,50 @@ npm run test:e2e --prefix tests
 
 在“设置 → 模型连接”输入在线接口密钥后，点击连接或切换接口就会保存到该账号的本机密钥库。切换回来时显示已保存状态，留空即可复用；密钥明文不会回填到输入框或浏览器本地存储。Windows 运行方式使用当前系统用户的 DPAPI 加密 `secrets.json`，旧版明文密钥文件在读取时原位迁移；加密失败时保留原文件。旧版留下的历史备份不会自动改写，仍需按明文密钥文件妥善保管。密钥文件随账号和电脑绑定，移到另一台电脑或 Windows 用户下需重新输入。其他操作系统继续使用原有的本机密钥文件格式。
 
+### 运行模式与 12-factor 配置
+
+同一个后端核心有两种运行形态，由 `DREAMLAND_MODE` 决定：
+
+- `server`（默认）：无桌面假设。**不会**自动打开浏览器，**不会**启动 Electron/托盘，退出时**不会**封存加密用户空间（数据根保持挂载、可跨重启使用）。适合 Linux 容器/服务器部署。
+- `desktop`：Electron 桌面宿主。桌面壳会自动把进程标记为 `desktop`；显式设置 `DREAMLAND_MODE=server` 时桌面壳会拒绝启动。
+
+所有配置都可以用 `DREAMLAND_*` 环境变量提供，**优先级高于 `config.yaml`**（也高于保留兼容的旧 `SILLYTAVERN_*` 变量）。完整优先级：命令行参数 → `DREAMLAND_*` → `SILLYTAVERN_*` → `config.yaml` → 内置默认值。启动时会把生效的环境变量逐条打印出来；凭据类变量只显示 `[redacted]`。
+
+| 环境变量 | 对应配置 | 说明 |
+| --- | --- | --- |
+| `DREAMLAND_MODE` | — | `server` / `desktop`，默认 `server` |
+| `DREAMLAND_CONFIG_PATH` | — | `config.yaml` 路径（等同 `--configPath`） |
+| `DREAMLAND_DATA_ROOT` | `dataRoot` | 用户数据根目录 |
+| `DREAMLAND_PORT` | `port` | 监听端口，默认 8000 |
+| `DREAMLAND_LISTEN` | `listen` | 是否监听所有网卡（公网部署需开启并由反代终止 TLS） |
+| `DREAMLAND_LISTEN_ADDRESS_IPV4` / `_IPV6` | `listenAddress.ipv4` / `.ipv6` | 具体监听地址 |
+| `DREAMLAND_WHITELIST_MODE` | `whitelistMode` | IP 白名单开关 |
+| `DREAMLAND_BASIC_AUTH_MODE` | `basicAuthMode` | HTTP Basic 认证开关 |
+| `DREAMLAND_BASIC_AUTH_USER` / `DREAMLAND_BASIC_AUTH_PASSWORD` | `basicAuthUser.*` | Basic 认证凭据，建议改用挂载密钥 |
+| `DREAMLAND_COOKIE_SECRET` | `cookieSecret` | 会话签名密钥；设置后不再读取/生成文件，也不再落 `config.yaml` |
+| `DREAMLAND_HEARTBEAT_INTERVAL` | `heartbeatInterval` | 心跳文件间隔（秒），0 关闭 |
+| `DREAMLAND_SSL_ENABLED` / `_CERT_PATH` / `_KEY_PATH` | `ssl.*` | 由后端直接终止 TLS（反代终止时不需要） |
+| `DREAMLAND_CORS_ENABLED` / `_ORIGIN` / `_METHODS` / `_ALLOWED_HEADERS` / `_EXPOSED_HEADERS` / `_CREDENTIALS` / `_MAX_AGE` | `cors.*` | 列表类可传 JSON 数组 |
+| `DREAMLAND_ALLOW_KEYS_EXPOSURE` | `allowKeysExposure` | 是否允许接口返回密钥明文，服务器上应保持 `false` |
+| `DREAMLAND_REQUEST_PROXY_ENABLED` / `_URL` | `requestProxy.*` | 出站请求代理 |
+| `DREAMLAND_CORS_PROXY` | `enableCorsProxy` | CORS 代理开关 |
+| `DREAMLAND_BROWSER_LAUNCH_ENABLED` | `browserLaunch.enabled` | 仅 `desktop` 模式生效 |
+| `DREAMLAND_SECRETS_FILE` | — | 挂载的密钥 JSON 文件，默认 `/run/secrets/dreamland-secrets.json`（存在时自动读取） |
+| `DREAMLAND_SECRET_<KEY>` | — | 单个上游接口密钥。变量名由密钥 key 生成，例如 `api_key_openai` → `DREAMLAND_SECRET_API_KEY_OPENAI` |
+
+密钥解析顺序：`DREAMLAND_SECRET_<KEY>` → `DREAMLAND_SECRETS_FILE` 指向的挂载文件 → 每账号的 `secrets.json`。外部来源的密钥在界面上显示为 `Environment / mounted secret` 且为当前生效项，接口只返回掩码值，明文不会下发到客户端；此时仍写入 `secrets.json` 的值不会生效（会打印提示）。服务器模式下若 `listen` 或 `basicAuthMode` 处于开启状态，而 `basicAuthUser.password` / `cookieSecret` 仍来自 `config.yaml`，启动日志会给出明文密钥告警。
+
+挂载密钥文件格式（键为密钥 key，值可以是字符串或 `{ "value": "...", "label": "..." }`）：
+
+```json
+{
+  "api_key_openai": "sk-...",
+  "api_key_deepseek": { "value": "sk-...", "label": "prod" }
+}
+```
+
+容器化部署与 HTTPS 反代见 [docker/docker-compose.yml](docker/docker-compose.yml) 与 [deploy/](deploy/)。
+
 ## 项目结构
 
 ```text

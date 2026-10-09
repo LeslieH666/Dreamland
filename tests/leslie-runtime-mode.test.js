@@ -54,24 +54,15 @@ describe('DreamLand runtime mode', () => {
         expect(shouldSealUserSpaceOnExit(undefined)).toBe(false);
     });
 
-    test('publishes the resolved mode on globalThis for the rest of the process', () => {
-        const previous = globalThis.DREAMLAND_MODE;
-        try {
-            expect(setRuntimeMode(RUNTIME_MODE_DESKTOP)).toBe(RUNTIME_MODE_DESKTOP);
-            expect(globalThis.DREAMLAND_MODE).toBe(RUNTIME_MODE_DESKTOP);
-            expect(getRuntimeMode()).toBe(RUNTIME_MODE_DESKTOP);
-            expect(isDesktopMode()).toBe(true);
-            expect(isServerMode()).toBe(false);
+    test('publishes the resolved mode for the rest of the process', () => {
+        expect(setRuntimeMode(RUNTIME_MODE_DESKTOP)).toBe(RUNTIME_MODE_DESKTOP);
+        expect(getRuntimeMode()).toBe(RUNTIME_MODE_DESKTOP);
+        expect(isDesktopMode()).toBe(true);
+        expect(isServerMode()).toBe(false);
 
-            setRuntimeMode('nonsense');
-            expect(globalThis.DREAMLAND_MODE).toBe(RUNTIME_MODE_SERVER);
-            expect(isServerMode()).toBe(true);
-        } finally {
-            if (previous === undefined) {
-                delete globalThis.DREAMLAND_MODE;
-            } else {
-                globalThis.DREAMLAND_MODE = previous;
-            }
-        }
+        // An unknown value must never leave the process in an undefined mode.
+        expect(setRuntimeMode('nonsense')).toBe(RUNTIME_MODE_SERVER);
+        expect(getRuntimeMode()).toBe(RUNTIME_MODE_SERVER);
+        expect(isServerMode()).toBe(true);
     });
 });

@@ -68,11 +68,13 @@ import {
     setupLogLevel,
     setWindowTitle,
     getConfigValue,
+    keyToEnv,
 } from './util.js';
 import { UPLOADS_DIRECTORY } from './constants.js';
 
 // Routers
-import { resolveBrowserLaunchEnabled, shouldSealUserSpaceOnExit } from './runtime-mode.js';
+import { isServerMode, resolveBrowserLaunchEnabled, shouldSealUserSpaceOnExit } from './runtime-mode.js';
+import { SECRET_CONFIG_KEYS, findDreamlandEnvOverride, listConfigEnvOverrides } from './config-env.js';
 import { router as usersPublicRouter } from './endpoints/users-public.js';
 import { init as statsInit, onExit as statsOnExit } from './endpoints/stats.js';
 import { checkForNewContent } from './endpoints/content-manager.js';
@@ -287,10 +289,52 @@ redirectDeprecatedEndpoints(app);
 setupPrivateEndpoints(app);
 
 /**
+ * Report the effective server configuration for a 12-factor deployment.
+ *
+ * Credential values are never printed: environment overrides are redacted and
+ * the warning names only the config keys that still carry plaintext secrets.
+ */
+function reportServerConfiguration() {
+    if (!isServerMode()) {
+        return;
+    }
+
+    const overrides = listConfigEnvOverrides();
+    if (overrides.length > 0) {
+        console.log('Configuration supplied by the environment:');
+        for (const entry of overrides) {
+            console.log(`  ${entry.envKey} -> ${entry.key} = ${entry.value}`);
+        }
+    }
+
+    // Only warn when the plaintext value actually protects a reachable
+    // service: a loopback development run keeps the shipped defaults.
+    const publiclyReachable = Boolean(getConfigValue('listen', false, 'boolean'))
+        || Boolean(getConfigValue('basicAuthMode', false, 'boolean'));
+    if (!publiclyReachable) {
+        return;
+    }
+
+    const plaintextSecrets = SECRET_CONFIG_KEYS.filter(key => {
+        if (findDreamlandEnvOverride(key) || keyToEnv(key) in process.env) {
+            return false;
+        }
+        return Boolean(getConfigValue(key));
+    });
+    if (plaintextSecrets.length > 0) {
+        console.warn(color.yellow(
+            `Warning: ${plaintextSecrets.join(', ')} still come from config.yaml. `
+            + 'Set the matching DREAMLAND_* variable (or a mounted secret) so the server config file holds no plaintext secret.',
+        ));
+    }
+}
+
+/**
  * Tasks that need to be run before the server starts listening.
  * @returns {Promise<void>}
  */
 async function preSetupTasks() {
+    reportServerConfiguration();
     const version = await getVersion();
 
     // Print formatted header

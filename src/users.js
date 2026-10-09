@@ -18,6 +18,7 @@ import ipMatching from 'ip-matching';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
 import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent, setPermissionsSync } from './util.js';
+import { findDreamlandEnvOverride } from './config-env.js';
 import { allowKeysExposure, readSecret, writeSecret, SECRETS_FILE } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
@@ -614,6 +615,13 @@ export function stampLeslieLoginSession(session) {
  */
 export function getCookieSecret(dataRoot) {
     const cookieSecretPath = path.join(dataRoot, COOKIE_SECRET_PATH);
+
+    // 12-factor: an operator can supply the session secret from the
+    // environment (or a mounted secret) instead of relying on a file.
+    const envSecret = findDreamlandEnvOverride(STORAGE_KEYS.cookieSecret);
+    if (envSecret && envSecret.raw.trim() !== '') {
+        return envSecret.raw;
+    }
 
     if (fs.existsSync(cookieSecretPath)) {
         const stat = fs.statSync(cookieSecretPath);

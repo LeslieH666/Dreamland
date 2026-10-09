@@ -6,7 +6,12 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { color, getConfigValue, uuidv4 } from '../util.js';
 import { PROTECTED_SECRETS_FORMAT, getDefaultSecretProtector, parseSecretDocument, serializeSecretDocument } from '../secret-protection.js';
 
+import { readEnvSecret, readMountedSecrets, SECRETS_FILE_ENV } from '../config-env.js';
+
 export const SECRETS_FILE = 'secrets.json';
+/** Synthetic id/label for a secret supplied by the environment or a mounted file. */
+export const EXTERNAL_SECRET_ID = 'external';
+export const EXTERNAL_SECRET_LABEL = 'Environment / mounted secret';
 export const SECRET_KEYS = {
     _MIGRATED: '_migrated',
     HORDE: 'api_key_horde',
@@ -123,6 +128,32 @@ export class SecretManager {
         this.filePath = path.join(directories.root, SECRETS_FILE);
         this.defaultSecrets = {};
         this.protector = protector;
+        this.mountedSecrets = undefined;
+    }
+
+    /**
+     * Read the mounted secret document once per manager instance.
+     * @private
+     * @returns {{path: string, secrets: Record<string, unknown>} | null} Mounted document, if any.
+     */
+    _readMountedSecrets() {
+        if (this.mountedSecrets === undefined) {
+            this.mountedSecrets = readMountedSecrets(process.env);
+            if (this.mountedSecrets) {
+                console.log(`Reading API secrets from the mounted secret file ${this.mountedSecrets.path} (${SECRETS_FILE_ENV}).`);
+            }
+        }
+        return this.mountedSecrets;
+    }
+
+    /**
+     * Resolve a secret supplied outside the per-user secrets file.
+     * @param {string} key Secret key.
+     * @returns {{value: string, source: string} | null} External secret, if configured.
+     * @private
+     */
+    _readExternalSecret(key) {
+        return readEnvSecret(key, { environment: process.env, mounted: this._readMountedSecrets() });
     }
 
     /**
@@ -225,6 +256,9 @@ export class SecretManager {
      * @returns {string} The ID of the newly created secret
      */
     writeSecret(key, value, label = 'Unlabeled') {
+        if (this._readExternalSecret(key)) {
+            console.warn(`Secret "${key}" is supplied by the environment or a mounted secret file and will keep overriding the stored value.`);
+        }
         const secrets = this._readSecretsFile();
 
         if (!Array.isArray(secrets[key])) {
@@ -289,6 +323,11 @@ export class SecretManager {
      * @returns {string} Secret value or empty string if not found
      */
     readSecret(key, id) {
+        const external = this._readExternalSecret(key);
+        if (external && (id === undefined || id === null || id === EXTERNAL_SECRET_ID)) {
+            return external.value;
+        }
+
         if (!fs.existsSync(this.filePath)) {
             return '';
         }
@@ -374,16 +413,29 @@ export class SecretManager {
                 continue;
             }
             const value = secrets[key];
-            if (value && Array.isArray(value) && value.length > 0) {
-                state[key] = value.map(secret => ({
+            const stored = Array.isArray(value) && value.length > 0
+                ? value.map(secret => ({
                     id: secret.id,
                     value: this.getMaskedValue(secret.value, key),
                     label: secret.label,
                     active: secret.active,
-                }));
+                }))
+                : [];
+            const external = this._readExternalSecret(key);
+            if (external) {
+                // An externally supplied secret is authoritative, so it is the
+                // active entry. Only the masked value ever leaves the server.
+                state[key] = [
+                    {
+                        id: EXTERNAL_SECRET_ID,
+                        value: this.getMaskedValue(external.value, key),
+                        label: EXTERNAL_SECRET_LABEL,
+                        active: true,
+                    },
+                    ...stored.map(entry => ({ ...entry, active: false })),
+                ];
             } else {
-                // No secrets for this key
-                state[key] = null;
+                state[key] = stored.length > 0 ? stored : null;
             }
         }
 

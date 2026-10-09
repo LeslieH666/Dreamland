@@ -6,6 +6,16 @@ import yargs from 'yargs';
 import { serverEvents, EVENT_NAMES } from '../server-events.js';
 import { sealActiveUserSpace } from '../leslie-user-spaces/vault.js';
 import { createSealedExitHandler } from './sealed-exit.js';
+import { DREAMLAND_MODE_ENV, RUNTIME_MODE_DESKTOP } from '../runtime-mode.js';
+
+// The Electron shell is the desktop host. Publish the mode before the server
+// core is imported so tray, browser launch and desktop exit sealing stay on.
+if (String(process.env[DREAMLAND_MODE_ENV] ?? '').trim().toLowerCase() === 'server') {
+    console.error(`Refusing to start the DreamLand desktop host with ${DREAMLAND_MODE_ENV}=server. Unset it or use DREAMLAND_MODE=desktop.`);
+    app.exit(1);
+} else {
+    process.env[DREAMLAND_MODE_ENV] = RUNTIME_MODE_DESKTOP;
+}
 
 const cliArguments = yargs(process.argv)
     .usage('Usage: <your-start-script> [options]')

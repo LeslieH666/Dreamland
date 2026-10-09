@@ -72,6 +72,7 @@ import {
 import { UPLOADS_DIRECTORY } from './constants.js';
 
 // Routers
+import { resolveBrowserLaunchEnabled, shouldSealUserSpaceOnExit } from './runtime-mode.js';
 import { router as usersPublicRouter } from './endpoints/users-public.js';
 import { init as statsInit, onExit as statsOnExit } from './endpoints/stats.js';
 import { checkForNewContent } from './endpoints/content-manager.js';
@@ -327,7 +328,12 @@ async function preSetupTasks() {
         isExiting = true;
         try {
             await statsOnExit();
-            await sealActiveUserSpace(globalThis.DATA_ROOT);
+            // Encrypted user spaces are a desktop feature (see
+            // src/runtime-mode.js). A server deployment keeps its data root
+            // mounted and unlocked across restarts.
+            if (shouldSealUserSpaceOnExit()) {
+                await sealActiveUserSpace(globalThis.DATA_ROOT);
+            }
         } catch (error) {
             console.error('Could not encrypt the active user space before exit:', error);
             isExiting = false;
@@ -378,7 +384,7 @@ async function postSetupTasks(result) {
     const browserLaunchUrl = cliArgs.getBrowserLaunchUrl(browserLaunchHostname);
     const browserLaunchApp = String(getConfigValue('browserLaunch.browser', 'default') ?? '');
 
-    if (cliArgs.browserLaunchEnabled) {
+    if (resolveBrowserLaunchEnabled({ mode: cliArgs.mode, configured: cliArgs.browserLaunchEnabled })) {
         try {
             // TODO: This should be converted to a regular import when support for Node 18 is dropped
             const openModule = await import('open');

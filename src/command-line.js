@@ -6,9 +6,16 @@ import ipRegex from 'ip-regex';
 import envPaths from 'env-paths';
 import { color, getConfigValue, stringToBool } from './util.js';
 import { initConfig } from './config-init.js';
+import {
+    RUNTIME_MODE_DESKTOP,
+    resolveBrowserLaunchEnabled,
+    resolveRuntimeMode,
+    setRuntimeMode,
+} from './runtime-mode.js';
 
 /**
  * @typedef {object} CommandLineArguments Parsed command line arguments
+ * @property {string} mode DreamLand runtime mode: 'server' or 'desktop'
  * @property {string} configPath Path to the config file
  * @property {string} dataRoot Data root directory
  * @property {number} port Port number
@@ -266,6 +273,13 @@ export class CommandLineParser {
             })
             .parseSync();
 
+        const runtime = resolveRuntimeMode();
+        if (runtime.invalid) {
+            console.warn(color.yellow(`Warning: unknown ${'DREAMLAND_MODE'} value "${runtime.raw}". Falling back to "${runtime.mode}".`));
+            console.warn(color.yellow('Valid modes: server, desktop.'));
+        }
+        setRuntimeMode(runtime.mode);
+
         const isGlobal = globalThis.FORCE_GLOBAL_MODE ?? cliArguments.global ?? false;
         const defaultConfig = this.getDefaultConfig(isGlobal);
 
@@ -296,8 +310,12 @@ export class CommandLineParser {
             console.warn(color.yellow(`Warning: Failed to create data root directory at ${dataRoot}. Please make sure the path is correct and writable.`), err);
         }
 
+        const browserLaunchConfigured = cliArguments.browserLaunchEnabled ?? cliArguments.autorun
+            ?? getConfigValue('browserLaunch.enabled', defaultConfig.browserLaunchEnabled, 'boolean');
+
         /** @type {CommandLineArguments} */
         const result = {
+            mode: runtime.mode,
             configPath: configPath,
             dataRoot: dataRoot,
             port: cliArguments.port ?? getConfigValue('port', defaultConfig.port, 'number'),
@@ -308,7 +326,7 @@ export class CommandLineParser {
             enableIPv6: stringToBool(cliArguments.enableIPv6) ?? stringToBool(getConfigValue('protocol.ipv6', defaultConfig.enableIPv6)) ?? defaultConfig.enableIPv6,
             dnsPreferIPv6: cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', defaultConfig.dnsPreferIPv6, 'boolean'),
             heartbeatInterval: cliArguments.heartbeatInterval ?? getConfigValue('heartbeatInterval', defaultConfig.heartbeatInterval, 'number'),
-            browserLaunchEnabled: cliArguments.browserLaunchEnabled ?? cliArguments.autorun ?? getConfigValue('browserLaunch.enabled', defaultConfig.browserLaunchEnabled, 'boolean'),
+            browserLaunchEnabled: resolveBrowserLaunchEnabled({ mode: runtime.mode, configured: browserLaunchConfigured }),
             browserLaunchHostname: cliArguments.browserLaunchHostname ?? cliArguments.autorunHostname ?? getConfigValue('browserLaunch.hostname', defaultConfig.browserLaunchHostname),
             browserLaunchPort: cliArguments.browserLaunchPort ?? cliArguments.autorunPortOverride ?? getConfigValue('browserLaunch.port', defaultConfig.browserLaunchPort, 'number'),
             browserLaunchAvoidLocalhost: cliArguments.browserLaunchAvoidLocalhost ?? cliArguments.avoidLocalhost ?? getConfigValue('browserLaunch.avoidLocalhost', defaultConfig.browserLaunchAvoidLocalhost, 'boolean'),
@@ -367,6 +385,10 @@ export class CommandLineParser {
                 );
             },
         };
+
+        if (browserLaunchConfigured && runtime.mode !== RUNTIME_MODE_DESKTOP) {
+            console.warn(color.yellow('Browser auto-launch is disabled in server mode. Set DREAMLAND_MODE=desktop to enable it.'));
+        }
 
         if (!this.booleanAutoOptions.includes(result.enableIPv6)) {
             console.warn(color.red('`protocol: ipv6` option invalid'), '\n use:', this.booleanAutoOptions, '\n setting to:', defaultConfig.enableIPv6);

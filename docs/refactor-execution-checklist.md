@@ -356,3 +356,14 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 - **D3（非 root 取舍）**：**保留 `USER node`（uid 1000）非 root**。公网后端以非 root 为安全基线；bind mount 属主 `chown -R 1000:1000` 属一次性运维步骤，已在 Dockerfile/compose/README 写明。不接受回退到 root + su-exec。
 - **D1（容器链路）**：仍延后到有 Docker 的主机/CI 实跑（`docker build` + `docker compose -f deploy/docker-compose.tls.yml up -d` + `curl https://$DOMAIN/version`）；不阻塞 Phase 2/3，但**上线前必须闭环**。
 - **D4**：明文密钥告警属正向信号，保留；反代下 IP 白名单用「Caddy 精确匹配 + TLS + 可选 Basic 认证」兜底，取舍已记录，接受。
+
+---
+
+## 附 G：Phase 2 裁决记录（Lead 已决，Phase 3 起按此执行）
+
+- **D1（`/chats/{id}/generate` 网关模式）**：**接受方案 (a) 作为 Phase 2 的过渡契约**；但这是本项目最重要的架构发现——**提示词组装（角色卡/World Info/Persona/记忆）目前只在浏览器 `public/script.js`**（`Generate` + `getWorldInfoPrompt` + `prepareOpenAIMessages`），服务端 `src/` 零引用。**新增「Phase 2.5 服务端提示词组装（authoritative turn）」，作为 Phase 5（RN App）前的强制前置**：把浏览器提示词管线移植到服务端，使后端对“完整聊天轮次”权威，Web/RN 都退化为薄客户端。**明确否决方案 (c)**（RN 自己组装提示词）——会造成多客户端逻辑重复与漂移，违背“单一事实来源”。
+- **D2（5 个 501 操作）**：**接受 Phase 2 内保持 501**，不阻塞核心聊天 MVP。授权后续（非阻塞）通过「在非红线文件**新增导出**」或「移植浏览器逻辑」补齐，优先级：**Swipe 重生成 > 朋友圈发帖 > World Info 增删改 > 工坊生成 > 头像写**。“红线冻结”指**不得改变既有行为/存储格式**；**新增导出（不改既有逻辑）是允许的**，须带测试。
+- **D3（契约新增 `/auth/pkce` + `/secrets`）**：**接受**。两者分别是 RFC 7636 PKCE 与 Task 2.5 密钥抽象的必需端点。
+- **D4**：`/capabilities` **维持需鉴权**（客户端先登录再发现能力，避免向匿名者暴露特性；D7 的域级细化留到 RN 需要时）。`GET /worldinfo` 返回全部书目（服务端无聊天上下文、激活在客户端）——接受。
+- **D5/D6**：refresh token 内存态 + 限流进程内，接受（与 P6 Redis 延后一致）；测试期服务重启会登出客户端，可接受。
+- **D7**：`/capabilities` 域级细化、`EXPOSABLE_SECRET_KEYS` 扩展，延后到 RN 需要时。

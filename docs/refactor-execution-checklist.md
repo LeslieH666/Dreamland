@@ -462,3 +462,16 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 - **§5.2（filter 实为空操作）**：**保留现有 no-op 语义，不修**。async 谓词传入 `Array.filter` 恒真属既有行为；唯一注册者 `/inject` 按 Q4 不在服务端范围，无实际影响。作为“已知遗留怪癖”记录，不做行为变更。
 - **§5.4（实验宏引擎无法抬升）**：**服务端 Phase 2.5 只支持 legacy 宏引擎**；实验引擎 `substituteParamsExtended`/`MacroEngine` 因宏定义 import 浏览器模块而保持浏览器独占，服务端命中时**抛错（fail-closed）而非静默降级**。作为已知限制文档化，若 RN 端确需实验引擎再单独立项移植其定义。
 - **放行 3–7 步**：每步门槛不变（`test:prompt-baseline` 8/8 + lint/test:unit/check:repo + 红线 diff 为空）。**第 4 步（World Info 激活）是最后一个硬输入**：若出现“需行为取舍才能逐字一致”的差异，停下报告，不要为了凑逐字一致而偷偷改行为。
+
+---
+
+## 附 L：Phase 2.5.2 第 4 步停止点裁决（Lead 已决，4–7 步按此执行）
+
+第 4 步发现的三个分叉源（WI 正则、`WORLDINFO_SCAN_DONE` 监听者、vectors 强制激活）属实。裁决：
+
+- **Q-a（逐字一致范围）**：选 **(i) 夹具范围逐字一致 + 文档化分叉**。**不**移植 WI 正则引擎、**不**移植 vectors 激活路径（不推翻 Q4）。这三个分叉源 + 实验宏引擎（附 K）统一记为「**未复刻的高级/可选能力**」。
+- **Q-b（分叉源激活时服务端行为）**：**fail-closed（抛清晰错误）**，与实验宏引擎一致。精确检测：① `extension_settings.regex` 含作用于 `WORLD_INFO` placement 的规则；② vectors 启用；③ 注册了 `WORLDINFO_SCAN_DONE` 监听者（服务端不注册；第 4 步顺带确认树内订阅者数并报告，若为 0 则该项仅文档化、不触发）。
+- **Q-c（getTokenizerModel）**：**收窄抬升 + fail-closed**。把 `getTokenizerModel` 抬升到共享模块，但只实现 CC 相关 provider（OpenAI / DeepSeek / OpenAI-compatible custom）；对其它 provider 服务端 fail-closed（抛错），不产出错误计数。
+- **通用原则（适用于第 5–7 步）**：任何被 Q4/Q-a 排除、且会改变提示词的分叉源（如第 6 步的 vectors 注入），一律「激活时 fail-closed + 文档化边界」，不得静默分叉、不得为凑逐字一致偷偷改行为。
+
+**放行第 4–7 步**：按上述裁决推进；每步门槛不变。第 4 步完成后（World Info 抬升 + RNG 种子注入 + timedWorldInfo 写回 + 分叉源 fail-closed 检查）停下报告。

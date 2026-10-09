@@ -85,24 +85,15 @@ import { getGenerationTokenBudget } from './leslie-reasoning-budget.js';
 import {
     ChatCompletion,
     IdentifierNotFoundError,
-    InvalidCharacterNameError,
     Message,
     MessageCollection,
-    TokenBudgetExceededError,
     TokenHandler,
     configureChatCompletion,
 } from '/prompt-assembly/chat-completion.js';
-import {
-    populateChatCompletionCore,
-    preparePromptsForChatCompletionCore,
-} from '/prompt-assembly/populate.js';
+import { prepareOpenAIMessagesCore } from '/prompt-assembly/orchestrate.js';
 
-async function populateChatCompletion(prompts, chatCompletion, options) {
-    return populateChatCompletionCore(prompts, chatCompletion, options, openAiAssemblyEnv());
-}
-
-async function preparePromptsForChatCompletion(options) {
-    return preparePromptsForChatCompletionCore(options, openAiAssemblyEnv());
+export async function prepareOpenAIMessages(input, dryRun) {
+    return prepareOpenAIMessagesCore(input, dryRun, openAiAssemblyEnv());
 }
 
 // ChatCompletion was exported from this module before the move; keep it that way.
@@ -935,97 +926,6 @@ export function getPromptRole(role) {
  * @param dryRun - Whether this is a live call or not.
  * @returns {Promise<(any[]|boolean)[]>} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
-export async function prepareOpenAIMessages({
-    name2,
-    charDescription,
-    charPersonality,
-    scenario,
-    worldInfoBefore,
-    worldInfoAfter,
-    bias,
-    type,
-    quietPrompt,
-    quietImage,
-    extensionPrompts,
-    cyclePrompt,
-    systemPromptOverride,
-    jailbreakPromptOverride,
-    messages,
-    messageExamples,
-}, dryRun) {
-    // Without a character selected, there is no way to accurately calculate tokens
-    if (!promptManager.activeCharacter && dryRun) return [null, false];
-
-    const chatCompletion = new ChatCompletion();
-    if (power_user.console_log_prompts) chatCompletion.enableLogging();
-
-    const userSettings = promptManager.serviceSettings;
-    const reasoningBudget = getGenerationTokenBudget({
-        chatCompletionSource: userSettings.chat_completion_source,
-        showThoughts: userSettings.show_thoughts,
-        reasoningEffort: userSettings.reasoning_effort,
-        contextTokens: userSettings.openai_max_context,
-        outputTokens: userSettings.openai_max_tokens,
-        type,
-    });
-    chatCompletion.setTokenBudget(reasoningBudget.contextTokens, reasoningBudget.outputTokens);
-
-    try {
-        // Merge markers and ordered user prompts with system prompts
-        const prompts = await preparePromptsForChatCompletion({
-            scenario,
-            charPersonality,
-            name2,
-            worldInfoBefore,
-            worldInfoAfter,
-            charDescription,
-            quietPrompt,
-            bias,
-            extensionPrompts,
-            systemPromptOverride,
-            jailbreakPromptOverride,
-            type,
-        });
-
-        // Fill the chat completion with as much context as the budget allows
-        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples });
-    } catch (error) {
-        if (error instanceof TokenBudgetExceededError) {
-            toastr.error(t`Mandatory prompts exceed the context size.`);
-            chatCompletion.log('Mandatory prompts exceed the context size.');
-            promptManager.error = t`Not enough free tokens for mandatory prompts. Raise your token limit or disable custom prompts.`;
-        } else if (error instanceof InvalidCharacterNameError) {
-            toastr.warning(t`An error occurred while counting tokens: Invalid character name`);
-            chatCompletion.log('Invalid character name');
-            promptManager.error = t`The name of at least one character contained whitespaces or special characters. Please check your user and character name.`;
-        } else {
-            toastr.error(t`An unknown error occurred while counting tokens. Further information may be available in console.`);
-            chatCompletion.log('----- Unexpected error while preparing prompts -----');
-            chatCompletion.log(error);
-            chatCompletion.log(error.stack);
-            chatCompletion.log('----------------------------------------------------');
-        }
-    } finally {
-        // Pass chat completion to prompt manager for inspection
-        promptManager.setChatCompletion(chatCompletion);
-
-        if (oai_settings.squash_system_messages && dryRun == false) {
-            await chatCompletion.squashSystemMessages();
-        }
-
-        // All information is up-to-date, render.
-        if (false === dryRun) promptManager.render(false);
-    }
-
-    const chat = chatCompletion.getChat();
-
-    const eventData = { chat, dryRun };
-    await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
-
-    openai_messages_count = chat.filter(x => !x?.tool_calls && ['user', 'assistant', 'tool'].includes(x?.role)).length || 0;
-
-    return [chat, promptManager.tokenHandler.counts];
-}
 
 /**
  * Handles errors during streaming requests.
@@ -5869,6 +5769,14 @@ export function initOpenAI() {
 
 function openAiAssemblyEnv() {
     return {
+        // The orchestration constructs this through env, per the step 7 contract.
+        ChatCompletion,
+        notify: toastr,
+        t,
+        emit: (event, data) => eventSource.emit(event, data),
+        eventTypes: event_types,
+        getGenerationTokenBudget,
+        setOpenaiMessagesCount: value => { openai_messages_count = value; },
         Prompt,
         injectionPosition: INJECTION_POSITION,
         toolManager: ToolManager,

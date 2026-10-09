@@ -1,3 +1,8 @@
+# DreamLand server image.
+#   docker build -f Dockerfile -t dreamland/server:dev .
+# The build context is filtered by .dockerignore, which excludes the Electron
+# desktop host, the removed AIRI subtree and local-model hosting, the GGUF
+# catalog, the mobile clients and the packaging/test trees.
 FROM node:lts-alpine3.23
 
 # Arguments

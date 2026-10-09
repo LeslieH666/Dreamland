@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Function to handle startup logic (Config check + init + Start)
-start_sillytavern() {
+start_dreamland() {
     local PREFIX="$1"
     shift # Remove the first argument (PREFIX) so $@ contains the rest
 
@@ -96,4 +96,4 @@ else
 fi
 
 # Calling function with the determined prefix
-start_sillytavern "$EXEC_PREFIX" "$@"
+start_dreamland "$EXEC_PREFIX" "$@"

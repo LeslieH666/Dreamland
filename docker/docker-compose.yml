@@ -1,9 +1,11 @@
 services:
-  sillytavern:
-    build: ..
-    container_name: sillytavern
-    hostname: sillytavern
-    image: ghcr.io/sillytavern/sillytavern:latest
+  dreamland:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: dreamland
+    hostname: dreamland
+    image: dreamland/server:dev
     environment:
       - NODE_ENV=production
       - FORCE_COLOR=1

@@ -27,6 +27,26 @@
 /node_modules
 /tests
 
+# --- Not part of the server image (Phase 0 crop) ---
+# Desktop host, removed AIRI subtree, removed local-model hosting, GGUF
+# catalog, mobile clients and packaging must never enter the server build
+# context. /airi and /src/leslie-local-model no longer exist in the tree;
+# they stay listed so a re-introduction cannot silently ship.
+/airi
+/src/electron
+/src/leslie-local-model
+/models
+/mobile
+/packaging
+/resources
+/notes
+/Config
+/Runtime
+/Run
+/Cache
+/logs
+/extensions
+
 # --- Sensitive Info ---
 **/.env*
 **/*.pem

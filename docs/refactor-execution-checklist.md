@@ -605,6 +605,12 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 
 现有 8 个基线**均不含作者注**（`2_floating_prompt` 未出现），而 `note_text` 是 2.5.2 显式入参化的两处 DOM 读取之一，不能被逐字等价覆盖是不可接受的。**裁决：新增第 9 个夹具用例（作者注启用 + `note_prompt`/note 内容），经 `run-baseline.mjs` 重录其浏览器基线，并入 `corpus.mjs` 与 replay oracle**。这样作者注路径同样受逐字等价门禁。
 
+### 附 O 门槛纪律升级（Lead 已决，二次同类事故后）
+
+**门槛必须“断言结果”，不得只 grep 信号。** 本轮 `b8de7e89d` 在单测失败状态下被提交，根因是门槛脚本只 grep 了 lint/baseline/check:repo 的信号、**从未断言单测套件通过**——与 2.5.2 收口“tests lint 未纳入门槛”同属“信号检查 ≠ 结果断言”一类。**自现在起**：
+- 每单元门槛必须**显式断言**：`Test Suites: N passed, N total` 且无 `failed`；双 lint 以**退出码 0** 为准；`check:repo`/`test:prompt-baseline` 以退出码 0 为准。任何“grep 到了成功字样”都不算通过。
+- 若失守：**用独立 commit 修复并记录**（不 `--amend` 掩盖），并在报告中如实披露。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

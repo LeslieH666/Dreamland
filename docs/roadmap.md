@@ -1,5 +1,15 @@
 # Roadmap
 
+## Phase 2 public API v1, token auth and the adapter layer (2026-10-09)
+
+- Added `/api/v1` (`src/api-v1/`) as the versioned public surface for the web client and the React Native app: `/health`, `/capabilities`, accounts (`/auth/register`, `/auth/token`, `/auth/pkce`, `/auth/refresh`, `/auth/logout`, `/auth/me`), characters, chats (including SSE generation), groups, World Info, voices, speech, memory, moments, identity, workshop and key-id-only secrets. The contract lives in `docs/contracts/api-v1.openapi.yaml` and now records the two additions and every operation the server cannot serve yet.
+- Authentication is dual-track: `/api/v1` uses short-lived HS256 access tokens plus rotating opaque refresh tokens (only their SHA-256 hash is stored) and optional RFC 7636 PKCE; the desktop web UI keeps its cookie session. The v1 router is mounted before the cookie-session and CSRF middleware, so neither track can affect the other.
+- Added per-client and per-account rate limiting with `RateLimiter-*` and `Retry-After` headers over the existing `rate-limiter-flexible` dependency.
+- The adapter layer (`src/api-v1/adapters/express.js`) reuses the existing routers by invoking them with a mock request/response. This keeps chat-core files untouched while avoiding duplicated business logic; the domain modules call exported stores (`LeslieMemoryStore`, `LeslieMomentsStore`, `LeslieIdentityStore`) and handlers (`SecretManager`, the Volcengine voice handlers) directly.
+- Opaque ids hide internal file names; every id is resolved inside the authenticated account's own directories, so a forged id cannot cross accounts.
+- Operations whose logic only exists in the browser answer `501` with a stable code instead of being re-implemented server-side: character avatar write, World Info entry writes, moment publishing, workshop generation, and swipe regeneration. Chat generation runs in gateway mode because prompt assembly is still browser-only.
+- Refresh tokens live in memory for the test phase (single instance), so a server restart signs clients out; Redis remains deferred with the rest of Phase 6.
+
 ## Phase 1 server deployment: runtime modes, environment config, HTTPS (2026-10-09)
 
 - Added the `DREAMLAND_MODE=server|desktop` runtime switch (`src/runtime-mode.js`, resolved in `src/command-line.js`, default `server`). Server mode never opens a browser, never starts Electron or a tray, and no longer seals the encrypted user space on exit, so a container keeps its mounted data root across restarts. The Electron host marks itself as `desktop` and refuses to start with `DREAMLAND_MODE=server`.

@@ -1,0 +1,993 @@
+# DreamLand Public API v1 — OpenAPI contract (Phase 2 DRAFT scaffold)
+#
+# RECONCILED in Phase 2 against the implemented /api/v1 router (src/api-v1/).
+# Two additions were required and are marked below:
+#   - POST /auth/pkce      (RFC 7636 challenge registration; the draft's
+#                           /auth/token code_verifier field cannot be verified
+#                           without a registered challenge)
+#   - /secrets             (key-id only API-key management for task 2.5)
+# Operations the server cannot serve yet answer 501 with a stable error code
+# and are marked NOT IMPLEMENTED below.
+#
+# The original scaffold instructions were:
+#   1. Reconcile every operation against the real handler in src/endpoints/*.js and
+#      src/leslie-*/router.js (reuse exported functions; do not duplicate business logic).
+#   2. Decide and DOCUMENT the id mapping: API-level opaque `id` <-> internal key
+#      (user handle, character card name/filename, chat id/hash). Do not leak internal
+#      paths or plaintext secrets.
+#   3. Keep the OpenAI-compatible conventions already established by the Leslie Bridge
+#      (chat.completion.chunk SSE, `{error:{code,message,type}}`, `object:"list"`).
+#   4. Auth is dual-track: this /api/v1 surface uses Bearer JWT; the desktop web UI
+#      keeps the existing cookie-session. Both must coexist in Phase 2.
+#
+openapi: 3.1.0
+info:
+  title: DreamLand Public API
+  version: '1'
+  description: Public, versioned API for the DreamLand backend. Serves the React Native app and the public web client.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+  - name: characters
+  - name: chats
+  - name: groups
+  - name: worldinfo
+  - name: voice
+  - name: leslie
+
+paths:
+  # ---------------------------------------------------------------- meta
+  /health:
+    get:
+      operationId: getHealth
+      tags: [auth]
+      security: []
+      responses:
+        '200':
+          description: Service health.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service, version]
+                properties:
+                  status: { const: ok }
+                  service: { const: dreamland }
+                  version: { type: string }
+
+  /capabilities:
+    get:
+      operationId: getCapabilities
+      tags: [auth]
+      responses:
+        '200':
+          description: Feature availability for this API version.
+          content:
+            application/json:
+              schema: { type: object }
+
+  # ---------------------------------------------------------------- auth
+  /auth/register:
+    post:
+      operationId: registerAccount
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [handle, password]
+              properties:
+                handle: { type: string, minLength: 3, maxLength: 64 }
+                password: { type: string, minLength: 8, maxLength: 256 }
+                email: { type: string, format: email }
+      responses:
+        '201':
+          description: Account created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/token:
+    post:
+      operationId: issueToken
+      tags: [auth]
+      security: []
+      summary: OAuth2 password grant (with optional PKCE) for first-party clients.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [grant_type, handle, password]
+              properties:
+                grant_type:
+                  type: string
+                  enum: [password, authorization_code]
+                  description: >-
+                    `password` is the OAuth2 password grant. `authorization_code`
+                    additionally requires `code`, `client_id` and `code_verifier`,
+                    and proves the same client that registered the PKCE challenge.
+                handle: { type: string }
+                password: { type: string }
+                client_id: { type: string, description: Public client id for PKCE. }
+                code: { type: string, description: Code returned by /auth/pkce. }
+                code_verifier: { type: string, description: PKCE verifier when client_id is present. }
+      responses:
+        '200':
+          description: Access and refresh tokens.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/pkce:
+    post:
+      operationId: registerPkceChallenge
+      tags: [auth]
+      security: []
+      summary: ADDED IN PHASE 2. Registers a PKCE challenge and returns a one-time code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client_id, code_challenge]
+              properties:
+                client_id: { type: string, minLength: 3 }
+                code_challenge: { type: string, minLength: 43, maxLength: 128 }
+                code_challenge_method: { const: S256, default: S256 }
+      responses:
+        '201':
+          description: One-time authorization code bound to the challenge.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, expires_in, code_challenge_method]
+                properties:
+                  code: { type: string }
+                  expires_in: { type: integer }
+                  code_challenge_method: { const: S256 }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          description: Rotated access and refresh tokens.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      responses:
+        '204':
+          description: Session revoked.
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      responses:
+        '200':
+          description: Current authenticated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+
+  # ---------------------------------------------------------------- characters
+  /characters:
+    get:
+      operationId: listCharacters
+      tags: [characters]
+      parameters:
+        - $ref: '#/components/parameters/PageCursor'
+        - $ref: '#/components/parameters/PageLimit'
+        - name: query
+          in: query
+          schema: { type: string }
+          description: Free-text filter over name and tags.
+      responses:
+        '200':
+          description: Paginated character list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/CharacterSummary' } }
+                  next_cursor: { type: string, nullable: true }
+    post:
+      operationId: createCharacter
+      tags: [characters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CharacterInput' }
+      responses:
+        '201':
+          description: Created character.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterCard' }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /characters/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      operationId: getCharacter
+      tags: [characters]
+      responses:
+        '200':
+          description: Full character card.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterCard' }
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+    patch:
+      operationId: updateCharacter
+      tags: [characters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CharacterInput' }
+      responses:
+        '200':
+          description: Updated character.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterCard' }
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteCharacter
+      tags: [characters]
+      responses:
+        '204':
+          description: Deleted.
+
+  /characters/{id}/avatar:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      operationId: getCharacterAvatar
+      tags: [characters]
+      responses:
+        '200':
+          description: Avatar image bytes.
+          content:
+            image/*:
+              schema: { type: string, format: binary }
+    put:
+      operationId: setCharacterAvatar
+      tags: [characters]
+      x-status: NOT_IMPLEMENTED
+      description: 501 in Phase 2. Re-embedding the card into the PNG needs a helper that src/endpoints/characters.js keeps private and frozen.
+      requestBody:
+        required: true
+        content:
+          image/*:
+            schema: { type: string, format: binary }
+      responses:
+        '204':
+          description: Avatar updated.
+
+  # ---------------------------------------------------------------- chats
+  /chats:
+    get:
+      operationId: listChats
+      tags: [chats]
+      parameters:
+        - $ref: '#/components/parameters/PageCursor'
+        - $ref: '#/components/parameters/PageLimit'
+        - name: character_id
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated chat list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/ChatSummary' } }
+                  next_cursor: { type: string, nullable: true }
+    post:
+      operationId: createChat
+      tags: [chats]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                character_id: { type: string, description: For solo chats. }
+                group_id: { type: string, description: For group chats. }
+                persona_id: { type: string, nullable: true }
+                title: { type: string }
+      responses:
+        '201':
+          description: Created chat.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Chat' }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /chats/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ChatId'
+    get:
+      operationId: getChat
+      tags: [chats]
+      responses:
+        '200':
+          description: Chat with its message list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Chat' }
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteChat
+      tags: [chats]
+      responses:
+        '204':
+          description: Deleted.
+
+  /chats/{id}/messages:
+    parameters:
+      - $ref: '#/components/parameters/ChatId'
+    post:
+      operationId: sendMessage
+      tags: [chats]
+      summary: Append a user message (no generation). Returns the persisted message.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string, minLength: 1, maxLength: 100000 }
+      responses:
+        '201':
+          description: Persisted user message.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /chats/{id}/generate:
+    parameters:
+      - $ref: '#/components/parameters/ChatId'
+    post:
+      operationId: generateChatCompletion
+      tags: [chats]
+      summary: >-
+        Authoritative turn. NOTE: prompt assembly (character card, World Info,
+        persona, memory) is browser-only today, so the server runs the existing
+        model proxy in gateway mode: pass `messages` to control the prompt, or
+        omit it to forward the stored conversation. The stream is the provider's
+        OpenAI-compatible SSE with `X-Accel-Buffering: no`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: { type: string, description: Optional new user message to append before generating. }
+                stream: { type: boolean, default: true }
+                temperature: { type: number }
+                max_tokens: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Server-sent event stream of assistant deltas.
+          content:
+            text/event-stream:
+              schema: { $ref: '#/components/schemas/ChatCompletionChunk' }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /chats/{id}/messages/{message_id}/swipe:
+    parameters:
+      - $ref: '#/components/parameters/ChatId'
+      - $ref: '#/components/parameters/MessageId'
+    post:
+      operationId: swipeMessage
+      tags: [chats]
+      summary: Regenerate an alternative reply for the given assistant message (Swipe).
+      x-status: NOT_IMPLEMENTED
+      description: 501 in Phase 2. Swipes are produced by the browser prompt pipeline; no server-side implementation exists to reuse.
+      responses:
+        '200':
+          description: SSE stream of the new alternative.
+          content:
+            text/event-stream:
+              schema: { $ref: '#/components/schemas/ChatCompletionChunk' }
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  # ---------------------------------------------------------------- groups
+  /groups:
+    get:
+      operationId: listGroups
+      tags: [groups]
+      responses:
+        '200':
+          description: Group chat list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/GroupChat' } }
+    post:
+      operationId: createGroup
+      tags: [groups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                member_ids: { type: array, items: { type: string } }
+      responses:
+        '201':
+          description: Created group.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupChat' }
+
+  /groups/{id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      operationId: getGroup
+      tags: [groups]
+      responses:
+        '200':
+          description: Group detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupChat' }
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+    patch:
+      operationId: updateGroup
+      tags: [groups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GroupChat' }
+      responses:
+        '200':
+          description: Updated group.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupChat' }
+    delete:
+      operationId: deleteGroup
+      tags: [groups]
+      responses:
+        '204':
+          description: Deleted.
+
+  # ---------------------------------------------------------------- world info
+  /worldinfo:
+    get:
+      operationId: getWorldInfo
+      tags: [worldinfo]
+      responses:
+        '200':
+          description: World Info entries for the current chat context.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/WorldInfoEntry' } }
+    post:
+      operationId: createWorldInfoEntry
+      tags: [worldinfo]
+      x-status: NOT_IMPLEMENTED
+      description: 501 in Phase 2. World Info entry editing is browser-only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorldInfoEntry' }
+      responses:
+        '201':
+          description: Created entry.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorldInfoEntry' }
+
+  /worldinfo/{id}:
+    parameters:
+      - $ref: '#/components/parameters/WorldInfoId'
+    put:
+      operationId: updateWorldInfoEntry
+      tags: [worldinfo]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorldInfoEntry' }
+      responses:
+        '200':
+          description: Updated entry.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorldInfoEntry' }
+    delete:
+      operationId: deleteWorldInfoEntry
+      tags: [worldinfo]
+      responses:
+        '204':
+          description: Deleted.
+
+  # ---------------------------------------------------------------- voice / TTS
+  /voices:
+    get:
+      operationId: listVoices
+      tags: [voice]
+      responses:
+        '200':
+          description: Available character voice catalog (Volcengine).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Voice' } }
+
+  /audio/speech:
+    post:
+      operationId: createSpeech
+      tags: [voice]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SpeechRequest' }
+      responses:
+        '200':
+          description: Synthesized MP3 audio.
+          content:
+            audio/mpeg:
+              schema: { type: string, format: binary }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  # ---------------------------------------------------------------- leslie (light; finalize against routers)
+  /memory:
+    get:
+      operationId: listMemoryProfiles
+      tags: [leslie]
+      responses:
+        '200':
+          description: Memory profiles (per-character) for the current user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { type: object } }
+
+  /moments/feed:
+    get:
+      operationId: getMomentsFeed
+      tags: [leslie]
+      responses:
+        '200':
+          description: Timeline feed of Moments posts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { type: object } }
+
+  /moments/posts:
+    post:
+      operationId: publishMoment
+      tags: [leslie]
+      x-status: NOT_IMPLEMENTED
+      description: 501 in Phase 2. Publishing needs the persona/storyline draft resolution that only the browser router performs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string, minLength: 1 }
+      responses:
+        '201':
+          description: Published post.
+          content:
+            application/json:
+              schema: { type: object }
+
+  /identity/personas:
+    get:
+      operationId: listPersonas
+      tags: [leslie]
+      responses:
+        '200':
+          description: User personas / storyline identities.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { type: object } }
+
+  /workshop/generate:
+    post:
+      operationId: generateCharacterDraft
+      tags: [leslie]
+      summary: Character workshop — generate a CCV3 draft via the configured chat API (cloud only). Draft is preview-only; nothing is persisted until explicitly saved via /characters.
+      x-status: NOT_IMPLEMENTED
+      description: 501 in Phase 2. The workshop is browser-only (client-side prompt builders plus a page-side model call).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brief: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: Draft character card (not persisted).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterCard' }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  # ---------------------------------------------------------------- secrets
+  # ADDED IN PHASE 2 (task 2.5). Responses carry only key ids, entry ids, a
+  # masked preview and the source; a plaintext secret is never returned.
+  /secrets:
+    get:
+      operationId: listSecretKeyIds
+      tags: [auth]
+      responses:
+        '200':
+          description: Configured secret slots for the authenticated account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/SecretSlot' }
+  /secrets/{keyId}:
+    parameters:
+      - name: keyId
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      operationId: setSecret
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value: { type: string, minLength: 1 }
+                label: { type: string, maxLength: 64 }
+      responses:
+        '201':
+          description: Stored. Returns identifiers only.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key_id: { type: string }
+                  entry_id: { type: string }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+    delete:
+      operationId: deleteSecret
+      tags: [auth]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entry_id: { type: string, nullable: true }
+      responses:
+        '204':
+          description: Deleted.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token issued by /auth/token.
+    oauth2:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: /api/v1/auth/token
+          refreshUrl: /api/v1/auth/refresh
+          scopes: {}
+
+  parameters:
+    CharacterId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Opaque character id.
+    ChatId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Opaque chat id.
+    MessageId:
+      name: message_id
+      in: path
+      required: true
+      schema: { type: string }
+    GroupId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    WorldInfoId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    PageCursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    PageLimit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+
+  responses:
+    ErrorResponse:
+      description: Stable error envelope (OpenAI-compatible).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  schemas:
+    SecretSlot:
+      type: object
+      required: [key_id, configured]
+      properties:
+        key_id: { type: string }
+        configured: { type: boolean }
+        entry_id: { type: string, nullable: true }
+        label: { type: string, nullable: true }
+        preview: { type: string, nullable: true, description: Masked; never the plaintext value. }
+        source: { type: string, nullable: true, enum: [stored, external, null] }
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            type:
+              type: string
+              enum: [invalid_request_error, authentication_error, permission_error, not_found_error, rate_limit_error, server_error]
+
+    User:
+      type: object
+      required: [id, handle, created_at]
+      properties:
+        id: { type: string }
+        handle: { type: string }
+        email: { type: string, nullable: true }
+        admin: { type: boolean, default: false }
+        avatar_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    TokenResponse:
+      type: object
+      required: [access_token, refresh_token, token_type, expires_in]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        token_type: { const: Bearer }
+        expires_in: { type: integer, description: Access token lifetime in seconds. }
+
+    CharacterSummary:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        avatar_url: { type: string, nullable: true }
+        tags: { type: array, items: { type: string } }
+
+    CharacterCard:
+      allOf:
+        - $ref: '#/components/schemas/CharacterSummary'
+        - type: object
+          properties:
+            version: { type: string, enum: [ccv2, ccv3] }
+            description: { type: string }
+            personality: { type: string }
+            scenario: { type: string }
+            first_message: { type: string }
+            example_dialogue: { type: string }
+            creator: { type: string }
+            metadata: { type: object }
+
+    CharacterInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: string }
+        personality: { type: string }
+        scenario: { type: string }
+        first_message: { type: string }
+        example_dialogue: { type: string }
+        tags: { type: array, items: { type: string } }
+
+    ChatSummary:
+      type: object
+      required: [id, title, updated_at]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        character_id: { type: string, nullable: true }
+        group_id: { type: string, nullable: true }
+        message_count: { type: integer }
+        updated_at: { type: string, format: date-time }
+
+    Chat:
+      allOf:
+        - $ref: '#/components/schemas/ChatSummary'
+        - type: object
+          properties:
+            messages:
+              type: array
+              items: { $ref: '#/components/schemas/ChatMessage' }
+
+    ChatMessage:
+      type: object
+      required: [id, role, content, created_at]
+      properties:
+        id: { type: string }
+        role: { type: string, enum: [system, user, assistant] }
+        name: { type: string, nullable: true }
+        content: { type: string }
+        swipe_id: { type: string, nullable: true }
+        meta: { type: object }
+        created_at: { type: string, format: date-time }
+
+    GroupChat:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        member_ids: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+
+    WorldInfoEntry:
+      type: object
+      required: [id, keys, content]
+      properties:
+        id: { type: string }
+        keys: { type: array, items: { type: string } }
+        content: { type: string }
+        position: { type: integer }
+        selective: { type: boolean }
+
+    Voice:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        language: { type: string, nullable: true }
+
+    SpeechRequest:
+      type: object
+      required: [input, voice]
+      properties:
+        input: { type: string, minLength: 1, maxLength: 10000 }
+        voice: { type: string, description: Speaker id from /voices. }
+        model: { type: string, default: leslie-volcengine-tts }
+        speed: { type: number, exclusiveMinimum: 0, default: 1 }
+        response_format: { const: mp3, default: mp3 }
+
+    ChatCompletionChunk:
+      type: object
+      required: [id, object, model, choices]
+      properties:
+        id: { type: string }
+        object: { const: chat.completion.chunk }
+        model: { type: string }
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index: { type: integer }
+              delta:
+                type: object
+                properties:
+                  content: { type: string }
+              finish_reason: { type: string, nullable: true }

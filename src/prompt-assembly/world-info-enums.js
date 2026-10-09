@@ -38,3 +38,19 @@ export const MAX_SCAN_DEPTH = 1000;
 
 /** Default group weight for inclusion-group scoring (moved from world-info.js). */
 export const DEFAULT_WEIGHT = 100;
+
+export const world_info_position = {
+    before: 0,
+    after: 1,
+    ANTop: 2,
+    ANBottom: 3,
+    atDepth: 4,
+    EMTop: 5,
+    EMBottom: 6,
+    outlet: 7,
+};
+
+export const wi_anchor_position = {
+    before: 0,
+    after: 1,
+};

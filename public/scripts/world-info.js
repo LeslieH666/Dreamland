@@ -29,7 +29,9 @@ import {
     DEFAULT_WEIGHT,
     MAX_SCAN_DEPTH,
     scan_state,
+    wi_anchor_position,
     world_info_logic,
+    world_info_position,
 } from '/prompt-assembly/world-info-enums.js';
 import {
     WorldInfoBuffer,
@@ -41,7 +43,7 @@ import {
 
 // Phase 2.5.2 step 4, substep 1: these names moved to the shared modules and stay
 // exported from here so existing importers keep working unchanged.
-export { DEFAULT_DEPTH, DEFAULT_WEIGHT, MAX_SCAN_DEPTH, scan_state, world_info_logic, parseRegexFromString };
+export { DEFAULT_DEPTH, DEFAULT_WEIGHT, MAX_SCAN_DEPTH, scan_state, wi_anchor_position, world_info_logic, world_info_position, parseRegexFromString };
 
 /**
  * Bind the browser's World Info state for the shared scan classes.
@@ -67,7 +69,7 @@ import {
     loadWorldInfo as loadWorldInfoCore,
     getSortedEntries as getSortedEntriesCore,
 } from '/prompt-assembly/world-info-lore.js';
-import { scanWorldInfo } from '/prompt-assembly/world-info-scan.js';
+import { checkWorldInfo as checkWorldInfoCore, getWorldInfoPrompt as getWorldInfoPromptCore } from '/prompt-assembly/world-info-prompt.js';
 
 /**
  * Bind the browser's World Info corpus state for the shared lore module
@@ -103,6 +105,17 @@ function worldInfoContext() {
         getContext,
         notifyOverflow: (message, title) => toastr.warning(message, title),
         emitScanDone: args => eventSource.emit(event_types.WORLDINFO_SCAN_DONE, args),
+        getExtensionSettings: () => extension_settings,
+        getShouldWIAddPrompt: () => shouldWIAddPrompt,
+        noteModuleName: NOTE_MODULE_NAME,
+        metadataKeys: metadata_keys,
+        extensionPromptRoles: extension_prompt_roles,
+        getRegexedString,
+        regexPlacement: regex_placement,
+        emitWorldInfoActivated: arg => eventSource.emit(event_types.WORLD_INFO_ACTIVATED, arg),
+        // The browser IS the reference implementation, so it must never fail closed;
+        // only the server sets this, and then assertWorldInfoPortable runs.
+        enforcePortability: false,
         getWorldInfo: () => world_info,
         getSelectedWorldInfo: () => selected_world_info,
         getCharacterStrategy: () => world_info_character_strategy,
@@ -127,6 +140,34 @@ function worldInfoContext() {
  * @param {string} name World book name.
  * @returns {Promise<object>} World book data.
  */
+/**
+ * Performs a scan on the chat and returns the world info activated.
+ *
+ * Phase 2.5.2 step 4: the scan and the prompt building both live in
+ * src/prompt-assembly/world-info-prompt.js; this wrapper supplies the browser
+ * environment.
+ * @param {string[]} chat The chat messages to scan, in reverse order.
+ * @param {number} maxContext The maximum context size of the generation.
+ * @param {boolean} isDryRun Whether to perform a dry run.
+ * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned.
+ * @returns {Promise<WIActivated>} The world info activated.
+ */
+export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData = defaultGlobalScanData) {
+    return checkWorldInfoCore(chat, maxContext, isDryRun, globalScanData, worldInfoContext());
+}
+
+/**
+ * Gets the world info prompt for the current chat.
+ * @param {string[]} chat The chat messages to scan, in reverse order.
+ * @param {number} maxContext The maximum context size of the generation.
+ * @param {boolean} isDryRun Whether to perform a dry run.
+ * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned.
+ * @returns {Promise<object>} The world info prompt.
+ */
+export async function getWorldInfoPrompt(chat, maxContext, isDryRun, globalScanData) {
+    return getWorldInfoPromptCore(chat, maxContext, isDryRun, globalScanData, worldInfoContext());
+}
+
 export async function loadWorldInfo(name) {
     return loadWorldInfoCore(name, worldInfoContext());
 }
@@ -348,21 +389,6 @@ export function updateWorldInfoSettings(settings, activeWorldInfo) {
     saveSettingsDebounced();
 }
 
-export const world_info_position = {
-    before: 0,
-    after: 1,
-    ANTop: 2,
-    ANBottom: 3,
-    atDepth: 4,
-    EMTop: 5,
-    EMBottom: 6,
-    outlet: 7,
-};
-
-export const wi_anchor_position = {
-    before: 0,
-    after: 1,
-};
 
 /**
  * The cache of all world info data that was loaded from the backend.
@@ -377,38 +403,6 @@ export const wi_anchor_position = {
  * */
 export const worldInfoCache = new StructuredCloneMap({ cloneOnGet: true, cloneOnSet: false });
 
-/**
- * Gets the world info based on chat messages.
- * @param {string[]} chat - The chat messages to scan, in reverse order.
- * @param {number} maxContext - The maximum context size of the generation.
- * @param {boolean} isDryRun - If true, the function will not emit any events.
- * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned
- * @returns {Promise<WIPromptResult>} The world info string and depth.
- */
-export async function getWorldInfoPrompt(chat, maxContext, isDryRun, globalScanData) {
-    let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
-
-    const activatedWorldInfo = await checkWorldInfo(chat, maxContext, isDryRun, globalScanData);
-    worldInfoBefore = activatedWorldInfo.worldInfoBefore;
-    worldInfoAfter = activatedWorldInfo.worldInfoAfter;
-    worldInfoString = worldInfoBefore + worldInfoAfter;
-
-    if (!isDryRun && activatedWorldInfo.allActivatedEntries && activatedWorldInfo.allActivatedEntries.size > 0) {
-        const arg = Array.from(activatedWorldInfo.allActivatedEntries.values());
-        await eventSource.emit(event_types.WORLD_INFO_ACTIVATED, arg);
-    }
-
-    return {
-        worldInfoString,
-        worldInfoBefore,
-        worldInfoAfter,
-        worldInfoExamples: activatedWorldInfo.EMEntries ?? [],
-        worldInfoDepth: activatedWorldInfo.WIDepthEntries ?? [],
-        anBefore: activatedWorldInfo.ANBeforeEntries ?? [],
-        anAfter: activatedWorldInfo.ANAfterEntries ?? [],
-        outletEntries: activatedWorldInfo.outletEntries ?? {},
-    };
-}
 
 export function setWorldInfoSettings(settings, data) {
     if (settings.world_info_depth !== undefined)
@@ -3775,126 +3769,6 @@ export async function createNewWorldInfo(worldName, { interactive = false } = {}
     return true;
 }
 //MARK: checkWorldInfo
-/**
- * Performs a scan on the chat and returns the world info activated.
- *
- * Phase 2.5.2 step 4, substep 3: the scan loop itself now lives in
- * src/prompt-assembly/world-info-scan.js; this function runs it and then builds
- * the prompt fragments (moved in substep 4).
- * @param {string[]} chat The chat messages to scan, in reverse order.
- * @param {number} maxContext The maximum context size of the generation.
- * @param {boolean} isDryRun Whether to perform a dry run.
- * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned.
- * @returns {Promise<WIActivated>} The world info activated.
- */
-export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData = defaultGlobalScanData) {
-    const scan = await scanWorldInfo(chat, maxContext, isDryRun, globalScanData, worldInfoContext());
-    if (scan.empty) {
-        // Preserved early return: with no lore selected the original code returned
-        // before the timed-effect persistence and clean-up below, so those side
-        // effects must not run here either.
-        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], ANBeforeEntries: [], ANAfterEntries: [], outletEntries: {}, allActivatedEntries: new Set() };
-    }
-
-    const { allActivatedEntries, buffer, timedEffects } = scan;
-    // The build phase below uses the SillyTavern context (extension prompts, AN hijack).
-    const context = getContext();
-
-
-    console.debug('[WI] --- BUILDING PROMPT ---');
-
-    // Forward-sorted list of entries for joining
-    const WIBeforeEntries = [];
-    const WIAfterEntries = [];
-    const EMEntries = [];
-    const ANTopEntries = [];
-    const ANBottomEntries = [];
-    const WIDepthEntries = [];
-    /** @type {{[key: string]: string[]}} */
-    const WIOutletEntries = {};
-
-    // Appends from insertion order 999 to 1. Use unshift for this purpose
-    // TODO (kingbri): Change to use WI Anchor positioning instead of separate top/bottom arrays
-    [...allActivatedEntries.values()].sort(sortFn).forEach((entry) => {
-        const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
-        const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
-
-        if (!content) {
-            console.debug(`[WI] Entry ${entry.uid}`, 'skipped adding to prompt due to empty content', entry);
-            return;
-        }
-
-        switch (entry.position) {
-            case world_info_position.before:
-                WIBeforeEntries.unshift(content);
-                break;
-            case world_info_position.after:
-                WIAfterEntries.unshift(content);
-                break;
-            case world_info_position.EMTop:
-                EMEntries.unshift(
-                    { position: wi_anchor_position.before, content: content },
-                );
-                break;
-            case world_info_position.EMBottom:
-                EMEntries.unshift(
-                    { position: wi_anchor_position.after, content: content },
-                );
-                break;
-            case world_info_position.ANTop:
-                ANTopEntries.unshift(content);
-                break;
-            case world_info_position.ANBottom:
-                ANBottomEntries.unshift(content);
-                break;
-            case world_info_position.atDepth: {
-                const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === (entry.depth ?? DEFAULT_DEPTH) && e.role === (entry.role ?? extension_prompt_roles.SYSTEM));
-                if (existingDepthIndex !== -1) {
-                    WIDepthEntries[existingDepthIndex].entries.unshift(content);
-                } else {
-                    WIDepthEntries.push({
-                        depth: entry.depth,
-                        entries: [content],
-                        role: entry.role ?? extension_prompt_roles.SYSTEM,
-                    });
-                }
-                break;
-            }
-            case world_info_position.outlet: {
-                if (!entry.outletName) {
-                    console.warn(`[WI] Entry ${entry.uid} has position 'outlet' but no outlet name. Skipping.`);
-                    break;
-                }
-                if (Array.isArray(WIOutletEntries[entry.outletName])) {
-                    WIOutletEntries[entry.outletName].push(content);
-                } else {
-                    WIOutletEntries[entry.outletName] = [content];
-                }
-                break;
-            }
-            default:
-                break;
-        }
-    });
-
-    const worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.join('\n') : '';
-    const worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.join('\n') : '';
-
-    if (shouldWIAddPrompt) {
-        const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`.replace(/(^\n)|(\n$)/g, '');
-        context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
-    }
-
-    timedEffects.setTimedEffects(Array.from(allActivatedEntries.values()));
-    buffer.resetExternalEffects();
-    timedEffects.cleanUp();
-
-    console.log(`[WI] ${isDryRun ? 'Hypothetically adding' : 'Adding'} ${allActivatedEntries.size} entries to prompt`, Array.from(allActivatedEntries.values()));
-    console.debug(`[WI] --- DONE${isDryRun ? ' (DRY RUN)' : ''} ---`);
-
-    return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, ANBeforeEntries: ANTopEntries, ANAfterEntries: ANBottomEntries, outletEntries: WIOutletEntries, allActivatedEntries: new Set(allActivatedEntries.values()) };
-}
 
 /**
  * Only leaves entries with the highest key matching score in each group.

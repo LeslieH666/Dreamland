@@ -21,7 +21,16 @@ async function preparePage(page) {
     }));
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#preloader')).toBeHidden({ timeout: 30_000 });
-    await page.locator('.popup[open]').evaluateAll((popups) => popups.forEach((popup) => popup.close()));
+    // First-run dialogues can open one after another; keep closing until the
+    // page settles so they cannot intercept later clicks.
+    for (let attempt = 0; attempt < 10; attempt++) {
+        const open = page.locator('.popup[open]');
+        if (await open.count() === 0) {
+            break;
+        }
+        await open.evaluateAll((popups) => popups.forEach((popup) => popup.close()));
+        await page.waitForTimeout(250);
+    }
 }
 
 test('Leslie settings keeps essentials clear and advanced tools guarded', async ({ page }) => {
@@ -42,7 +51,7 @@ test('Leslie settings keeps essentials clear and advanced tools guarded', async 
 
     const conversationSidebarBox = await page.locator('#leslie-conversation-sidebar').boundingBox();
 
-    await page.locator('.leslie-sidebar-actions [data-action="settings"]').click();
+    await page.locator('.dreamland-navigation [data-action="settings"]').click();
 
     const overlay = page.locator('#leslie-settings-overlay');
     const panel = page.locator('.leslie-settings-panel');
@@ -54,12 +63,14 @@ test('Leslie settings keeps essentials clear and advanced tools guarded', async 
     await expect(overlay).toHaveCSS('opacity', '1');
     await expect(page.locator('.leslie-settings-backdrop')).toHaveCount(0);
     await expect(panel).not.toHaveAttribute('aria-modal', 'true');
-    await expect.poll(async () => Math.abs((await panel.boundingBox()).x)).toBeLessThanOrEqual(1);
+    // The Blue Archive shell keeps the conversation sidebar on screen, so the
+    // settings page covers the full main area to its right.
+    await expect.poll(async () => Math.abs((await panel.boundingBox()).x - conversationSidebarBox.width)).toBeLessThanOrEqual(1);
     await expect.poll(async () => Math.abs((await panel.boundingBox()).y)).toBeLessThanOrEqual(1);
-    await expect.poll(async () => Math.abs((await panel.boundingBox()).width - 1280)).toBeLessThanOrEqual(1);
+    await expect.poll(async () => Math.abs((await panel.boundingBox()).width - (1280 - conversationSidebarBox.width))).toBeLessThanOrEqual(1);
     await expect.poll(async () => Math.abs((await panel.boundingBox()).height - 900)).toBeLessThanOrEqual(1);
-    await expect.poll(async () => Math.abs((await settingsMaster.boundingBox()).width - conversationSidebarBox.width)).toBeLessThanOrEqual(1);
-    await expect.poll(async () => Math.abs((await settingsContent.boundingBox()).x - conversationSidebarBox.width)).toBeLessThanOrEqual(1);
+    await expect.poll(async () => Math.abs((await settingsMaster.boundingBox()).x - conversationSidebarBox.width)).toBeLessThanOrEqual(1);
+    await expect.poll(async () => Math.abs((await settingsContent.boundingBox()).x - ((await settingsMaster.boundingBox()).x + (await settingsMaster.boundingBox()).width))).toBeLessThanOrEqual(1);
     await page.locator('.popup[open]').evaluateAll((popups) => popups.forEach((popup) => popup.close()));
     await expect(settingsNavigation.locator('[data-leslie-detail="model"]')).toBeVisible();
     await expect(settingsNavigation.locator('[data-leslie-detail="character"]')).toBeVisible();
@@ -143,7 +154,7 @@ test('Leslie settings keeps essentials clear and advanced tools guarded', async 
 test('Leslie settings becomes a full-screen settings page on phones', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await preparePage(page);
-    await page.locator('.leslie-sidebar-actions [data-action="settings"]').click();
+    await page.locator('.dreamland-navigation [data-action="settings"]').click();
     await page.locator('.popup[open]').evaluateAll((popups) => popups.forEach((popup) => popup.close()));
 
     const overlay = page.locator('#leslie-settings-overlay');
@@ -152,8 +163,10 @@ test('Leslie settings becomes a full-screen settings page on phones', async ({ p
     const settingsContent = page.locator('.leslie-settings-content-pane');
     const settingsNavigation = page.locator('.leslie-settings-navigation');
     await expect(overlay).toHaveCSS('opacity', '1');
+    // The phone layout reserves the bottom navigation below the settings page.
+    const bottomNavigationBox = await page.locator('.dreamland-navigation').boundingBox();
     await expect.poll(async () => Math.abs((await panel.boundingBox()).width - 390)).toBeLessThanOrEqual(1);
-    await expect.poll(async () => Math.abs((await panel.boundingBox()).height - 844)).toBeLessThanOrEqual(1);
+    await expect.poll(async () => Math.abs((await panel.boundingBox()).height - (844 - (bottomNavigationBox?.height ?? 0)))).toBeLessThanOrEqual(1);
     await expect.poll(async () => Math.abs((await settingsMaster.boundingBox()).x)).toBeLessThanOrEqual(1);
     await expect.poll(async () => Math.abs((await settingsMaster.boundingBox()).width - 390)).toBeLessThanOrEqual(1);
     await expect.poll(async () => Math.abs((await settingsContent.boundingBox()).x - 390)).toBeLessThanOrEqual(1);
@@ -183,7 +196,9 @@ test('Leslie settings becomes a full-screen settings page on phones', async ({ p
 test('Leslie settings follows the saved Chinese interface language', async ({ page }) => {
     await page.addInitScript({ content: 'localStorage.setItem("language", "zh-cn");' });
     await preparePage(page);
-    await page.locator('.leslie-sidebar-actions [data-action="settings"]').click();
+    // The first-run dialogue can still be opening here; it would swallow the click.
+    await expect(page.locator('.popup[open]')).toHaveCount(0);
+    await page.locator('.dreamland-navigation [data-action="settings"]').click();
 
     const settingsNavigation = page.locator('.leslie-settings-navigation');
     await expect(page.locator('#leslie-settings-title')).toHaveText('设置');
@@ -206,8 +221,10 @@ test('privacy mode masks only the selected original UI blocks and persists the c
     });
     await preparePage(page);
 
-    await expect(page.locator('[data-leslie-privacy-quick-toggle="sidebar"]')).toBeVisible();
-    await page.locator('.leslie-sidebar-actions [data-action="settings"]').click();
+    // The Blue Archive shell hides the sidebar quick toggle; the control must
+    // still be created so the header/mobile layouts keep working.
+    await expect(page.locator('[data-leslie-privacy-quick-toggle="sidebar"]')).toBeAttached();
+    await page.locator('.dreamland-navigation [data-action="settings"]').click();
     const privacyNavigation = page.locator('.leslie-settings-navigation [data-leslie-detail="privacy"]');
     await expect(privacyNavigation).toBeVisible();
     await privacyNavigation.click();
@@ -231,6 +248,10 @@ test('privacy mode masks only the selected original UI blocks and persists the c
     await page.locator('.popup[open]').evaluateAll((popups) => popups.forEach((popup) => popup.close()));
     await expect(page.locator('body')).toHaveClass(/leslie-privacy-mode/);
     await expect(page.locator('body')).toHaveAttribute('data-leslie-privacy-messages', 'visible');
-    await page.locator('[data-leslie-privacy-quick-toggle="sidebar"]').click();
+    // The sidebar quick toggle is hidden by the Blue Archive shell, so turn the
+    // mode off through the same settings control the rest of the test uses.
+    await page.locator('.dreamland-navigation [data-action="settings"]').click();
+    await page.locator('.leslie-settings-navigation [data-leslie-detail="privacy"]').click();
+    await page.locator('[data-leslie-privacy-master]').uncheck();
     await expect(page.locator('body')).not.toHaveClass(/leslie-privacy-mode/);
 });

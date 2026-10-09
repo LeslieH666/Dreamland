@@ -126,7 +126,7 @@ grep -rniE "airi|leslie-local-model|managed.?kobold|local-model" \
 - [ ] 提交该文档。
 
 ### Task 0.6 自有 Linux 镜像
-- [ ] 修改 `docker/Dockerfile`、`docker/docker-compose.yml`、`docker/docker-entrypoint.sh`：把镜像名/服务名 `ghcr.io/sillytavern/sillytavern` / `sillytavern` 改为本项目自有命名（如 `dreamland/server`）。
+- [ ] 修改**根目录 `Dockerfile`**（`docker/` 下只有 compose/entrypoint/build-lib，无 Dockerfile）、`docker/docker-compose.yml`、`docker/docker-entrypoint.sh`：把镜像名/服务名 `ghcr.io/sillytavern/sillytavern` / `sillytavern` 改为本项目自有命名（如 `dreamland/server`）。
 - [ ] 确认镜像构建产物不含 `airi/`、`src/electron/`、`src/leslie-local-model/`、`models/`、`mobile/android`。
 - [ ] `docker build -f Dockerfile -t dreamland/server:dev .` 成功；按 `docker/docker-compose.yml` 起容器，`curl http://localhost:8000/version` 返回 JSON。
 
@@ -283,11 +283,18 @@ P0（基线+裁剪）──▶ P1（公网部署）──▶ P2（API v1+认证�
 
 ---
 
-## 附 B：遗留引用检测脚本（每个 Phase 结束都跑一次）
+## 附 B：遗留引用检测（每个 Phase 结束都跑一次）
+
+Phase 0 已确立**允许清单**，以下不算残留：
+- 保留的「连接用户自托管端点」能力沿用 `local-model` 命名：`public/scripts/leslie-local-model-core.js`（连接配置 + 门控 + 偏好键 `leslie-local-model-loading-enabled`）、`leslie-settings.js` 连接卡片、`public/css/leslie-local-model.css`。
+- tokenizer 词表 / 二进制资源里的 `airi`、`pairing` 等字节误报。
 
 ```bash
-# AIRI / 本地模型残留检测（期望无命中）
-grep -rniE "airi|leslie-local-model|managed.?kobold|local-model|GGUF|gguf" \
+# 1) 目录级：以下必须不存在
+test ! -d airi && test ! -d models && test ! -d src/leslie-local-model && echo "DIRS-OK"
+
+# 2) 硬删除项 grep：期望无命中
+grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-LocalModel|Stop-LocalModel|Leslie-AIRI|airi-bridge|airi-launcher" \
   src/ public/ default/ docs/ mobile/ README.md README.en.md package.json \
   --exclude-dir=node_modules --exclude-dir=nodebridge || true
 ```
@@ -330,3 +337,13 @@ grep -rniE "airi|leslie-local-model|managed.?kobold|local-model|GGUF|gguf" \
 5. **禁止**跳过验证命令；**禁止**在一个 task 未通过验证时继续下一个 task。
 6. **禁止**新增/推送 SillyTavern / AIRI 上游 remote。
 7. 遇到与本文档描述不符、或会触及红线的情况，**停下并报告**，不要自行发挥。
+
+---
+
+## 附 E：Phase 0 裁决记录（Lead 已决，Phase 1 起按此执行）
+
+- **D2**：`leslie-bridge` 的 companion 轮次 `POST /chat/completions` 已删除（依赖被删的 `companion-session/request`，无法保留）；保留语义等价的 OpenAI 兼容网关 `POST /model/chat/completions`。✅ 采纳。
+- **D4（遗留检测）**：采纳**方案 A（允许清单）**。`local-model` 命名是「连接用户自托管端点」的保留能力，与新版 AGENTS.md（“只连接、不托管本地模型”）一致；**不做方案 B 改名**（涉及持久化偏好键迁移 + 触及聊天管线）；**不做方案 C 删除**（会移除保留能力）。§附 B 已按此重写。
+- **D6**：`docs/team-plan.md` 是 Lead 在规划会话中创建的产物，非外来文件，已提交。
+- **D1**：容器构建验证延后至有 Docker 运行时的主机执行，不影响代码合入。
+- **D7**：`npm run test:e2e --prefix tests` 延后到 Phase 1 前补跑；Electron 依赖安装（`.npmrc ignore-scripts`）到 Phase 3 再处理。

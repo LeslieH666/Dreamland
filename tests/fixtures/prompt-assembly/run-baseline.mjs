@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global window, document, localStorage */
 /**
  * Record (or re-verify) the browser's prompt-assembly output for the synthetic
  * corpus — the Phase 2.5.4 baseline that Phase 2.5.2 must not change.
@@ -188,6 +189,8 @@ function firstDifference(a, b) {
 }
 
 const dataRoots = [];
+/** Errors the page reported, so a failed capture can say why. */
+const pageErrors = [];
 let server = null;
 let browser = null;
 let provider = null;
@@ -208,6 +211,18 @@ try {
     }
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
+
+    // Capture what the page itself reports. Without this a broken bundle only shows
+    // up as "the preloader never hid", which says nothing about the actual exception.
+    page.on('pageerror', error => {
+        pageErrors.push(`[pageerror] ${error?.message ?? error}`);
+    });
+    page.on('console', message => {
+        if (message.type() === 'error') {
+            pageErrors.push(`[console] ${message.text()}`);
+        }
+    });
+
     await page.addInitScript(() => {
         try {
             localStorage.setItem('language', 'zh-cn');
@@ -252,6 +267,14 @@ try {
 
 if (failures.length) {
     console.error(`\n${failures.length} case(s) could not be captured.`);
+    // The reason a capture fails is almost always a page-level exception; print the
+    // first one so the failure is diagnosable instead of a bare timeout.
+    if (pageErrors.length) {
+        console.error(`\nFirst page error (${pageErrors.length} captured):`);
+        console.error(`  ${pageErrors[0]}`);
+    } else {
+        console.error('The page reported no error; the capture timed out for another reason.');
+    }
     process.exit(1);
 }
 

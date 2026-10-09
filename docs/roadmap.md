@@ -1,5 +1,14 @@
 # Roadmap
 
+## Phase 3 dual packaging: platform injection and two build targets (2026-10-09)
+
+- The Electron shell is now explicitly a pure desktop host owning three responsibilities: the system tray, automatic startup of the bundled backend and window, and sealed exit. The only IPC left is the moments status/tick channel that drives the tray label; the companion frontend and in-app model controls were removed in Phase 0.
+- Added `src/platform/` as the single place that inspects the process platform. It injects two interfaces — data root (a mounted server volume versus an install-relative desktop directory) and secret storage (Windows DPAPI versus AES-256-GCM under `DREAMLAND_SECRET_ENCRYPTION_KEY`, with both formats readable during a migration). Business code asks for a capability instead of branching: `src/util.js`, `src/server-main.js` and `src/endpoints/secrets.js` no longer contain platform checks.
+- `src/secret-protection.js` became format-aware, so an existing DPAPI secrets file can be read after a deployment switches to encryption-at-rest, and a tampered AES file fails to open instead of returning wrong plaintext.
+- Added the two packaging targets with shared-input verification: `npm run build:server` (backend plus the single `public/` UI into a container image, with the build context proven free of the desktop host, mobile clients, packaging and tests) and `npm run build:desktop` (the same backend and UI plus the Electron host). `npm run verify:targets` runs both checks without Docker or Windows.
+- Desktop dependency setup is reproducible now: `src/electron/package.json` allows the Electron postinstall, which npm 12 otherwise blocks, resolving the Phase 1 deferral.
+- Verified on this host: the server image equivalent boots and both targets serve the same `public/` tree; the Electron host starts the bundled server and completed a full chat with streamed SSE against a mock model.
+
 ## Phase 2 public API v1, token auth and the adapter layer (2026-10-09)
 
 - Added `/api/v1` (`src/api-v1/`) as the versioned public surface for the web client and the React Native app: `/health`, `/capabilities`, accounts (`/auth/register`, `/auth/token`, `/auth/pkce`, `/auth/refresh`, `/auth/logout`, `/auth/me`), characters, chats (including SSE generation), groups, World Info, voices, speech, memory, moments, identity, workshop and key-id-only secrets. The contract lives in `docs/contracts/api-v1.openapi.yaml` and now records the two additions and every operation the server cannot serve yet.

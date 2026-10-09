@@ -524,6 +524,17 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 2. **动手前备份 + `node --check` + `npm run lint`（no-undef）** 作为提交前兜底；禁止提交中间态。
 3. **测试只断言真实行为**：不把“代码并不具备的行为”写进断言（如 `parseDecorators` 剥离、`getSortedEntries` 过滤 disable）。
 
+**子步 3/4 总结出的教训（第 5–7 步沿用）**：
+4. **注入参数命名用 `env` 而非 `context`**：被搬函数若内部已有局部 `const context = getContext()`，注入参数叫 `context` 会静默遮蔽它（lint/no-undef 不报），导致 AN 劫持等读 `undefined`。约定：注入参数统一叫 `env`，内部保留 `context = env.getContext()`。
+5. **空选集提前返回的副作用跳过必须保留**：不要把扫描/构建阶段“统一化”而丢掉原有 `length === 0` 提前返回（它会跳过 timedEffects 副作用）。
+6. **jest 运行时是“缺失具名导出”的唯一关口**：`node --check` 与 lint 抓不到 `import { X }` 中 X 不存在，只有 jest 加载时报错。故“jest 加载成功”是每个迁移单元的必过关口。
+
+### N.1 进度（子步 3、4 已收口后更新）
+- World Info 抬升（第 4 步）**完整收口**：`world-info.js` 6289 → 4713 行，公共导出始终 70 个不变。
+- 已完成单元：子步 1、2、3、4（`e84181ecf`）。
+- 剩余 3 个单元：**第 5 步 → 第 6 步 → 第 7 步**（第 7 步完成即 Phase 2.5.2 收口）。
+- 欠账：子步 4 的构建阶段专属单测（`buildWorldInfoPrompt` 四种位置分支），在第 5 步一并补上。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

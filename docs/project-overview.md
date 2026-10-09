@@ -22,38 +22,35 @@ Browser UI
 ├─ Memory and moments extensions, including bounded cross-line recall, a desktop two-pane timeline, threaded replies, per-character publishing policy, isolated social memory, and a model-backed activity worker
 └─ Character workshop and voice settings
 
-Optional companion boundary
+Optional API boundary
 └─ Leslie Bridge v1
    ├─ Process-scoped bearer authentication
-   ├─ Capability discovery
-   ├─ OpenAI-compatible Volcengine speech adapter
-   ├─ Active DreamLand character and chat binding
-   ├─ Authoritative DreamLand turn streaming
-   └─ Bound-character Volcengine speech
+   ├─ Capability discovery (/health, /capabilities)
+   ├─ Configured model listing (/models)
+   ├─ Authoritative DreamLand turn streaming (/model/chat/completions)
+   └─ Bound-character Volcengine speech (/voices, /audio/speech)
 
 Local Windows workflow
 ├─ One DreamLand launcher
-├─ Electron controls for AIRI and local-model stop; same-subnet mobile model selection and startup
-├─ Ephemeral inherited Bridge token
+├─ Process-scoped Bridge token
 └─ Internal build, diagnostics, logs, and safe tracked-process shutdown scripts
 
 Android connected client
 ├─ Native phone/tablet shell with a remembered DreamLand server address
 ├─ Responsive existing DreamLand web interface inside Android WebView
 ├─ Shared platform-neutral address and capability rules under `mobile/shared/`
-└─ Local model management and AIRI disabled in this client
+└─ Chat and character data stay on the computer; the WebView only permits the configured DreamLand origin among private-network origins
 
 Android standalone beta
 ├─ In-process Node.js 24 Android runtime and existing DreamLand server
 ├─ App-private server/data/config/cache roots; listener restricted to loopback
 ├─ Reuses the connected Android shell and shared capability policy
-└─ Local model management and AIRI disabled; Android arm64 beta only
+└─ Android arm64 beta; on-device acceptance still pending
 
 Integrated source workspace
 ├─ One root Git repository and owned origin remote
 ├─ LeslieTavern npm package boundary
-├─ airi/ pnpm package boundary
-└─ No nested AIRI Git metadata or upstream remote
+└─ src/leslie-bridge/ as the seed for the versioned public API
 ```
 
 ## Compatibility boundaries
@@ -64,11 +61,11 @@ Integrated source workspace
 - Character cards, JSONL chats, group chats, World Info, swipes, and model adapters must remain usable.
 - User data is local state and is not part of the source repository.
 - Direct LAN web access may be enabled explicitly with an allowlist that follows the private subnet used for each connection and a trusted-network firewall boundary. Same-subnet devices do not need per-IP entries, while public and unrelated routed networks remain blocked. Device discovery, data synchronization, cloud synchronization, and automatic memory writes still require separate security and approval designs before implementation.
-- The AIRI companion bridge is disabled by default and uses a process-scoped bearer token.
-- The first Android APK is a LAN client, not an on-device server. Chat and character data remain on the computer; local model management and AIRI are unavailable in the Android client. Its native WebView only permits the configured DreamLand origin among private-network origins.
-- The standalone Android APK embeds a Node.js mobile runtime and the existing server inside the Android app process. It stores data in the app-private sandbox and binds only to loopback. The runtime is a third-party Node 24 mobile pre-release; on-device startup and desktop-data migration need acceptance before this can be treated as a supported release. Local model management and AIRI remain disabled.
-- AIRI and local-model stop actions are exposed only through Electron IPC from the main DreamLand window. The authenticated HTTP API permits same-subnet clients to list project GGUF models, start a selected managed KoboldCpp model, and probe fixed host-loopback ports. It does not accept arbitrary paths, URLs, commands, or routed/public clients.
-- AIRI sends only the newest user input. DreamLand remains authoritative for prompt assembly, generation, persistence, character selection, and voice selection. The boundary is documented in [airi-bridge.md](airi-bridge.md).
+- The Leslie Bridge v1 API is disabled by default, uses a process-scoped bearer token, and exposes only `/health`, `/capabilities`, `/model/chat/completions`, `/voices`, `/models`, and `/audio/speech`.
+- The first Android APK is a LAN client, not an on-device server. Chat and character data remain on the computer, and the client neither manages nor hosts models. Its native WebView only permits the configured DreamLand origin among private-network origins.
+- The standalone Android APK embeds a Node.js mobile runtime and the existing server inside the Android app process. It stores data in the app-private sandbox and binds only to loopback. The runtime is a third-party Node 24 mobile pre-release; on-device startup and desktop-data migration need acceptance before this can be treated as a supported release. The embedded server connects only to the model endpoints the user configures and does not host or manage a local runtime.
+- Model connections are user-configured: DreamLand talks to cloud APIs or to an already-running self-hosted or remote KoboldCpp / OpenAI-compatible endpoint. It does not download, scan, start, stop, or expose model processes, and the authenticated HTTP API does not accept arbitrary paths, URLs, or commands.
+- DreamLand remains authoritative for prompt assembly, generation, persistence, character selection, and voice selection. Leslie Bridge v1 stays disabled by default behind a process-scoped bearer token and is the seed for a future versioned `/api/v1`.
 
 ## Current maturity
 

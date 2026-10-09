@@ -3,7 +3,6 @@ export const LESLIE_BRIDGE_PROTOCOL_NAME = 'leslie-bridge';
 export const LESLIE_BRIDGE_PROTOCOL_VERSION = '1';
 export const LESLIE_BRIDGE_CHAT_MODEL = 'leslie-current-chat';
 export const LESLIE_BRIDGE_TTS_MODEL = 'leslie-volcengine-tts';
-export const LESLIE_BRIDGE_TRANSCRIPTION_MODEL = 'leslie-local-whisper';
 
 export const LESLIE_BRIDGE_CAPABILITIES = Object.freeze({
     service: 'leslie-tavern',
@@ -24,7 +23,7 @@ export const LESLIE_BRIDGE_CAPABILITIES = Object.freeze({
         },
         modelGateway: {
             available: true,
-            authoritativeStore: 'airi',
+            authoritativeStore: 'leslie-tavern',
             model: LESLIE_BRIDGE_CHAT_MODEL,
             protocol: 'openai-chat-completions',
         },
@@ -32,23 +31,12 @@ export const LESLIE_BRIDGE_CAPABILITIES = Object.freeze({
             available: true,
             binding: 'active-leslie-character',
         },
-        sessions: {
-            available: true,
-            authoritativeStore: 'leslie-tavern',
-        },
         speech: {
             available: true,
             protocol: 'openai-audio-speech',
             provider: 'volcengine',
             model: LESLIE_BRIDGE_TTS_MODEL,
             responseFormats: ['mp3'],
-        },
-        transcription: {
-            available: true,
-            model: LESLIE_BRIDGE_TRANSCRIPTION_MODEL,
-            protocol: 'openai-audio-transcriptions',
-            provider: 'leslie-local-transformers',
-            responseFormats: ['json'],
         },
     },
 });

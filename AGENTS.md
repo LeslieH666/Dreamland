@@ -12,7 +12,7 @@ Before changing code, read `README.md`, `docs/project-overview.md`, and `docs/ro
 ## User data
 
 - Treat `data/`, `Config/`, `Runtime/`, `Cache/`, `Run/`, logs, backups, and `notes/private/` as local-only state.
-- Treat `airi/` as an integrated source subtree in this Git repository. It keeps its pnpm package boundary but has no nested Git repository or separate remote.
+- DreamLand does not host or manage local models. Users run their own KoboldCpp / llama.cpp / OpenAI-compatible endpoint and DreamLand only connects to it. Do not reintroduce an in-repo model catalog or process launcher.
 - Never commit character cards, chats, credentials, cookies, memories, user settings, generated audio, or real-person fixtures.
 - Do not print secret values or private chat content in logs, tests, documentation, or review output.
 - Use synthetic fixtures for automated tests.

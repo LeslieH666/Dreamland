@@ -18,7 +18,7 @@ cd D:\Projects\Leslietavern\mobile\android
 
 Output: `mobile/android/app/build/outputs/apk/standalone/debug/app-standalone-debug.apk`.
 
-The standalone beta serves only at 127.0.0.1:18790, not over the LAN. Its data survives app updates but is removed if Android app data is cleared or the app is uninstalled. Desktop-data migration and on-device chat acceptance still need testing. Mobile local-model management and AIRI are disabled. The connected client continues to block other private-network origins.
+The standalone beta serves only at 127.0.0.1:18790, not over the LAN. Its data survives app updates but is removed if Android app data is cleared or the app is uninstalled. Desktop-data migration and on-device chat acceptance still need testing. Model hosting and management are not part of this project for any client: the app connects only to the cloud or self-hosted endpoints the user configures. The connected client continues to block other private-network origins.
 
 Build the computer-connected client with .\gradlew.bat assembleClientDebug; its APK is written under app/build/outputs/apk/client/debug/.
 

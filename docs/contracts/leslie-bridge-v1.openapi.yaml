@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Leslie Bridge
   version: '1'
-  description: Process-local companion API for an AIRI desktop frontend.
+  description: Process-local versioned API for external DreamLand clients. It is the seed for the public /api/v1 surface.
 servers:
   - url: /api/leslie/bridge/v1
 security:
@@ -32,16 +32,6 @@ paths:
           content:
             application/json:
               schema: { type: object }
-  /companion/state:
-    get:
-      operationId: getCompanionState
-      description: Reports the visible LeslieTavern page and its active character, chat, and voice binding.
-      responses:
-        '200':
-          description: Current companion state. A disconnected state is still a successful response.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/CompanionState' }
   /models:
     get:
       operationId: listBridgeModels
@@ -83,10 +73,10 @@ paths:
   /model/chat/models:
     get:
       operationId: listBridgeChatModels
-      description: Legacy compatibility endpoint. The dedicated AIRI companion does not use it.
+      description: Reports the single stable chat model that maps to the active upstream model.
       responses:
         '200':
-          description: One stable AIRI chat model mapped to the active upstream model.
+          description: One stable chat model mapped to the active upstream model.
           content:
             application/json:
               schema:
@@ -102,7 +92,7 @@ paths:
   /model/chat/completions:
     post:
       operationId: createBridgeModelChatCompletion
-      description: Legacy AIRI-owned prompt gateway. The dedicated AIRI companion does not use it.
+      description: OpenAI-compatible prompt gateway. The calling client owns the messages.
       requestBody:
         required: true
         content:
@@ -114,68 +104,6 @@ paths:
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '409':
-          $ref: '#/components/responses/ErrorResponse'
-  /chat/completions:
-    post:
-      operationId: createBridgeChatCompletion
-      description: Uses only the newest user message and runs a normal turn for the active LeslieTavern character and chat.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ChatRequest' }
-      responses:
-        '200':
-          description: OpenAI-compatible server-sent event stream.
-        '409':
-          $ref: '#/components/responses/ErrorResponse'
-        '503':
-          $ref: '#/components/responses/ErrorResponse'
-  /companion/audio/speech:
-    post:
-      operationId: createCompanionSpeech
-      description: Uses the Volcengine voice assigned to the active LeslieTavern character.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [input]
-              properties:
-                input: { type: string, minLength: 1, maxLength: 10000 }
-                model: { const: leslie-volcengine-tts }
-                response_format: { const: mp3, default: mp3 }
-      responses:
-        '200':
-          description: Synthesized MP3 audio.
-          content:
-            audio/mpeg:
-              schema: { type: string, contentEncoding: binary }
-        '409':
-          $ref: '#/components/responses/ErrorResponse'
-  /companion/audio/transcriptions:
-    post:
-      operationId: createCompanionTranscription
-      description: Uses the local speech-recognition model configured by LeslieTavern. No external API key is required.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/TranscriptionRequest' }
-      responses:
-        '200':
-          description: Transcribed text.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [text]
-                properties:
-                  text: { type: string }
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
-        '413':
           $ref: '#/components/responses/ErrorResponse'
 components:
   securitySchemes:
@@ -195,40 +123,6 @@ components:
       properties:
         name: { const: leslie-bridge }
         version: { const: '1' }
-    CompanionState:
-      type: object
-      required: [connected, binding, characters, generating, voice]
-      properties:
-        connected: { type: boolean }
-        binding:
-          oneOf:
-            - type: 'null'
-            - type: object
-              required: [characterId, characterName, chatId, personaName]
-              properties:
-                characterId: { type: string }
-                characterName: { type: string }
-                chatId: { type: string }
-                personaName: { type: string }
-        characters:
-          type: array
-          items:
-            type: object
-            required: [id, name, avatar]
-            properties:
-              id: { type: string }
-              name: { type: string }
-              avatar: { type: string }
-        generating: { type: boolean }
-        voice:
-          type: object
-          required: [available]
-          properties:
-            available: { type: boolean }
-            speakerId: { type: string }
-            resourceId: { type: string }
-            speed: { type: number }
-            languageMode: { type: string }
     Model:
       type: object
       required: [id, object, owned_by]
@@ -283,21 +177,6 @@ components:
         language_mode:
           type: string
           enum: [auto, crosslingual, zh-cn, en, ja]
-    TranscriptionRequest:
-      type: object
-      required: [audio, content_type, model]
-      properties:
-        audio:
-          type: string
-          contentEncoding: base64
-          minLength: 4
-        content_type:
-          type: string
-          enum: [audio/wav, audio/x-wav]
-        language:
-          type: string
-          maxLength: 32
-        model: { const: leslie-local-whisper }
     ErrorEnvelope:
       type: object
       required: [error]

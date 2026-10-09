@@ -7,7 +7,7 @@
     <string name="server_address_hint">例如 http://192.168.1.20:8000</string>
     <string name="remember_address">记住这台电脑</string>
     <string name="connect_button">连接</string>
-    <string name="connection_privacy">聊天与角色数据仍保存在电脑上。此客户端不会启动电脑上的本地模型或 AIRI。</string>
+    <string name="connection_privacy">聊天与角色数据仍保存在电脑上。此客户端只连接你在电脑或服务器上自行配置的接口。</string>
     <string name="switch_server">切换电脑</string>
     <string name="connection_failed">无法连接。请确认地址、电脑服务和局域网设置。</string>
     <string name="external_link_blocked">为保护连接，只能在 DreamLand 服务器页面内浏览。</string>

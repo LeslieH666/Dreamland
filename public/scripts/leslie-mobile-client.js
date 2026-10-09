@@ -15,9 +15,7 @@ export function isDreamLandAndroidStandalone() {
 
 /** The connected Android client does not expose desktop-only services. */
 export function getDreamLandClientCapabilities() {
-    const androidClient = isDreamLandAndroidClient();
     return Object.freeze({
-        airiCompanion: !androidClient,
         localServer: isDreamLandAndroidStandalone(),
     });
 }

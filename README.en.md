@@ -18,8 +18,8 @@ DreamLand is an experimental desktop-oriented fork of [SillyTavern](https://gith
 ## Highlights
 
 - Compatible with SillyTavern character cards, group chats, World Info, swipes, model adapters, and JSONL chats.
-- Windows Electron workflow with one `DreamLand` entry point, in-app AIRI/local-model controls, and portable-package tooling.
-- A shared `models/` folder for local single-file GGUF weights. The desktop settings list discovered models under the managed KoboldCpp connection method and connect the selected model without requiring a port setting.
+- Windows Electron workflow with one `DreamLand` entry point and portable-package tooling.
+- The existing KoboldCpp and OpenAI-compatible adapters can connect to an already-running self-hosted or remote endpoint. The repository does not bundle, start, scan, or manage a model runtime, and model weights stay outside Git.
 - Leslie memory and Persona/storyline isolation with story/reality chat lines that share only bounded memory resonance. Reality chats extract a de-fictionalized core personality, generate dynamic openings through the active API, and persist strictly plain instant messages; Moments provides a desktop-first timeline.
 - Volcengine voice configuration, preview, and automatic reply playback.
 - Explicit separation between source code, local user data, runtimes, backups, and distributable builds.
@@ -45,9 +45,9 @@ npm run lint
 npm run test:unit
 ```
 
-## Local models
+## Self-hosted endpoints
 
-Place a single-file GGUF in `models/` or one of its subfolders. The Qwen3.5 and Peach 2.0 Q4_K_M weights each live in their own subfolder. In DreamLand, open Settings → Model connection → Local API, select the model shown under KoboldCpp, and click Connect selected model. The desktop app starts or switches the tracked KoboldCpp process and applies the existing chat adapter. Use Stop local model to release resources. Automatic process control is desktop-only; Ollama, llama.cpp, other formats, and manual addresses remain under Advanced connection settings. A discovered GGUF is a load candidate, and the runtime checks architecture and available memory when starting.
+DreamLand does not host or manage models. Run your own KoboldCpp, llama.cpp, or other OpenAI-compatible service, then open Settings → Model connection and point the existing chat adapter at that address. Ollama, llama.cpp, other formats, and manual addresses remain under Advanced connection settings. Model weights and runtimes stay outside this repository.
 
 ## Repository layout
 

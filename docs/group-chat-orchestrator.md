@@ -66,4 +66,4 @@ Temporary roles are stored only under `chat_metadata.leslie_group_v1.temporary_r
 
 The model never writes directly to character storage or chat messages, and automatic creation/automatic archival remain intentionally unsupported. A later stage can add proposal-quality telemetry, role editing/version history, and more precise scene-boundary heuristics after real-chat evaluation.
 
-Temporary roles must never appear in `/api/characters/all`, the character library, ordinary character export, Moments character selection, or AIRI character binding.
+Temporary roles must never appear in `/api/characters/all`, the character library, ordinary character export, or Moments character selection.

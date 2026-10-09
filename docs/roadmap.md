@@ -1,5 +1,12 @@
 # Roadmap
 
+## Phase 0 removal of the AIRI companion and managed local models (2026-10-09)
+
+- Removed the integrated `airi/` desktop companion frontend, the `src/leslie-local-model/` router, the `models/` GGUF catalog, Electron-managed AIRI and local-model service control, and the public local-model settings UI. DreamLand no longer ships, launches, scans, starts, or stops an AIRI or model process.
+- Kept `src/leslie-bridge/` (minus companion-only routes) as the seed for the future versioned `/api/v1`: `/health`, `/capabilities`, `/model/chat/completions`, `/voices`, `/models`, and `/audio/speech` behind a process-scoped bearer token, disabled by default.
+- Kept the SillyTavern chat engine, cloud model adapters, the Leslie identity, memory, moments, voice, workshop, and story modules, and manual connections to an already-running self-hosted or remote KoboldCpp / OpenAI-compatible endpoint. Model weights and inference runtimes stay outside this repository.
+- Removed the AIRI documentation (`docs/airi-bridge.md`, `docs/airi-launcher.md`, `docs/airi-live2d-hiyori-analysis.md`) and its links from the READMEs, the documentation index, the project overview, and the packaging guide.
+
 ## Mobile chat fixes (2026-10-04)
 
 - Keep the send button visible at a 44 px touch target on narrow mobile chat layouts while preserving the temporary hidden state used during slash-command execution.
@@ -225,17 +232,11 @@
 - Character-card and chat-record export from the Leslie chat menu, including a combined ZIP that preserves CCV3 PNG and SillyTavern JSONL files.
 - Windows portable-package builder with empty distributable user data.
 - Disabled-by-default Leslie Bridge v1 foundation with bearer authentication, capability discovery, and an OpenAI-compatible Volcengine speech route.
-- Authoritative AIRI companion turns through the active DreamLand character, chat, prompt pipeline, memory, and model.
-- Automatic AIRI binding to the visible DreamLand character and its Volcengine voice.
-- Dedicated AIRI mode with automatic provider selection, no onboarding window, and a reduced settings surface.
-- One `DreamLand` desktop launcher, with AIRI and tracked local-model stop controls in Electron settings. Same-subnet mobile clients can select a cataloged GGUF model and request managed KoboldCpp startup through authenticated, CSRF-protected HTTP endpoints.
+- One `DreamLand` desktop launcher; model connections stay user-configured through the existing cloud, KoboldCpp, and OpenAI-compatible adapters.
 - Optional interactive-guidance input mode with three AI-generated replies anchored to the current user Persona, automatic collapse for free-form typing, and the existing model, character-card, World Info, Persona, memory, and chat pipeline as its source of truth.
 - A story-line plot compass for solo chats, with three structured multi-stage arcs that state their in-world horizon and lasting impact, optional 12–80-turn estimates, versioned chat-metadata persistence with v1 migration, a compact desktop header pin, a non-overlapping mobile dock and bottom sheet, and active-plan guidance for existing reply choices without automatic character steering.
-- One-click local Qwen3.5 9B RP and Peach 2.0 9B RP GGUF detection and API configuration through the existing KoboldCpp or llama.cpp adapters, plus desktop settings start/stop controls; model weights remain outside Git.
-- A shared `models/` catalog for single-file GGUF weights in desktop and same-subnet mobile settings. Users select a discovered model and connect through managed KoboldCpp without editing a port; manual local-provider controls are folded into advanced settings.
-- Character workshop provider switch between the existing chat API and local Qwen3.5 generation, with structured-output budgeting and preview-only drafts.
+- Character workshop provider switch between the existing chat API and a manually connected self-hosted OpenAI-compatible endpoint, with structured-output budgeting and preview-only drafts.
 - Per-memory model selection for automatic memory extraction and growth synthesis, including the existing chat API, the DeepSeek OpenAI Chat Completions API, local OpenAI-compatible runtimes, and independent OpenAI-compatible endpoints.
-- Project-wide local-model loading gate shared by chat, character workshop, and memory-model adapters; disabling it leaves local model files intact while preventing local calls.
 - Model connection checks retain the selected provider and visible endpoint across settings refreshes, recover the button after failures, and keep autosave/backup maintenance from taking down the service.
 - Online API keys persist per account and provider across connection switches. The Leslie settings page saves pending keys before switching, shows saved-key state without revealing values, and Windows migrates the local secret file to current-user DPAPI protection.
 - Bundled Peach roleplay output now stops at its known bracketed state/scene continuation pattern before contaminated text can be saved into chat history.
@@ -248,9 +249,7 @@
 2. Add long-response cancellation and swipe coverage for automatic voice playback.
 3. Split the largest frontend modules into smaller maintainable units.
 4. Add schema migration and recovery fixtures for identity, memory, and moments stores.
-5. Add AIRI controls for DreamLand retry, regenerate, swipe, edit, and branch operations.
-6. Add an optional per-character AIRI display-model mapping without mixing it into DreamLand character data.
-7. Extend reality-line switching to group chats after group identity, membership, and cross-line privacy rules are specified and tested.
+5. Extend reality-line switching to group chats after group identity, membership, and cross-line privacy rules are specified and tested.
 
 ## Later work
 

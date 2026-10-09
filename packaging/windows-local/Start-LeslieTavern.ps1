@@ -28,7 +28,7 @@ $configuredIpv4 = if ($listenAddressMatch.Success) { $listenAddressMatch.Groups[
 $expectedIpv4 = if ($listenEnabled) { $configuredIpv4 } else { '127.0.0.1' }
 $expectedListener = '{0}:{1}' -f $expectedIpv4, $expectedPort
 
-# The desktop app owns one process-scoped companion token. AIRI may be started
+# The desktop app owns one process-scoped Bridge API token. External clients may be started
 # later from Settings without writing that token into source or user settings.
 if (-not $env:LESLIE_BRIDGE_TOKEN) {
     $tokenBytes = New-Object byte[] 32

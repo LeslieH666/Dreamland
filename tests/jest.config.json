@@ -1,8 +1,5 @@
 {
     "verbose": true,
     "transform": {},
-    "testEnvironment": "node",
-    "testPathIgnorePatterns": [
-        "<rootDir>/airi/"
-    ]
+    "testEnvironment": "node"
 }

@@ -117,14 +117,6 @@ Invoke-RobocopyChecked -Arguments $sourceArguments
 # The broad source copy excludes local previews. Include only verified artwork.
 Invoke-BaAssetPreparation (Join-Path $AppPath 'public\img\blue-archive\bundled')
 
-# The managed GGUF flow calls these scripts from the Electron app root. Keep
-# them in portable builds even though the rest of packaging/ stays excluded.
-$managedModelScripts = Join-Path $AppPath 'packaging\windows-local'
-New-Item -ItemType Directory -Path $managedModelScripts -Force | Out-Null
-foreach ($scriptName in @('Start-LocalModel.ps1', 'Stop-LocalModel.ps1')) {
-    Copy-Item -LiteralPath (Join-Path $ProjectRoot "packaging\windows-local\$scriptName") -Destination (Join-Path $managedModelScripts $scriptName) -Force
-}
-
 # Robocopy's /XF pattern applies at every depth. Restore the non-personal
 # default config that SillyTavern uses to fill missing portable config values.
 Copy-Item -LiteralPath (Join-Path $ProjectRoot 'default\config.yaml') -Destination (Join-Path $AppPath 'default\config.yaml') -Force

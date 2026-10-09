@@ -4,8 +4,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import yargs from 'yargs';
 import { serverEvents, EVENT_NAMES } from '../server-events.js';
-import { companionSession } from '../leslie-bridge/companion-session.js';
-import { getLocalServiceStatus, runLocalServiceAction } from './local-services.js';
 import { sealActiveUserSpace } from '../leslie-user-spaces/vault.js';
 import { createSealedExitHandler } from './sealed-exit.js';
 
@@ -39,7 +37,6 @@ let appUrl;
 
 /** @type {BrowserWindow | undefined} Keep the desktop window alive until it is explicitly closed. */
 let mainWindow;
-let companionHostSeen = false;
 let tray;
 let backgroundTickTimer;
 let stopRequestTimer;
@@ -50,7 +47,6 @@ let momentsBackgroundState = {
     paused: false,
     pendingCount: 0,
 };
-const localServiceTasks = new Map();
 
 function getProjectRoot() {
     return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -59,32 +55,6 @@ function getProjectRoot() {
 function isMainWindowSender(event) {
     return Boolean(mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents);
 }
-
-ipcMain.handle('leslie:companion:poll', async (event, message) => {
-    if (!isMainWindowSender(event)) {
-        throw new Error('Only the DreamLand window can own the companion session.');
-    }
-    const command = companionSession.pollHost({
-        hostId: message?.hostId,
-        snapshot: message?.snapshot,
-    });
-    if (!companionHostSeen) {
-        companionHostSeen = true;
-        console.info('Leslie companion page host connected.');
-    }
-    return command;
-});
-
-ipcMain.handle('leslie:companion:publish', (event, message) => {
-    if (!isMainWindowSender(event)) {
-        throw new Error('Only the DreamLand window can publish companion events.');
-    }
-    return companionSession.publishHostEvent({
-        hostId: message?.hostId,
-        requestId: message?.requestId,
-        event: message?.event,
-    });
-});
 
 ipcMain.on('leslie:moments:status', (event, message) => {
     if (!isMainWindowSender(event)) {
@@ -96,33 +66,6 @@ ipcMain.on('leslie:moments:status', (event, message) => {
         pendingCount: Math.max(0, Number(message?.pendingCount) || 0),
     };
     updateTrayMenu();
-});
-
-ipcMain.handle('leslie:services:status', (event) => {
-    if (!isMainWindowSender(event)) {
-        throw new Error('Only the DreamLand window can inspect desktop services.');
-    }
-    return getLocalServiceStatus(getProjectRoot(), { busyServices: new Set(localServiceTasks.keys()) });
-});
-
-ipcMain.handle('leslie:services:action', async (event, message) => {
-    if (!isMainWindowSender(event)) {
-        throw new Error('Only the DreamLand window can control desktop services.');
-    }
-    const service = String(message?.service || '');
-    const action = String(message?.action || '');
-    if (localServiceTasks.has(service)) {
-        return getLocalServiceStatus(getProjectRoot(), { busyServices: new Set(localServiceTasks.keys()) });
-    }
-    const root = getProjectRoot();
-    const task = runLocalServiceAction(root, service, action);
-    localServiceTasks.set(service, task);
-    try {
-        await task;
-    } finally {
-        localServiceTasks.delete(service);
-    }
-    return getLocalServiceStatus(getProjectRoot(), { busyServices: new Set(localServiceTasks.keys()) });
 });
 
 function showMainWindow() {
@@ -246,17 +189,8 @@ function createSillyTavernWindow() {
     mainWindow.once('closed', () => {
         mainWindow = undefined;
     });
-    mainWindow.webContents.once('did-finish-load', async () => {
-        try {
-            const companionHostReady = await mainWindow.webContents.executeJavaScript(
-                'typeof window.leslieCompanionHost === \'object\'',
-                true,
-            );
-            console.info(`Leslie companion preload: ${companionHostReady ? 'ready' : 'missing'}.`);
-            setTimeout(() => sendBackgroundTick('window-ready'), 2_000);
-        } catch (error) {
-            console.warn('Failed to inspect the Leslie companion preload.', error);
-        }
+    mainWindow.webContents.once('did-finish-load', () => {
+        setTimeout(() => sendBackgroundTick('window-ready'), 2_000);
     });
     void mainWindow.loadURL(appUrl);
 }

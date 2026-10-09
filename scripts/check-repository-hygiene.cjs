@@ -19,10 +19,6 @@ const allowedPrivatePlaceholders = new Set([
     'data/.gitkeep',
 ]);
 
-function isAiriSource(file) {
-    return file.startsWith('airi/');
-}
-
 const forbiddenPath = /(^|\/)(backups|cache|config|data|dist|legacy-portable-package|logs|notes\/private|run|runtime)(\/|$)/i;
 const forbiddenArtifact = /(^|\/)(secrets\.json|\.env(?:\..*)?|.*\.jsonl)$/i;
 const requiredFiles = [
@@ -39,9 +35,6 @@ const requiredFiles = [
     'README.md',
     'SECURITY.md',
     'SUPPORT.md',
-    'airi/LICENSE',
-    'airi/package.json',
-    'airi/pnpm-lock.yaml',
     '启动 DreamLand.cmd',
     'packaging/windows-portable/assets/启动 DreamLand.cmd',
     'packaging/windows-portable/assets/关闭 DreamLand.cmd',
@@ -49,12 +42,6 @@ const requiredFiles = [
 
 const tracked = trackedFiles();
 const violations = tracked.filter(file => {
-    // AIRI is a source workspace inside this repository. Its upstream source tree
-    // legitimately contains directories such as config/, data/, and dist/; its
-    // own .gitignore remains responsible for excluding generated and local state.
-    if (isAiriSource(file)) {
-        return false;
-    }
     if (allowedPrivatePlaceholders.has(file)) {
         return false;
     }
@@ -78,10 +65,6 @@ for (const [directory, allowedEntries] of [
             violations.push(`unexpected Windows entry: ${path.posix.join(directory, entry)}`);
         }
     }
-}
-
-if (fs.existsSync(path.join(repositoryRoot, 'airi', '.git'))) {
-    violations.push('airi/.git must not exist; AIRI belongs to the root Git repository');
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));

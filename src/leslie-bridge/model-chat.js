@@ -78,7 +78,7 @@ export function getLeslieBridgeChatConfigurationFromSettings(settings) {
     if (settings.main_api && settings.main_api !== 'openai') {
         throw new LeslieBridgeRequestError(
             'CHAT_SOURCE_NOT_SUPPORTED',
-            'Select a Chat Completions provider in Leslie Tavern before using the AIRI chat gateway.',
+            'Select a Chat Completions provider in Leslie Tavern before using the Leslie Bridge chat gateway.',
             409,
         );
     }
@@ -92,7 +92,7 @@ export function getLeslieBridgeChatConfigurationFromSettings(settings) {
     if (!source || !modelField || !model) {
         throw new LeslieBridgeRequestError(
             'CHAT_MODEL_NOT_CONFIGURED',
-            'Select a Chat Completions provider and model in Leslie Tavern before using the AIRI chat gateway.',
+            'Select a Chat Completions provider and model in Leslie Tavern before using the Leslie Bridge chat gateway.',
             409,
         );
     }
@@ -120,8 +120,8 @@ export function getLeslieBridgeChatConfiguration(userDirectories) {
 
 /**
  * Convert one OpenAI request into the existing SillyTavern model-proxy request.
- * AIRI owns the messages in this gateway mode. This function does not build a
- * SillyTavern character prompt and does not save a SillyTavern chat.
+ * The API client owns the messages in this gateway mode. This function does not
+ * build a SillyTavern character prompt and does not save a SillyTavern chat.
  * @param {Record<string, unknown>} body OpenAI-compatible request.
  * @param {{model: string, source: string, settings: Record<string, unknown>}} configuration Chat connection.
  * @returns {Record<string, unknown>} SillyTavern Chat Completions request.

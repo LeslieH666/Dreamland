@@ -109,7 +109,7 @@ export function isLeslieQwenRoleplayModel(model) {
  * into a bracketed state/scene template and then repeats dialogue. This is
  * deliberately conservative and model-scoped so ordinary local models keep
  * their native output behavior.
- * @param {unknown} text Generated local-model text.
+ * @param {unknown} text Generated local model text.
  * @param {{model?: unknown}} [options] Runtime metadata.
  * @returns {string} Cleaned roleplay text.
  */

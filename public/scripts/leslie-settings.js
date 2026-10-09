@@ -11,7 +11,7 @@ import { clearUserSpaceBrowserState } from './leslie-user-space-browser.js';
 import { flushUserSpacePreferences } from './leslie-user-preferences.js';
 import { extension_settings } from './extensions.js';
 import { getLeslieConnectionState } from './leslie-connection-state.js';
-import { getDreamLandClientCapabilities, isDreamLandAndroidClient } from './leslie-mobile-client.js';
+import { isDreamLandAndroidClient } from './leslie-mobile-client.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 import {
     isLocalModelLoadingEnabled,
@@ -196,18 +196,6 @@ const COPY = {
         localModelLoadingDisabled: '本地模型加载已关闭，请先打开开关。',
         localModelLoadingEnabledStatus: '本地模型加载已开启。',
         localModelLoadingDisabledStatus: '本地模型加载已关闭；项目不会连接本地模型。',
-        desktopServicesTitle: '本地服务',
-        desktopServicesBody: '从 DreamLand 内启动或停止可选桌面组件，不再需要单独的启动脚本。',
-        desktopServicesUnavailable: '请在 DreamLand 桌面应用中管理这些服务。浏览器与局域网页面只能查看设置。',
-        desktopServiceAiri: 'AIRI 桌面陪伴',
-        desktopServiceAiriBody: '连接当前角色、聊天、记忆与语音。首次启动可能需要构建。',
-        desktopServiceStart: '启动',
-        desktopServiceStop: '停止',
-        desktopServiceStarting: '处理中',
-        desktopServiceRunning: '运行中',
-        desktopServiceStopped: '未启动',
-        desktopServiceMissing: '组件未配置',
-        desktopServiceFailed: '本地服务操作失败。',
         serviceOpenAI: 'OpenAI',
         serviceOpenAIBody: '直接连接 OpenAI 官方接口。',
         endpoint: '服务地址',
@@ -449,18 +437,6 @@ const COPY = {
         localModelLoadingDisabled: 'Local model loading is disabled. Turn on the switch first.',
         localModelLoadingEnabledStatus: 'Local model loading is enabled.',
         localModelLoadingDisabledStatus: 'Local model loading is disabled; the project will not connect to a local model.',
-        desktopServicesTitle: 'Local services',
-        desktopServicesBody: 'Start or stop optional desktop components from DreamLand without separate launch scripts.',
-        desktopServicesUnavailable: 'Manage these services in the DreamLand desktop app. Browser and LAN pages can only view settings.',
-        desktopServiceAiri: 'AIRI companion',
-        desktopServiceAiriBody: 'Connects to the active character, chat, memory, and voice. The first start may build AIRI.',
-        desktopServiceStart: 'Start',
-        desktopServiceStop: 'Stop',
-        desktopServiceStarting: 'Working',
-        desktopServiceRunning: 'Running',
-        desktopServiceStopped: 'Stopped',
-        desktopServiceMissing: 'Not configured',
-        desktopServiceFailed: 'The local service action failed.',
         serviceOpenAI: 'OpenAI',
         serviceOpenAIBody: 'Connect directly to the official OpenAI API.',
         endpoint: 'Server address',
@@ -560,8 +536,6 @@ let closeTimer;
 let activeDetail;
 let detailBindingController;
 let detailObservers = [];
-let desktopServiceStatus = null;
-const desktopServiceBusy = new Set();
 let activeModelServiceId;
 let localAdvancedOpen = false;
 let demoModeState;
@@ -943,114 +917,6 @@ function renderLocalModelSetup(copy) {
         </section>`;
 }
 
-function getDesktopServiceCopy(service, copy) {
-    return service === 'airi'
-        ? { title: copy.desktopServiceAiri, body: copy.desktopServiceAiriBody, icon: 'fa-solid fa-wand-magic-sparkles' }
-        : { title: copy.desktopServiceAiri, body: copy.desktopServiceAiriBody, icon: 'fa-solid fa-wand-magic-sparkles' };
-}
-
-function getDesktopServiceStateCopy(serviceState, copy) {
-    if (serviceState?.configured === false) {
-        return copy.desktopServiceMissing;
-    }
-    if (serviceState?.state === 'running') {
-        return copy.desktopServiceRunning;
-    }
-    if (serviceState?.state === 'busy') {
-        return copy.desktopServiceStarting;
-    }
-    return copy.desktopServiceStopped;
-}
-
-function renderDesktopServices(copy) {
-    const capabilities = getDreamLandClientCapabilities();
-    if (!capabilities.airiCompanion) {
-        return '';
-    }
-    const desktopApiAvailable = typeof globalThis.leslieDesktopServices?.getStatus === 'function';
-    const available = desktopApiAvailable && desktopServiceStatus?.available !== false;
-    const rows = [['airi']].map(([service]) => {
-        const details = getDesktopServiceCopy(service, copy);
-        const state = desktopServiceStatus?.services?.[service] ?? { state: desktopApiAvailable ? 'busy' : 'stopped', configured: true };
-        const running = state.state === 'running';
-        const busy = state.state === 'busy' || desktopServiceBusy.has(service);
-        const disabled = !available || busy || state.configured === false;
-        return `<article class="leslie-desktop-service-row is-${escapeHtml(state.state)}" data-leslie-desktop-service="${service}">
-            <span class="leslie-desktop-service-icon ${details.icon}" aria-hidden="true"></span>
-            <span class="leslie-desktop-service-copy"><strong>${details.title}</strong><small>${details.body}</small></span>
-            <span class="leslie-desktop-service-status" data-leslie-desktop-service-status>${getDesktopServiceStateCopy(state, copy)}</span>
-            <button type="button" class="leslie-settings-primary-button" data-leslie-desktop-service-action="${running ? 'stop' : 'start'}" data-leslie-desktop-service-name="${service}" ${disabled ? 'disabled' : ''}>${busy ? copy.desktopServiceStarting : running ? copy.desktopServiceStop : copy.desktopServiceStart}</button>
-        </article>`;
-    }).join('');
-    return `<section class="leslie-detail-card leslie-desktop-services-card" aria-labelledby="leslie-desktop-services-title">
-        <div class="leslie-detail-card-heading"><h3 id="leslie-desktop-services-title">${copy.desktopServicesTitle}</h3><p>${copy.desktopServicesBody}</p></div>
-        ${available ? '' : `<div class="leslie-detail-callout"><i class="fa-solid fa-desktop"></i><span>${copy.desktopServicesUnavailable}</span></div>`}
-        <div class="leslie-desktop-service-list">${rows}</div>
-    </section>`;
-}
-
-function updateDesktopServiceControls() {
-    if (activeDetail !== 'model' || !settingsOverlay) {
-        return;
-    }
-    const copy = COPY[getCopyLocale()];
-    for (const service of ['airi']) {
-        const row = settingsOverlay.querySelector(`[data-leslie-desktop-service="${service}"]`);
-        const state = desktopServiceStatus?.services?.[service];
-        const button = row?.querySelector('[data-leslie-desktop-service-action]');
-        const status = row?.querySelector('[data-leslie-desktop-service-status]');
-        if (!row || !(button instanceof HTMLButtonElement) || !status || !state) {
-            continue;
-        }
-        const running = state.state === 'running';
-        const busy = state.state === 'busy' || desktopServiceBusy.has(service);
-        row.className = `leslie-desktop-service-row is-${state.state}`;
-        status.textContent = getDesktopServiceStateCopy(state, copy);
-        button.dataset.leslieDesktopServiceAction = running ? 'stop' : 'start';
-        button.textContent = busy ? copy.desktopServiceStarting : running ? copy.desktopServiceStop : copy.desktopServiceStart;
-        button.disabled = typeof globalThis.leslieDesktopServices?.runAction !== 'function'
-            || busy || state.configured === false || desktopServiceStatus?.available === false;
-    }
-}
-
-async function refreshDesktopServiceStatus() {
-    if (!getDreamLandClientCapabilities().airiCompanion) {
-        desktopServiceStatus = { available: false, services: {} };
-        return;
-    }
-    try {
-        desktopServiceStatus = typeof globalThis.leslieDesktopServices?.getStatus === 'function'
-            ? await globalThis.leslieDesktopServices.getStatus()
-            : { available: false, services: {} };
-        updateDesktopServiceControls();
-    } catch (error) {
-        console.warn('[Leslie settings] Could not read desktop service status.', error);
-        desktopServiceStatus = { available: false, services: {} };
-        updateDesktopServiceControls();
-    }
-}
-
-async function runDesktopServiceAction(button) {
-    const service = button.dataset.leslieDesktopServiceName;
-    const action = button.dataset.leslieDesktopServiceAction;
-    if (!service || !action || typeof globalThis.leslieDesktopServices?.runAction !== 'function') {
-        return;
-    }
-    const copy = COPY[getCopyLocale()];
-    desktopServiceBusy.add(service);
-    updateDesktopServiceControls();
-    try {
-        desktopServiceStatus = await globalThis.leslieDesktopServices.runAction(service, action);
-        toastr.success(`${getDesktopServiceCopy(service, copy).title}：${getDesktopServiceStateCopy(desktopServiceStatus?.services?.[service], copy)}`, copy.desktopServicesTitle);
-    } catch (error) {
-        const message = String(error?.message || copy.desktopServiceFailed).replace(/^Error invoking remote method '[^']+':\s*/i, '');
-        toastr.error(message, copy.desktopServicesTitle);
-    } finally {
-        desktopServiceBusy.delete(service);
-        await refreshDesktopServiceStatus();
-        updateDesktopServiceControls();
-    }
-}
 
 /**
  * Render the model connection detail page.
@@ -1141,7 +1007,6 @@ function renderModelDetail() {
             <div class="leslie-local-advanced-content">
                 ${serviceSection}
                 ${fieldsSection}
-                ${renderDesktopServices(copy)}
                 ${fullSettingsButton}
             </div>
         </details>`;
@@ -1154,7 +1019,7 @@ function renderModelDetail() {
             <div class="leslie-detail-card-heading"><h3>${copy.apiKindTitle}</h3><p>${copy.apiKindBody}</p></div>
             <div class="leslie-api-kind-grid">${kindOptions}</div>
         </section>
-        ${activeModelKind === 'local' ? localContent : `${serviceSection}${renderDesktopServices(copy)}${fieldsSection}${fullSettingsButton}`}`;
+        ${activeModelKind === 'local' ? localContent : `${serviceSection}${fieldsSection}${fullSettingsButton}`}`;
     return renderDetailShell({ icon: 'fa-solid fa-plug', title: copy.modelDetailTitle, body: copy.modelDetailBody, content });
 }
 
@@ -2338,7 +2203,6 @@ function bindDetailPage(detailId) {
         }
         bindDetailCheckbox('auto-connect-checkbox', 'leslie-model-auto-connect', 'input');
         bindThinkingMode();
-        void refreshDesktopServiceStatus();
     } else if (detailId === 'reply') {
         const ids = getReplyControlIds();
         bindDetailRange(ids.temperature, 'leslie-reply-creativity');
@@ -2821,13 +2685,6 @@ function initLeslieSettings() {
             }
             activeModelKind = apiKindButton.dataset.leslieApiKind;
             showDetail('model');
-            return;
-        }
-        const desktopServiceButton = target?.closest('[data-leslie-desktop-service-action]');
-        if (desktopServiceButton instanceof HTMLButtonElement) {
-            event.preventDefault();
-            event.stopPropagation();
-            void runDesktopServiceAction(desktopServiceButton);
             return;
         }
         const serviceButton = target?.closest('[data-leslie-service]');

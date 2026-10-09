@@ -7,7 +7,7 @@ export const LESLIE_BRIDGE_TOKEN_MIN_BYTES = 32;
 const LESLIE_BRIDGE_TOKEN_MAX_BYTES = 512;
 
 /**
- * Read the process-scoped token used by the AIRI companion process.
+ * Read the process-scoped bearer token used by external API clients.
  * The token is intentionally not persisted by DreamLand.
  * @param {NodeJS.ProcessEnv | Record<string, string | undefined>} [environment] Environment source.
  * @returns {{enabled: boolean, reason: 'configured' | 'missing' | 'invalid', token?: string}} Token state.
@@ -81,7 +81,7 @@ export function createLeslieBridgeAuthenticationMiddleware(options = {}) {
                     code: invalid ? 'BRIDGE_TOKEN_INVALID' : 'BRIDGE_DISABLED',
                     message: invalid
                         ? `The ${LESLIE_BRIDGE_TOKEN_ENV} value must contain between ${LESLIE_BRIDGE_TOKEN_MIN_BYTES} and ${LESLIE_BRIDGE_TOKEN_MAX_BYTES} UTF-8 bytes.`
-                        : `Set ${LESLIE_BRIDGE_TOKEN_ENV} before starting DreamLand to enable the AIRI bridge.`,
+                        : `Set ${LESLIE_BRIDGE_TOKEN_ENV} before starting DreamLand to enable the Leslie Bridge API.`,
                 },
             });
         }

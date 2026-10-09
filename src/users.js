@@ -1036,8 +1036,8 @@ export async function setUserDataMiddleware(request, response, next) {
 
     // Browser requests use the cookie session. An authenticated Leslie Bridge
     // request has no browser cookie, so bind it only to the currently unlocked
-    // encrypted space. This keeps AIRI inside the same user boundary without
-    // persisting or disclosing the process-scoped Bridge token.
+    // encrypted space. This keeps Bridge API clients inside the same user
+    // boundary without persisting or disclosing the process-scoped token.
     const bridgeRequest = request.leslieBridge?.authenticated === true;
     let handle = bridgeRequest && LESLIE_USER_SPACES
         ? getUnlockedUserSpace()

@@ -1171,7 +1171,7 @@ async function handleAction(action) {
             document.querySelector('#backgrounds-button .drawer-toggle')?.click();
             break;
         case 'about':
-            await callGenericPopup(`<article class="dreamland-about"><img src="${DREAMLAND_BRAND.icon}" width="64" height="64" alt=""><h2>DreamLand</h2><p>${DREAMLAND_BRAND.tagline}</p><p>${DREAMLAND_BRAND.introduction}</p><p>原 LeslieTavern。基于 SillyTavern，集成 AIRI；衍生代码采用 AGPL-3.0，各上游作者保留其权利。</p><h3>蔚蓝终端 · Blue Archive Inspired</h3><p>${BLUE_ARCHIVE_NOTICE}</p><a href="${DREAMLAND_BRAND.feedback}" target="_blank" rel="noopener noreferrer">项目反馈与素材联系</a></article>`, POPUP_TYPE.TEXT);
+            await callGenericPopup(`<article class="dreamland-about"><img src="${DREAMLAND_BRAND.icon}" width="64" height="64" alt=""><h2>DreamLand</h2><p>${DREAMLAND_BRAND.tagline}</p><p>${DREAMLAND_BRAND.introduction}</p><p>原 LeslieTavern。基于 SillyTavern；衍生代码采用 AGPL-3.0，各上游作者保留其权利。</p><h3>蔚蓝终端 · Blue Archive Inspired</h3><p>${BLUE_ARCHIVE_NOTICE}</p><a href="${DREAMLAND_BRAND.feedback}" target="_blank" rel="noopener noreferrer">项目反馈与素材联系</a></article>`, POPUP_TYPE.TEXT);
             break;
         case 'clear-search':
             searchInput.value = '';

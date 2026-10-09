@@ -4,9 +4,10 @@ import path from 'node:path';
 import express from 'express';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { color, getConfigValue, uuidv4 } from '../util.js';
-import { PROTECTED_SECRETS_FORMAT, getDefaultSecretProtector, parseSecretDocument, serializeSecretDocument } from '../secret-protection.js';
+import { PROTECTED_SECRETS_FORMAT, parseSecretDocument, serializeSecretDocument } from '../secret-protection.js';
 
 import { readEnvSecret, readMountedSecrets, SECRETS_FILE_ENV } from '../config-env.js';
+import { getPlatform } from '../platform/index.js';
 
 export const SECRETS_FILE = 'secrets.json';
 /** Synthetic id/label for a secret supplied by the environment or a mounted file. */
@@ -123,11 +124,15 @@ export class SecretManager {
      * @param {import('../users.js').UserDirectoryList} directories
      * @param {{protector?: {protect: (bytes: Buffer) => Buffer, unprotect: (bytes: Buffer) => Buffer} | null}} [options]
      */
-    constructor(directories, { protector = getDefaultSecretProtector() } = {}) {
+    constructor(directories, { protector, protectors } = {}) {
         this.directories = directories;
         this.filePath = path.join(directories.root, SECRETS_FILE);
         this.defaultSecrets = {};
-        this.protector = protector;
+        // The platform decides how secrets are protected at rest and which
+        // formats can still be opened (DPAPI on Windows, AES on a server).
+        const storage = getPlatform().secrets;
+        this.protector = protector === undefined ? storage.protector : protector;
+        this.protectors = protectors ?? (protector === undefined ? storage.protectors : [protector].filter(Boolean));
         this.mountedSecrets = undefined;
     }
 
@@ -178,7 +183,7 @@ export class SecretManager {
         if (cached?.raw === fileContents) {
             return structuredClone(cached.secrets);
         }
-        const { secrets, protected: isProtected } = parseSecretDocument(fileContents, this.protector);
+        const { secrets, protected: isProtected } = parseSecretDocument(fileContents, this.protectors);
         if (this.protector && !isProtected) {
             // The atomic replacement migrates existing plaintext files. If
             // protection is temporarily unavailable, preserve the old file.

@@ -6,6 +6,9 @@ import ipRegex from 'ip-regex';
 import envPaths from 'env-paths';
 import { color, getConfigValue, stringToBool } from './util.js';
 import { initConfig } from './config-init.js';
+import { serverDirectory } from './server-directory.js';
+import { resolveDataRoot } from './platform/data-root.js';
+import { configurePlatform } from './platform/index.js';
 import {
     RUNTIME_MODE_DESKTOP,
     resolveBrowserLaunchEnabled,
@@ -299,16 +302,22 @@ export class CommandLineParser {
         }
         initConfig(configPath);
 
-        const dataRoot = isGlobal
+        // The data root is a platform decision (mounted volume vs local
+        // directory); resolve it once here and publish it so the rest of the
+        // process never re-derives it. A relative path is resolved against the
+        // server directory, which is where the process runs after startup.
+        const configuredRoot = isGlobal
             ? defaultConfig.dataRoot
             : (cliArguments.dataRoot ?? getConfigValue('dataRoot', defaultConfig.dataRoot));
-        try {
-            if (!fs.existsSync(dataRoot)) {
-                fs.mkdirSync(dataRoot, { recursive: true });
-            }
-        } catch (err) {
-            console.warn(color.yellow(`Warning: Failed to create data root directory at ${dataRoot}. Please make sure the path is correct and writable.`), err);
-        }
+        const dataRootDescriptor = resolveDataRoot({
+            mode: runtime.mode,
+            configuredRoot,
+            configuredByEnv: !isGlobal && cliArguments.dataRoot === undefined && Boolean(process.env.DREAMLAND_DATA_ROOT),
+            cwd: serverDirectory,
+        });
+        dataRootDescriptor.ensure();
+        configurePlatform({ dataRoot: dataRootDescriptor });
+        const dataRoot = dataRootDescriptor.root;
 
         const browserLaunchConfigured = cliArguments.browserLaunchEnabled ?? cliArguments.autorun
             ?? getConfigValue('browserLaunch.enabled', defaultConfig.browserLaunchEnabled, 'boolean');

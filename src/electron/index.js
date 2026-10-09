@@ -1,3 +1,20 @@
+/**
+ * DreamLand desktop host (Electron).
+ *
+ * This layer owns exactly three desktop responsibilities and nothing else:
+ *   1. the system tray (window show/hide, background status, quit);
+ *   2. automatic startup — it starts the bundled backend and opens the window
+ *      as soon as the server reports SERVER_STARTED;
+ *   3. sealed exit — it flushes stats and seals the encrypted user space
+ *      before quitting (see ./sealed-exit.js).
+ *
+ * It must NOT contain product features. The companion frontend and all in-app
+ * model hosting controls were removed in Phase 0; the only IPC left is the
+ * moments status/tick channel that drives the tray label and the background
+ * worker. Anything else belongs in the shared backend or the web UI, so the
+ * server build (which has no Electron at all) behaves identically.
+ */
+
 import { app, BrowserWindow, ipcMain, Menu, powerMonitor, Tray } from 'electron';
 import fs from 'node:fs';
 import path from 'path';
@@ -7,6 +24,7 @@ import { serverEvents, EVENT_NAMES } from '../server-events.js';
 import { sealActiveUserSpace } from '../leslie-user-spaces/vault.js';
 import { createSealedExitHandler } from './sealed-exit.js';
 import { DREAMLAND_MODE_ENV, RUNTIME_MODE_DESKTOP } from '../runtime-mode.js';
+import { getPlatform } from '../platform/index.js';
 
 // The Electron shell is the desktop host. Publish the mode before the server
 // core is imported so tray, browser launch and desktop exit sealing stay on.
@@ -142,7 +160,7 @@ function installTray() {
     if (tray && !tray.isDestroyed()) {
         return;
     }
-    const iconFile = path.join('img', 'dreamland', process.platform === 'win32' ? 'icon.ico' : 'icon-192.png');
+    const iconFile = path.join('img', 'dreamland', getPlatform().environment.desktopIconAsset('icon'));
     const iconPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public', iconFile);
     tray = new Tray(iconPath);
     tray.on('double-click', showMainWindow);

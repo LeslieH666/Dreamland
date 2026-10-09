@@ -20,6 +20,7 @@ import chalk from 'chalk';
 import bytes from 'bytes';
 import { LOG_LEVELS, CHAT_COMPLETION_SOURCES, MEDIA_REQUEST_TYPE } from './constants.js';
 import { findDreamlandEnvOverride } from './config-env.js';
+import { getPlatform } from './platform/index.js';
 import { serverDirectory } from './server-directory.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { isFirefox } from './express-common.js';
@@ -37,6 +38,17 @@ let CONFIG_PATH = null;
  * @example keyToEnv('extensions.models.speechToText') // 'SILLYTAVERN_EXTENSIONS_MODELS_SPEECHTOTEXT'
  */
 export const keyToEnv = (key) => 'SILLYTAVERN_' + String(key).toUpperCase().replace(/\./g, '_');
+
+/**
+ * Whether a config file path has been established yet.
+ *
+ * Platform/CLI code may run before argument parsing (the Electron host installs
+ * its tray first); those callers must not force a config read.
+ * @returns {boolean} True when `getConfigValue` can safely read the file.
+ */
+export function isConfigPathSet() {
+    return CONFIG_PATH !== null;
+}
 
 /**
  * Set the config file path.
@@ -1336,11 +1348,9 @@ export function safeReadFileSync(filePath, options = { encoding: 'utf-8' }) {
  * @param {string} title Desired title for the window
  */
 export function setWindowTitle(title) {
-    if (process.platform === 'win32') {
-        process.title = title;
-    } else {
-        process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
-    }
+    // Platform policy lives in src/platform; this module only asks for the
+    // capability instead of branching on process.platform itself.
+    getPlatform().environment.applyTerminalTitle(title);
 }
 
 /**

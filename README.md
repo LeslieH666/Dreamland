@@ -98,6 +98,27 @@ npm run test:e2e --prefix tests
 
 在“设置 → 模型连接”输入在线接口密钥后，点击连接或切换接口就会保存到该账号的本机密钥库。切换回来时显示已保存状态，留空即可复用；密钥明文不会回填到输入框或浏览器本地存储。Windows 运行方式使用当前系统用户的 DPAPI 加密 `secrets.json`，旧版明文密钥文件在读取时原位迁移；加密失败时保留原文件。旧版留下的历史备份不会自动改写，仍需按明文密钥文件妥善保管。密钥文件随账号和电脑绑定，移到另一台电脑或 Windows 用户下需重新输入。其他操作系统继续使用原有的本机密钥文件格式。
 
+### 桌面端依赖与两种打包目标
+
+桌面版需要 Electron 二进制；仓库 `.npmrc` 默认 `ignore-scripts=true`，且 npm 12 起 postinstall 还需显式放行。`src/electron/package.json` 的 `allowScripts` 已放行 Electron，安装时把缓存指向可写目录即可：
+
+```bash
+cd src/electron
+npm ci                                  # 依赖
+# 若 home 目录不可写（CI/沙箱），把 Electron 下载缓存重定向：
+ELECTRON_CACHE=/tmp/electron-cache npm ci
+```
+
+两个打包目标共用同一份 `public/` UI：
+
+```bash
+npm run build:server   # 后端 + public/ → Linux 容器镜像（无 Electron）
+npm run build:desktop  # 后端 + public/ + Electron 宿主 → 安装包
+npm run verify:targets # 只做两目标的输入校验（无需 Docker / Windows）
+```
+
+`build:server` 在构建前会校验 `.dockerignore` 已排除桌面宿主、移动端、打包与测试目录，并确认根 `package.json` 不含 Electron 依赖；`build:desktop` 会校验唯一 `public/` 树、Electron 宿主入口与平台打包脚本。实际产出安装包需在 Windows 上运行 `packaging/windows-portable/build-portable.ps1`。
+
 ### 运行模式与 12-factor 配置
 
 同一个后端核心有两种运行形态，由 `DREAMLAND_MODE` 决定：

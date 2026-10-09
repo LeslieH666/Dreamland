@@ -74,6 +74,7 @@ import { UPLOADS_DIRECTORY } from './constants.js';
 
 // Routers
 import { isServerMode, resolveBrowserLaunchEnabled, shouldSealUserSpaceOnExit } from './runtime-mode.js';
+import { getPlatform } from './platform/index.js';
 import { API_V1_ROOT } from './api-v1/protocol.js';
 import { router as apiV1Router } from './api-v1/router.js';
 import { SECRET_CONFIG_KEYS, findDreamlandEnvOverride, listConfigEnvOverrides } from './config-env.js';
@@ -442,8 +443,9 @@ async function postSetupTasks(result) {
             const { default: open, apps } = openModule;
 
             function getBrowsers() {
-                const isAndroid = process.platform === 'android';
-                if (isAndroid) {
+                // Android has no external browser to launch; the platform layer
+                // answers that instead of an inline process.platform check.
+                if (getPlatform().environment.isAndroid) {
                     return {};
                 }
                 return {

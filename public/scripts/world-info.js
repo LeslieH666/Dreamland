@@ -62,6 +62,60 @@ function worldInfoStateContext() {
 }
 
 
+import {
+    loadWorldInfo as loadWorldInfoCore,
+    getSortedEntries as getSortedEntriesCore,
+} from '/prompt-assembly/world-info-lore.js';
+
+/**
+ * Bind the browser's World Info corpus state for the shared lore module
+ * (Phase 2.5.2 step 4, substep 2).
+ *
+ * Mutable bindings are exposed as getters: the browser reassigns this_chid,
+ * characters, chat_metadata, world_info, selected_world_info and the character
+ * strategy while the app runs, so a captured value would go stale. The corpus
+ * cache is passed by reference so editor reads observe what loading populated.
+ * @returns {object} Context for src/prompt-assembly/world-info-lore.js
+ */
+function worldInfoLoreContext() {
+    return {
+        getWorldInfo: () => world_info,
+        getSelectedWorldInfo: () => selected_world_info,
+        getCharacterStrategy: () => world_info_character_strategy,
+        getInsertionStrategy: () => world_info_insertion_strategy,
+        getPersonaLorebook: () => power_user.persona_description_lorebook,
+        getChatMetadata: () => chat_metadata,
+        getCharacters: () => characters,
+        getThisChid: () => this_chid,
+        getCharaFilename,
+        getStringHash,
+        getRequestHeaders,
+        cache: worldInfoCache,
+        sortFn,
+        metadataKey: METADATA_KEY,
+        worldInfoUrl: '/api/worldinfo/get',
+        emitEntriesLoaded: payload => eventSource.emit(event_types.WORLDINFO_ENTRIES_LOADED, payload),
+    };
+}
+
+/**
+ * Load a world book, through the shared corpus loader.
+ * @param {string} name World book name.
+ * @returns {Promise<object>} World book data.
+ */
+export async function loadWorldInfo(name) {
+    return loadWorldInfoCore(name, worldInfoLoreContext());
+}
+
+/**
+ * Collect, decorate and order the active lore entries for the current chat.
+ * @returns {Promise<object[]>} Sorted entries.
+ */
+export async function getSortedEntries() {
+    return getSortedEntriesCore(worldInfoLoreContext());
+}
+
+
 export const world_info_insertion_strategy = {
     evenly: 0,
     character_first: 1,
@@ -103,7 +157,6 @@ export const SORT_ORDER_KEY = 'world_info_sort_order';
 export const METADATA_KEY = 'world_info';
 export const DEFAULT_WEIGHT = 100;
 const MAX_COMMENT_LENGTH = 100;
-const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 /**
  * Randomness source for the World Info probability roll.
@@ -1443,39 +1496,6 @@ export async function showWorldEditor(name) {
 
     const wiData = await loadWorldInfo(name);
     await displayWorldEntries(name, wiData);
-}
-
-/**
- * Loads world info from the backend.
- *
- * This function will return from `worldInfoCache` if it has already been loaded before.
- *
- * @param {string} name - The name of the world to load
- * @return {Promise<Object|null>} A promise that resolves to the loaded world information, or null if the request fails.
- */
-export async function loadWorldInfo(name) {
-    if (!name) {
-        return;
-    }
-
-    if (worldInfoCache.has(name)) {
-        return worldInfoCache.get(name);
-    }
-
-    const response = await fetch('/api/worldinfo/get', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ name: name }),
-        cache: 'no-cache',
-    });
-
-    if (response.ok) {
-        const data = await response.json();
-        worldInfoCache.set(name, data);
-        return data;
-    }
-
-    return null;
 }
 
 export async function updateWorldInfoList() {
@@ -3731,240 +3751,6 @@ export async function createNewWorldInfo(worldName, { interactive = false } = {}
 
     return true;
 }
-
-async function getCharacterLore() {
-    const character = characters[this_chid];
-    const name = character?.name;
-    /** @type {Set<string>} */
-    let worldsToSearch = new Set();
-
-    const baseWorldName = character?.data?.extensions?.world;
-    if (baseWorldName) {
-        worldsToSearch.add(baseWorldName);
-    }
-
-    // TODO: Maybe make the utility function not use the window context?
-    const fileName = getCharaFilename(this_chid);
-    const extraCharLore = world_info.charLore?.find((e) => e.name === fileName);
-    if (extraCharLore) {
-        worldsToSearch = new Set([...worldsToSearch, ...extraCharLore.extraBooks]);
-    }
-
-    if (!worldsToSearch.size) {
-        return [];
-    }
-
-    let entries = [];
-    for (const worldName of worldsToSearch) {
-        if (selected_world_info.includes(worldName)) {
-            console.debug(`[WI] Character ${name}'s world ${worldName} is already activated in global world info! Skipping...`);
-            continue;
-        }
-
-        if (chat_metadata[METADATA_KEY] === worldName) {
-            console.debug(`[WI] Character ${name}'s world ${worldName} is already activated in chat lore! Skipping...`);
-            continue;
-        }
-
-        if (power_user.persona_description_lorebook === worldName) {
-            console.debug(`[WI] Character ${name}'s world ${worldName} is already activated in persona lore! Skipping...`);
-            continue;
-        }
-
-        const data = await loadWorldInfo(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: worldName, ...rest })) : [];
-        entries = entries.concat(newEntries);
-
-        if (!newEntries.length) {
-            console.debug(`[WI] Character ${name}'s world ${worldName} could not be found or is empty`);
-        }
-    }
-
-    console.debug(`[WI] Character ${name}'s lore has ${entries.length} world info entries`, [...worldsToSearch]);
-    return entries;
-}
-
-async function getGlobalLore() {
-    if (!selected_world_info?.length) {
-        return [];
-    }
-
-    let entries = [];
-    for (const worldName of selected_world_info) {
-        const data = await loadWorldInfo(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: worldName, ...rest })) : [];
-        entries = entries.concat(newEntries);
-    }
-
-    console.debug(`[WI] Global world info has ${entries.length} entries`, selected_world_info);
-
-    return entries;
-}
-
-async function getChatLore() {
-    const chatWorld = chat_metadata[METADATA_KEY];
-
-    if (!chatWorld) {
-        return [];
-    }
-
-    if (selected_world_info.includes(chatWorld)) {
-        console.debug(`[WI] Chat world ${chatWorld} is already activated in global world info! Skipping...`);
-        return [];
-    }
-
-    const data = await loadWorldInfo(chatWorld);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: chatWorld, ...rest })) : [];
-
-    console.debug(`[WI] Chat lore has ${entries.length} entries`, [chatWorld]);
-
-    return entries;
-}
-
-async function getPersonaLore() {
-    const chatWorld = chat_metadata[METADATA_KEY];
-    const personaWorld = power_user.persona_description_lorebook;
-
-    if (!personaWorld) {
-        return [];
-    }
-
-    if (chatWorld === personaWorld) {
-        console.debug(`[WI] Persona world ${personaWorld} is already activated in chat world! Skipping...`);
-        return [];
-    }
-
-    if (selected_world_info.includes(personaWorld)) {
-        console.debug(`[WI] Persona world ${personaWorld} is already activated in global world info! Skipping...`);
-        return [];
-    }
-
-    const data = await loadWorldInfo(personaWorld);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: personaWorld, ...rest })) : [];
-
-    console.debug(`[WI] Persona lore has ${entries.length} entries`, [personaWorld]);
-
-    return entries;
-}
-
-export async function getSortedEntries() {
-    try {
-        const [
-            globalLore,
-            characterLore,
-            chatLore,
-            personaLore,
-        ] = await Promise.all([
-            getGlobalLore(),
-            getCharacterLore(),
-            getChatLore(),
-            getPersonaLore(),
-        ]);
-
-        await eventSource.emit(event_types.WORLDINFO_ENTRIES_LOADED, { globalLore, characterLore, chatLore, personaLore });
-
-        let entries;
-
-        switch (Number(world_info_character_strategy)) {
-            case world_info_insertion_strategy.evenly:
-                entries = [...globalLore, ...characterLore].sort(sortFn);
-                break;
-            case world_info_insertion_strategy.character_first:
-                entries = [...characterLore.sort(sortFn), ...globalLore.sort(sortFn)];
-                break;
-            case world_info_insertion_strategy.global_first:
-                entries = [...globalLore.sort(sortFn), ...characterLore.sort(sortFn)];
-                break;
-            default:
-                console.error('[WI] Unknown WI insertion strategy:', world_info_character_strategy, 'defaulting to evenly');
-                entries = [...globalLore, ...characterLore].sort(sortFn);
-                break;
-        }
-
-        // Chat lore always goes first, then persona lore, then the rest
-        entries = [...chatLore.sort(sortFn), ...personaLore.sort(sortFn), ...entries];
-
-        // Calculate hash and parse decorators. Split maps to preserve old hashes.
-        entries = entries.map((entry) => {
-            const [decorators, content] = parseDecorators(entry.content || '');
-            return { ...entry, decorators, content };
-        }).map((entry) => {
-            const hash = getStringHash(JSON.stringify(entry));
-            return { ...entry, hash };
-        });
-
-        console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
-
-        // Need to deep clone the entries to avoid modifying the cached data
-        return structuredClone(entries);
-    } catch (e) {
-        console.error(e);
-        return [];
-    }
-}
-
-
-/**
- * Parse decorators from worldinfo content
- * @param {string} content The content to parse
- * @returns {[string[],string]} The decorators found in the content and the content without decorators
-*/
-function parseDecorators(content) {
-    /**
-     * Check if the decorator is known
-     * @param {string} data string to check
-     * @returns {boolean} true if the decorator is known
-    */
-    const isKnownDecorator = (data) => {
-        if (data.startsWith('@@@')) {
-            data = data.substring(1);
-        }
-
-        for (let i = 0; i < KNOWN_DECORATORS.length; i++) {
-            if (data.startsWith(KNOWN_DECORATORS[i])) {
-                return true;
-            }
-        }
-        return false;
-    };
-
-    if (content.startsWith('@@')) {
-        let newContent = content;
-        const splited = content.split('\n');
-        let decorators = [];
-        let fallbacked = false;
-
-        for (let i = 0; i < splited.length; i++) {
-            if (splited[i].startsWith('@@')) {
-                if (splited[i].startsWith('@@@') && !fallbacked) {
-                    continue;
-                }
-
-                if (isKnownDecorator(splited[i])) {
-                    decorators.push(splited[i].startsWith('@@@') ? splited[i].substring(1) : splited[i]);
-                    fallbacked = false;
-                } else {
-                    fallbacked = true;
-                }
-            } else {
-                newContent = splited.slice(i).join('\n');
-                break;
-            }
-        }
-        return [decorators, newContent];
-    }
-
-    return [[], content];
-}
-
-/**
- * Performs a scan on the chat and returns the world info activated.
- * @param {string[]} chat The chat messages to scan, in reverse order.
- * @param {number} maxContext The maximum context size of the generation.
- * @param {boolean} isDryRun Whether to perform a dry run.
- * @param {WIGlobalScanData} globalScanData Chat independent context to be scanned
- * @returns {Promise<WIActivated>} The world info activated.
- */
 //MARK: checkWorldInfo
 export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData = defaultGlobalScanData) {
     const context = getContext();

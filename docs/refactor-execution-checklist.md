@@ -585,6 +585,10 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 - **Q-7a**：`$('#send_textarea').val()` 有 4 处，**只入参化组装路径 `script.js:4315`**（`Generate` 内待发文本）；其余 3 处（`4225` 斜杠命令门控、`1770`/`5692` 草稿/`sendMessageAsUser`）属浏览器 UI 关注点，**保持 DOM 读取不变**，避免扩大回归面。
 - **Q-7b**：理解正确——共享模块接收 `pendingUserText` / `noteText` 入参（DOM-free）；浏览器适配器读 `$('#send_textarea').val()` 与 `$('#extension_floating_prompt').val()` 后作为入参传入；服务端从 `/api/v1` 请求体传入。
 
+### N.1 第 7 步拦截器钩子（Lead 已记，防双重执行）
+
+`runGenerationInterceptors` 已在 `script.js` 的 `Generate` 内**先跑一次**（组装之前）。故共享 `prepareOpenAIMessagesCore` 只提供**可选** `await env.runInterceptors?.(...)`（缺省跳过）；**浏览器适配器不传**（保持现行为、避免 CC 路径双重执行）；服务端在钩子里接自己的 memory/reply-style 实现；`reality`/`filter` 永不接入。单测必须覆盖“缺省不调用 / 提供时恰好调用一次”作回归护栏。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

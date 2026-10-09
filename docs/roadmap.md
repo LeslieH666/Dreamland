@@ -270,6 +270,31 @@
 - One-click standard Character Card V2/V3 JSON import in the manual character editor, with an optional avatar upload synchronized to the native create form before saving.
 - A default-off group-chat orchestrator with deterministic mention/relevance/turn-balance scoring, bounded reply batches, an automatic-reply ceiling, server-validated namespaced settings, and native natural-order fallback. Current-chat temporary roles use JSONL-only versioned metadata, manual creation, hidden in-memory card adapters, active/dormant/archived lifecycle states, branch pruning, Swipe continuity, and shared-memory speaker attribution without entering the character library. A third-stage isolated structured review can propose one editable role draft, an optionally immediate confirmed reply, or confirmed retirement choices on demand, with optional cooldown-based suggestions disabled by default and no direct model writes. See [group-chat-orchestrator.md](group-chat-orchestrator.md).
 
+## Prompt-assembly lift and authoritative-turn groundwork (2026-10-09)
+
+- Phase 2.5.2 (prompt-assembly lift) is closed. Prompt building now runs through shared
+  modules under `src/prompt-assembly/`: World Info state/lore/scan/build plus its
+  portability guard, the prompt registry and ordering, the chat-completion message model,
+  the populate cluster and the orchestrator. The browser files keep their exports and call
+  sites by delegating to those modules, so the public surface is unchanged:
+  `world-info.js` keeps all 70 exports, `PromptManager.js` 7, `openai.js` 43.
+- The compatibility red line held throughout: `src/endpoints/chats.js`,
+  `src/endpoints/characters.js` and `src/prompt-converters.js` were never touched.
+- Verification is byte-level. `npm run test:prompt-baseline` replays eight synthetic cases
+  (solo normal/continue/swipe/regenerate/impersonate/quiet, group, persona depth) through a
+  real browser and compares the POST body to a baseline recorded before the refactor; all
+  eight are byte-identical, and stayed so at every step of the lift.
+- The eight-case baseline is the only gate that exercises `openai.js` and the browser
+  bundle end to end, so it is the lower bound for any assembly change. The harness now also
+  reports page errors, console errors and failing request URLs, which is what turned a
+  three-attempt blind fix into a one-run fix.
+- Full self-check re-run and green: `npm run validate`; the eight-case baseline; an
+  all-commit audit showing no commit since the refactor base touched the three red-line
+  files or any `data/`-style path; leftover-reference and secret scans; and a live-service
+  smoke that boots the real `/api/v1` router on a listener and walks register, log in,
+  create character, create chat and stream a generation from a mock provider, asserting
+  ordered `chat.completion.chunk` frames, a terminating `[DONE]` and `X-Accel-Buffering: no`.
+
 ## Stabilization priorities
 
 1. Expand regression coverage for ordinary chat with every Leslie module disabled.

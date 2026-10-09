@@ -74,6 +74,8 @@ import { UPLOADS_DIRECTORY } from './constants.js';
 
 // Routers
 import { isServerMode, resolveBrowserLaunchEnabled, shouldSealUserSpaceOnExit } from './runtime-mode.js';
+import { API_V1_ROOT } from './api-v1/protocol.js';
+import { router as apiV1Router } from './api-v1/router.js';
 import { SECRET_CONFIG_KEYS, findDreamlandEnvOverride, listConfigEnvOverrides } from './config-env.js';
 import { router as usersPublicRouter } from './endpoints/users-public.js';
 import { init as statsInit, onExit as statsOnExit } from './endpoints/stats.js';
@@ -161,6 +163,11 @@ app.use(hostWhitelistMiddleware);
 if (cliArgs.listen) {
     app.use(accessLoggerMiddleware());
 }
+
+// Public versioned API. Mounted *before* the cookie session and CSRF so the
+// bearer-token track is fully independent from the desktop web UI's cookie
+// track; neither can affect the other.
+app.use(API_V1_ROOT, apiV1Router);
 
 app.use(cookieSession({
     name: getCookieSessionName(),

@@ -21,12 +21,13 @@ import { ApiError } from '../api-v1/errors.js';
 import { decodeCompositeId } from '../api-v1/ids.js';
 import { ExtensionPromptRole } from './enums.js';
 import { getExtensionPrompt, getExtensionPromptMaxDepth } from './extension-prompts.js';
-import { formatInstructModeExamples, parseMesExamples } from './macro-helpers.js';
+import { NAMES_BEHAVIOR_TYPES, formatInstructModeExamples, parseExampleIntoIndividual, parseMesExamples } from './macro-helpers.js';
 import { substituteParams } from './macros.js';
 import { setOpenAIMessageExamples, setOpenAIMessages } from './message-shaping.js';
 import { prepareOpenAIMessagesCore } from './orchestrate.js';
 import { Prompt, PromptCollection } from './prompt.js';
 import { buildServerAssemblyEnv, buildServerPromptManager, buildServerTokenHandler } from './server-env.js';
+import { buildServerPowerUser } from './settings-defaults.js';
 import { createSeededRandom, WORLD_INFO_REGEX_PLACEMENT } from './world-info-portability.js';
 import { getWorldInfoPrompt } from './world-info-prompt.js';
 
@@ -206,8 +207,12 @@ export async function assembleAuthoritativeTurn(input) {
     const ref = resolveServerChatRef(chatId, directories);
     const settings = loadServerSettings(directories, deps.fs);
     const chat = loadServerChat(ref.filePath, deps);
+    // The page fills its settings defaults at load and only overlays what was persisted,
+    // so the server has to merge the same defaults before anything reads them.
+    // oai_settings comes from settings.json as-is for now; only the power_user subset the
+    // assembly reads needs the page's defaults merged in.
     const oaiSettings = settings.oai_settings ?? {};
-    const powerUser = settings.power_user ?? {};
+    const powerUser = buildServerPowerUser(settings.power_user);
     const worldInfoSettings = settings.world_info_settings ?? {};
     const extensionSettings = settings.extension_settings ?? {};
     const type = String(input.type ?? 'normal');
@@ -241,6 +246,15 @@ export async function assembleAuthoritativeTurn(input) {
         selectedGroup: null,
         mainApi: settings.main_api ?? 'openai',
         getCardFields: () => card,
+        // The instruct formatter reads these straight off its context.
+        substituteParams: (text, overrides) => substitute(text, overrides),
+        namesBehaviorTypes: NAMES_BEHAVIOR_TYPES,
+        parseExampleIntoIndividual: (text, append) => parseExampleIntoIndividual(text, append, {
+            name1,
+            name2,
+            selectedGroup: null,
+            getGroupNames: () => [],
+        }),
         helpers: {
             parseMesExamples: (text, isInstruct) => parseMesExamples(text, isInstruct, macroContext()),
             formatInstructModeExamples: (array, first, second) => formatInstructModeExamples(array, first, second, macroContext()),

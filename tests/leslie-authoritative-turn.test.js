@@ -138,13 +138,24 @@ describe('assembleAuthoritativeTurn', () => {
             .rejects.toMatchObject({ status: 500 });
     });
 
-    test('fails closed while the registry rebuild is pending, instead of returning a different prompt', async () => {
+    test('attempts a real assembly instead of failing closed with 501', async () => {
+        // The placeholder boundary is gone: the turn now loads, scans World Info and
+        // calls the shared orchestration. A fixture without the page's settings defaults
+        // still fails, but never with the old not-implemented code.
         const id = encodeCompositeId('chat', ['solo', 'fixture-aurora', 'c']);
         fs.mkdirSync(path.join(directories.chats, 'fixture-aurora'), { recursive: true });
-        await expect(assembleAuthoritativeTurn({
+        const error = await assembleAuthoritativeTurn({
             user: { directories },
             chatId: id,
-            deps: { fs, readCard: async () => JSON.stringify({ name: 'A' }), getChatData: () => [{}, { mes: 'hi' }] },
-        })).rejects.toMatchObject({ status: 501, code: 'authoritative_turn_not_implemented' });
+            deps: {
+                fs,
+                readCard: async () => JSON.stringify({ name: 'A' }),
+                getChatData: () => [{}, { mes: 'hi' }],
+                ChatCompletion: class {},
+            },
+        }).then(() => null, raised => raised);
+
+        expect(error).not.toBeNull();
+        expect(error.code).not.toBe('authoritative_turn_not_implemented');
     });
 });

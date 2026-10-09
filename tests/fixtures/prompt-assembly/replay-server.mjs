@@ -73,8 +73,25 @@ async function main() {
     const { assembleAuthoritativeTurn } = await import(`${REPO_ROOT}/src/prompt-assembly/authoritative-turn.js`);
     const { parse: parseCard } = await import(`${REPO_ROOT}/src/character-card-parser.js`);
     const { getChatData } = await import(`${REPO_ROOT}/src/endpoints/chats.js`);
+    // The orchestration constructs ChatCompletion through env, so the replay supplies it.
+    const { ChatCompletion, configureChatCompletion } = await import(`${REPO_ROOT}/src/prompt-assembly/chat-completion.js`);
+    configureChatCompletion({
+        tokenHandler: { countAsync: async () => 1 },
+        media: {
+            createThumbnail: async () => null,
+            getBase64Async: async () => '',
+            getImageSizeFromDataURL: () => ({ width: 0, height: 0 }),
+            getVideoDurationFromDataURL: () => 0,
+            getAudioDurationFromDataURL: () => 0,
+            isDataURL: () => false,
+        },
+        getOaiSettings: () => ({}),
+        getDefaultSettings: () => ({}),
+        chatCompletionSources: {},
+    });
 
     const results = [];
+    let seenStack = false;
 
     for (const [profileName, profile] of Object.entries(PROFILES)) {
         const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), `dl-replay-${profileName}-`));
@@ -113,6 +130,7 @@ async function main() {
                         fs,
                         readCard: async cardPath => await parseCard(cardPath, 'png'),
                         getChatData,
+                        ChatCompletion,
                     },
                 });
             } catch (error) {
@@ -120,7 +138,13 @@ async function main() {
             }
 
             if (failure) {
-                results.push({ id: testCase.id, status: 'not-implemented', detail: `${failure.status ?? ''} ${failure.code ?? ''}`.trim() });
+                if (!seenStack) { seenStack = true; console.log('\nFirst failure stack:\n' + String(failure.stack ?? '').split('\n').slice(0, 6).join('\n') + '\n'); }
+                const code = [failure.status, failure.code].filter(Boolean).join(' ');
+                results.push({
+                    id: testCase.id,
+                    status: 'failed',
+                    detail: `${code} ${String(failure.message ?? failure).slice(0, 150)}`.trim(),
+                });
                 continue;
             }
 
@@ -154,7 +178,7 @@ async function main() {
     }
 
     const identical = results.filter(entry => entry.status === 'byte-identical').length;
-    const pending = results.filter(entry => entry.status === 'not-implemented').length;
+    const pending = results.filter(entry => entry.status === 'failed').length;
     console.log(`\n  ${identical}/${results.length} byte-identical, ${pending} not implemented, ${results.length - identical - pending} diverging\n`);
 
     if (STRICT && identical !== results.length) {

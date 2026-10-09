@@ -25,6 +25,16 @@ async function loadWorldInfo(name, context) {
         return context.cache.get(name);
     }
 
+    // The server has no world-info HTTP route to call: it reads the book straight off
+    // disk. The browser omits this hook and keeps using the endpoint below.
+    if (typeof context.readWorldInfo === 'function') {
+        const data = await context.readWorldInfo(name);
+        if (data) {
+            context.cache.set(name, data);
+        }
+        return data ?? null;
+    }
+
     const response = await fetch(context.worldInfoUrl, {
         method: 'POST',
         headers: context.getRequestHeaders(),

@@ -222,6 +222,16 @@ try {
             pageErrors.push(`[console] ${message.text()}`);
         }
     });
+    // A console message alone says "some resource failed" without naming it, which is
+    // not enough to act on. Record the URL and status too.
+    page.on('response', response => {
+        if (response.status() >= 400) {
+            pageErrors.push(`[http ${response.status()}] ${response.url()}`);
+        }
+    });
+    page.on('requestfailed', request => {
+        pageErrors.push(`[requestfailed] ${request.url()} ${request.failure()?.errorText ?? ''}`);
+    });
 
     await page.addInitScript(() => {
         try {

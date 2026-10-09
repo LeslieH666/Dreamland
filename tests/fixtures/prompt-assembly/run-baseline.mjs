@@ -247,7 +247,7 @@ try {
 
         const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), `dsh-pa-${profileName}-`));
         dataRoots.push(dataRoot);
-        seedPromptAssemblyFixtures(dataRoot, { personaPosition: profile.personaPosition, seedMemory: seedFixtureMemory });
+        seedPromptAssemblyFixtures(dataRoot, { personaPosition: profile.personaPosition, noteText: profile.noteText, seedMemory: seedFixtureMemory });
 
         server = startServer(dataRoot);
         await waitForServer(`${BASE_URL}/version`);

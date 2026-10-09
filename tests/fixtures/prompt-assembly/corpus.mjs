@@ -153,7 +153,7 @@ export const WORLD_BOOK = {
  * @param {{ personaPosition?: number }} [options] Options.
  * @returns {object} Settings object.
  */
-export function buildSettings({ personaPosition = PERSONA_POSITION.IN_PROMPT } = {}) {
+export function buildSettings({ personaPosition = PERSONA_POSITION.IN_PROMPT, noteText = '' } = {}) {
     return {
         firstRun: false,
         username: FIXTURE_USER_NAME,
@@ -222,7 +222,7 @@ export function buildSettings({ personaPosition = PERSONA_POSITION.IN_PROMPT } =
         },
         textgenerationwebui_settings: {},
         extension_settings: {
-            note: { default: '', defaultPosition: 1, defaultDepth: 4, defaultRole: 0, allowWIScan: false, chara: [] },
+            note: { default: noteText, defaultPosition: 1, defaultDepth: 4, defaultRole: 0, allowWIScan: false, chara: [] },
             memory: { enabled: false },
             regex: [],
         },
@@ -294,10 +294,17 @@ export const CASES = [
     { id: 'solo-quiet', profile: 'default', character: 'fixture-aurora.png', chat: '合成 · 静默', history: CHAT_HISTORY, type: 'quiet', quietPrompt: '用一句话总结当前的观测进度。' },
     { id: 'group-normal', profile: 'default', group: GROUP, chat: '合成 · 群聊', history: GROUP_HISTORY, type: 'normal' },
     { id: 'solo-persona-depth', profile: 'depth', character: 'fixture-aurora.png', chat: '合成 · 深度人设', history: CHAT_HISTORY, type: 'normal' },
+    { id: 'solo-author-note', profile: 'note', character: 'fixture-aurora.png', chat: '合成 · 作者注', history: CHAT_HISTORY, type: 'normal' },
 ];
+
+/** Author's-note body used by the `note` profile. */
+export const NOTE_TEXT = '（合成作者注）把每次观测写成条目，并标注当天的天气。';
 
 /** Profiles = one server data root each (settings differ). */
 export const PROFILES = {
     default: { personaPosition: PERSONA_POSITION.IN_PROMPT },
     depth: { personaPosition: PERSONA_POSITION.AT_DEPTH },
+    // The author's note is only injected when it is switched on in extension
+    // settings and the chat carries the note metadata, so it needs its own profile.
+    note: { personaPosition: PERSONA_POSITION.IN_PROMPT, noteText: NOTE_TEXT },
 };

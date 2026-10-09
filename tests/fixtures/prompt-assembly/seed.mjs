@@ -88,7 +88,7 @@ function writeCharacter(charactersDir, character, chatName) {
  * @param {{ personaPosition?: number, handle?: string, seedMemory?: (userRoot: string, chatKeys: object) => object }} options Options.
  * @returns {{ userRoot: string, chatKeys: object }} Seeded paths.
  */
-export function seedPromptAssemblyFixtures(dataRoot, { personaPosition, handle = DEFAULT_USER.handle, seedMemory } = {}) {
+export function seedPromptAssemblyFixtures(dataRoot, { personaPosition, noteText = '', handle = DEFAULT_USER.handle, seedMemory } = {}) {
     const userRoot = path.join(dataRoot, handle);
     const dirs = {
         root: userRoot,
@@ -127,7 +127,7 @@ export function seedPromptAssemblyFixtures(dataRoot, { personaPosition, handle =
         fs.mkdirSync(directory, { recursive: true });
     }
 
-    const settings = buildSettings({ personaPosition });
+    const settings = buildSettings({ personaPosition, noteText });
     fs.writeFileSync(path.join(userRoot, SETTINGS_FILE), JSON.stringify(settings, null, 4), 'utf8');
 
     fs.writeFileSync(path.join(dirs.worlds, `${WORLD_BOOK.name}.json`), JSON.stringify({ entries: Object.fromEntries(WORLD_BOOK.entries.map(entry => [String(entry.uid), entry])) }, null, 4), 'utf8');
@@ -155,6 +155,7 @@ export function seedPromptAssemblyFixtures(dataRoot, { personaPosition, handle =
         ['fixture-aurora.png', '合成 · 静默', CHAT_HISTORY],
         ['fixture-aurora.png', '合成 · 换一条', SWIPE_HISTORY],
         ['fixture-aurora.png', '合成 · 深度人设', CHAT_HISTORY],
+        ['fixture-aurora.png', '合成 · 作者注', CHAT_HISTORY],
     ];
     for (const [avatar, chatName] of chatPlan) {
         chatKeys[`${avatar}::${chatName}`] = { avatar, chatName, characterName: CHARACTERS.find(entry => entry.avatar === avatar)?.name ?? avatar };
@@ -169,7 +170,12 @@ export function seedPromptAssemblyFixtures(dataRoot, { personaPosition, handle =
         chatKeys[`${avatar}::${chatName}`] = { avatar, chatName, characterName };
     };
 
-    const baseMetadata = { persona: FIXTURE_PERSONA_AVATAR };
+    // interval 1 means the note is inserted regardless of position, so the case
+    // exercises the author's-note path deterministically.
+    const noteMetadata = noteText
+        ? { note_prompt: noteText, note_interval: 1, note_position: 1, note_depth: 4, note_role: 0 }
+        : {};
+    const baseMetadata = { persona: FIXTURE_PERSONA_AVATAR, ...noteMetadata };
     for (const [avatar, chatName, history] of chatPlan) {
         const extra = memoryMetadata[`${avatar}::${chatName}`] ?? {};
         writeChat(avatar, chatName, history, { ...baseMetadata, ...extra });

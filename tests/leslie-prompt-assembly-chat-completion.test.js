@@ -55,14 +55,8 @@ describe('configureChatCompletion', () => {
     });
 
     test('names every missing key in the error', () => {
-        try {
-            configureChatCompletion({ tokenHandler: {} });
-            throw new Error('expected a throw');
-        } catch (error) {
-            expect(error.message).toContain('media');
-            expect(error.message).toContain('getOaiSettings');
-            expect(error.message).toContain('chatCompletionSources');
-        }
+        expect(() => configureChatCompletion({ tokenHandler: {} }))
+            .toThrow(/missing required environment keys: media, getOaiSettings, getDefaultSettings, chatCompletionSources/u);
     });
 });
 

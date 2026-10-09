@@ -24,6 +24,22 @@ function script(placement) {
     return { scriptName: 'fixture', placement, disabled: false };
 }
 
+
+/**
+ * Run a callback and return the error it threw, so assertions can live outside a
+ * catch block (jest/no-conditional-expect).
+ * @param {Function} callback Callback expected to throw.
+ * @returns {Error} The thrown error.
+ */
+function captureThrow(callback) {
+    try {
+        callback();
+        return null;
+    } catch (error) {
+        return error;
+    }
+}
+
 describe('World Info divergence detection', () => {
     test('the regex placement constant matches the browser enum', () => {
         expect(WORLD_INFO_REGEX_PLACEMENT).toBe(5);
@@ -79,14 +95,10 @@ describe('World Info divergence detection', () => {
         expect(() => assertWorldInfoPortable({ vectorsEnabled: true })).toThrow(/vectors/u);
         expect(() => assertWorldInfoPortable({ regexScripts: [script([5])] })).toThrow(/world_info_regex/u);
 
-        try {
-            assertWorldInfoPortable({ regexScripts: [script([5])], vectorsEnabled: true });
-            throw new Error('expected assertWorldInfoPortable to throw');
-        } catch (error) {
-            expect(error.message).toContain(DIVERGENCE_SOURCE.WORLD_INFO_REGEX);
-            expect(error.message).toContain(DIVERGENCE_SOURCE.VECTORS);
-            expect(error.message).toMatch(/browser-only/u);
-        }
+        const error = captureThrow(() => assertWorldInfoPortable({ regexScripts: [script([5])], vectorsEnabled: true }));
+        expect(error.message).toContain(DIVERGENCE_SOURCE.WORLD_INFO_REGEX);
+        expect(error.message).toContain(DIVERGENCE_SOURCE.VECTORS);
+        expect(error.message).toMatch(/browser-only/u);
     });
 });
 
@@ -150,14 +162,10 @@ describe('narrowed tokenizer-model resolution (附 L Q-c)', () => {
     });
 
     test('the error names the provider and states why it refuses', () => {
-        try {
-            resolveChatCompletionTokenizerModel({ chatCompletionSource: 'groq' });
-            throw new Error('expected a throw');
-        } catch (error) {
-            expect(error).toBeInstanceOf(UnsupportedTokenizerProviderError);
-            expect(error.chatCompletionSource).toBe('groq');
-            expect(error.message).toContain('groq');
-            expect(error.message).toMatch(/Refusing to guess/u);
-        }
+        const error = captureThrow(() => resolveChatCompletionTokenizerModel({ chatCompletionSource: 'groq' }));
+        expect(error).toBeInstanceOf(UnsupportedTokenizerProviderError);
+        expect(error.chatCompletionSource).toBe('groq');
+        expect(error.message).toContain('groq');
+        expect(error.message).toMatch(/Refusing to guess/u);
     });
 });

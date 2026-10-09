@@ -568,7 +568,7 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 
 - **`getExtensionPrompt` 签名冲突**：共享核心是 `getExtensionPromptCore(registry, position, depth, opts)`，populate 代码沿用位置签名 `(position, depth, separator, role, wrap)`。**采用方案 (b)**：populate.js 内调用 `env.getExtensionPrompt(position, depth, sep, role, wrap)` / `env.getExtensionPromptMaxDepth()`，由 openai.js（浏览器）或服务端各自提供适配器（内部调共享核心 + 各自 registry）；populate.js **不感知 registry 形状**。
 - **两个 provider 枚举**（`tool_reasoning_modes`、`interleaved_reasoning_providers`）**不随迁、不硬编码**：留在 openai.js（值由 `chat_completion_sources` 构造），经 `env` 注入给 populate.js。
-- **工具链纪律**：eslint 有陈旧缓存会报过期行号；**先 `rm -rf .eslintcache` 或 `--no-cache` 再 lint**，并以 **jest 加载**（纪律⑥）为主关口。
+- **工具链纪律（更正）**：上一轮“eslint 有陈旧缓存、行号不可信”是**误判**——实为读报错时漏看文件名头，把指向 `populate.js` 的行号当成了 `openai.js`。**lint 可信**；读报错前先确认文件名归属。仍以 **jest 加载**（纪律⑥）为主关口（它抓得到缺失具名导出与签名错位）。
 
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 

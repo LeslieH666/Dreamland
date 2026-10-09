@@ -99,6 +99,30 @@ export const MAX_SCAN_DEPTH = 1000;
 const MAX_COMMENT_LENGTH = 100;
 const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
+/**
+ * Randomness source for the World Info probability roll.
+ * Phase 2.5.2 step 4: injectable so a seeded run is reproducible (附 L Q5); the
+ * default keeps browser behaviour identical.
+ */
+let worldInfoRandom = Math.random;
+
+/**
+ * Replace the probability-roll randomness source.
+ * @param {() => number} randomFunction Function returning [0, 1).
+ * @returns {void}
+ */
+export function setWorldInfoRandom(randomFunction) {
+    worldInfoRandom = typeof randomFunction === 'function' ? randomFunction : Math.random;
+}
+
+/**
+ * Restore the default probability-roll randomness source.
+ * @returns {void}
+ */
+export function resetWorldInfoRandom() {
+    worldInfoRandom = Math.random;
+}
+
 // Typedef area
 /**
  * @typedef {object} WIGlobalScanData The chat-independent data to be scanned. Each of
@@ -4919,7 +4943,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                     return true;
                 }
 
-                const rollValue = Math.random() * 100;
+                const rollValue = worldInfoRandom() * 100;
                 if (rollValue <= entry.probability) {
                     console.debug(`WI entry ${entry.uid} passed probability check of ${entry.probability}%`);
                     return true;

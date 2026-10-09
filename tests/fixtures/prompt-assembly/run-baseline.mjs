@@ -21,6 +21,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import { fileURLToPath } from 'node:url';
 
 import { CASES, PROFILES } from './corpus.mjs';
@@ -53,6 +54,29 @@ async function waitForServer(url, timeoutMs = 90_000) {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
     throw new Error(`Server did not become ready at ${url}`);
+}
+
+/**
+ * Fail fast when a fixture port is already taken.
+ *
+ * A server left behind by an earlier run would otherwise surface as "Server did not
+ * become ready", which looks exactly like a code regression. The harness refuses to
+ * kill a process it did not start, so it reports the conflict instead.
+ * @param {number} port Port to probe.
+ * @param {string} label What the port is for.
+ * @returns {Promise<void>} Resolves when the port is free.
+ */
+async function assertPortFree(port, label) {
+    await new Promise((resolve, reject) => {
+        const probe = net.createServer();
+        probe.once('error', error => {
+            reject(new Error(error.code === 'EADDRINUSE'
+                ? `Port ${port} (${label}) is already in use - a previous run may still be alive. Stop that process and retry.`
+                : `Could not probe port ${port} (${label}): ${error.message}`));
+        });
+        probe.once('listening', () => probe.close(() => resolve()));
+        probe.listen(port, '127.0.0.1');
+    });
 }
 
 /**
@@ -194,10 +218,31 @@ const pageErrors = [];
 let server = null;
 let browser = null;
 let provider = null;
+
+/** Kill the fixture server we started. Safe to call more than once. */
+function killFixtureServer() {
+    try {
+        server?.child?.kill('SIGKILL');
+    } catch {
+        // Already gone.
+    }
+}
+
+// A hard-killed parent never reaches the finally below, which is how a fixture server
+// survived an earlier run and held the port. These paths cover the catchable exits.
+process.on('exit', killFixtureServer);
+for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => {
+        killFixtureServer();
+        process.exit(1);
+    });
+}
 const results = {};
 const failures = [];
 
 try {
+    await assertPortFree(Number(process.env.LESLIE_FIXTURE_PROVIDER_PORT || 9099), 'mock provider');
+    await assertPortFree(PORT, 'fixture server');
     provider = await startMockProvider();
     console.log(`[${mode}] mock provider ready on http://127.0.0.1:${process.env.LESLIE_FIXTURE_PROVIDER_PORT || 9099}`);
     const { chromium } = await import('playwright');

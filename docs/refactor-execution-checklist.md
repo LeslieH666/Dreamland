@@ -475,3 +475,22 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 - **通用原则（适用于第 5–7 步）**：任何被 Q4/Q-a 排除、且会改变提示词的分叉源（如第 6 步的 vectors 注入），一律「激活时 fail-closed + 文档化边界」，不得静默分叉、不得为凑逐字一致偷偷改行为。
 
 **放行第 4–7 步**：按上述裁决推进；每步门槛不变。第 4 步完成后（World Info 抬升 + RNG 种子注入 + timedWorldInfo 写回 + 分叉源 fail-closed 检查）停下报告。
+
+---
+
+## 附 M：Phase 2.5.2 第 4 步拆分子步（Lead 已决）
+
+第 4 步核心抬升（1,872 行）按 4 个可独立过门的子步推进；每步门槛：`test:prompt-baseline` 8/8 + lint/test:unit/check:repo + 红线 diff 为空。
+
+1. `WorldInfoTimedEffects` + `WorldInfoBuffer`（596 行，纯状态机，最独立）
+2. `getSortedEntries` + `parseDecorators` + `loadWorldInfo` + lore 收集（240 行）
+3. `checkWorldInfo` 扫描循环（566 行，注入 RNG / tokenizer / 宏 / 注册表）
+4. 构建/位置/合并 + `getWorldInfoPrompt` 薄编排（~200 行，注入 `getRegexedString` 占位 + `setExtensionPrompt`）
+
+**接线时机（不单独接线）**：
+- `createSeededRandom` → 子步 3；`resolveChatCompletionTokenizerModel` → 子步 3（预算裁剪计数）。
+- `assertWorldInfoPortable` → 子步 4 / 第 7 步编排入口（最早有完整 `context` 处）。
+
+**`getTokenizerModel` 双实现**：**接受临时并存**（浏览器原函数冻结不动 + 服务端收窄 fail-closed），**统一收口推迟到第 7 步 / 2.5.3**（届时浏览器也改走共享模块、未支持 provider 保留本地回退）。列入待收口清单。
+
+**放行第 4 步的 4 个子步**：按 1→2→3→4 顺序推进，每个子步过门槛后再做下一个；子步 4 完成后停下报告，再做第 5–7 步。

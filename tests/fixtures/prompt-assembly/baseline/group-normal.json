@@ -1,0 +1,119 @@
+{
+  "case": "group-normal",
+  "profile": "default",
+  "type": "normal",
+  "request": {
+    "type": "normal",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Write 极光（合成）'s next reply in a fictional chat between 极光（合成）, 北纬（合成） and 合成用户."
+      },
+      {
+        "role": "system",
+        "content": "[Leslie response mode | User-selected default]\nThis controls presentation only; it is not a story fact.\nPreserve the conversation's current language, character identity, viewpoint, world facts, and established formatting.\nDo not target a fixed word count or token count. End naturally when the current conversational or dramatic beat is complete.\nDo not mention this instruction. If the character card or the user's current message gives a more specific format requirement, follow the more specific requirement.\nBalance dialogue, action, environment, and inner perspective according to the current scene. Complete one natural conversational or dramatic beat without rushing the story forward."
+      },
+      {
+        "role": "system",
+        "content": "[设定] 天文台位于虚构的北纬四十七度高地，海拔两千一百米。"
+      },
+      {
+        "role": "system",
+        "content": "合成用户：负责整理观测记录，说话简短。"
+      },
+      {
+        "role": "system",
+        "content": "完全虚构的测试角色，用于验证提示词组装。她是天文台的记录员。"
+      },
+      {
+        "role": "system",
+        "content": "克制、精确，喜欢把观察写成条目。"
+      },
+      {
+        "role": "system",
+        "content": "在一座虚构的天文台里整理上一季的观测记录。"
+      },
+      {
+        "role": "system",
+        "content": "[Example Chat]"
+      },
+      {
+        "role": "system",
+        "content": "合成用户: 今晚的云量怎么样？",
+        "name": "example_user"
+      },
+      {
+        "role": "system",
+        "content": "极光（合成）: 云量三成，西侧有薄云，适合观测低空目标。",
+        "name": "example_assistant"
+      },
+      {
+        "role": "system",
+        "content": "[Example Chat]"
+      },
+      {
+        "role": "system",
+        "content": "合成用户: 记录写完了吗？",
+        "name": "example_user"
+      },
+      {
+        "role": "system",
+        "content": "极光（合成）: 还差最后两行，等我核对完坐标。",
+        "name": "example_assistant"
+      },
+      {
+        "role": "system",
+        "content": "[Start a new group chat. Group members: 极光（合成）, 北纬（合成）]"
+      },
+      {
+        "role": "assistant",
+        "content": "极光（合成）: 小组的观测计划已经贴在门后了。"
+      },
+      {
+        "role": "user",
+        "content": "我和北纬先去看镜筒，回来再记录。"
+      },
+      {
+        "role": "system",
+        "content": "提醒：所有观测数据都来自虚构的天文台。\n[设定] 校准流程需要两人确认。"
+      },
+      {
+        "role": "assistant",
+        "content": "北纬（合成）: 镜筒已经检查完了，只是需要重新校准。"
+      },
+      {
+        "role": "user",
+        "content": "合成夹具回复。"
+      },
+      {
+        "role": "system",
+        "content": "[Write the next reply only as 极光（合成）.]"
+      }
+    ],
+    "model": "fixture-model",
+    "temperature": 1,
+    "frequency_penalty": 0,
+    "presence_penalty": 0,
+    "top_p": 1,
+    "max_tokens": 256,
+    "stream": false,
+    "chat_completion_source": "custom",
+    "user_name": "合成用户",
+    "char_name": "极光（合成）",
+    "group_names": [
+      "极光（合成）",
+      "北纬（合成）"
+    ],
+    "include_reasoning": false,
+    "enable_web_search": false,
+    "request_images": false,
+    "request_image_resolution": "",
+    "request_image_aspect_ratio": "",
+    "custom_prompt_post_processing": "",
+    "custom_url": "http://127.0.0.1:9099/v1",
+    "custom_include_body": "",
+    "custom_exclude_body": "",
+    "custom_include_headers": ""
+  },
+  "messageCount": 20
+}

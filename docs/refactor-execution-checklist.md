@@ -416,3 +416,24 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 2. 聊天核心（chats/characters/prompt-converters）diff 为空；JSONL/Swipe/WorldInfo/群聊兼容不变。
 3. `npm run validate` 通过。
 4. 契约已标注“权威轮次”。
+
+---
+
+## 附 I：Phase 2.5.1 盘点裁决（Lead 已决，2.5.2 按此执行）
+
+盘点文档 `docs/prompt-assembly-map.md` 已审核。Q1–Q8 裁决：
+
+- **Q1（方案）**：**接受方案 A**（`src/prompt-assembly/` 同构纯模块 + 两侧薄适配，含把 `public/script.js` 组装段改为显式入参的薄调用）。否决 B（复制必然漂移）、C（服务端 import public 脚本因 DOM 依赖不可行）。
+- **Q2（范围）**：**Phase 2.5 只做 CC 族（chat completions）**；TC 族（kobold/novel/TGW/horde 的 text completions）作为后续独立任务。理由：产品仅代理云端 API（OpenAI/DeepSeek/火山）全走 CC；TC 只服务自托管 text-gen 端点，非当前主路径。→ 大幅缩小移植面（跳过 §3 的 30 步 TC 管线）。
+- **Q3（拦截器/filter）**：**服务端自行实现拦截器阶段**（共享模块保留等价钩子位置），**否决“客户端上报”**（削弱权威 + 信任边界）。`filter` 闭包（唯一注册者 `/inject`）**不移植**。`leslie-reality` 替换式流水线**单独延后**（自建整条消息，语义不同）；`leslie-memory`/`leslie-reply-style` 拦截器随 2.5 主体移植（本质是“静态注册 + 动态上下文合并”）。
+- **Q4（向量/数据银行/`/inject`）**：**接受不移植**，文档化边界。核心聊天 MVP 不依赖向量/运行期注入。
+- **Q5（WI 随机 + timedWorldInfo 写回）**：**允许服务端写回 `chat_metadata.timedWorldInfo`**（服务端本就是权威持久化方；只写 metadata 首行，不改 JSONL 正文格式）。**断言用可注入随机种子**：WI 概率的 `Math.random` 换成可注入 RNG，测试注入固定 seed、生产用真随机；等价断言在相同 seed 下做。
+- **Q6（事件）**：**接受不复刻、仅文档化边界**（树内 0 订阅者；第三方订阅属边界，声明其不在服务端权威轮次生效）。
+- **Q7（逐字等价范围）**：**“未触发预算裁剪时逐字一致”为硬标准**（含空白/换行/顺序/槽位）；**触发裁剪时**要求同款 tokenizer（服务端 `/api/tokenizers`）+ 同算法 + 语义等价，逐位一致作为目标、tokenizer 实现差异可文档化。
+- **Q8（图片 fetch）**：**Phase 2.5 不代抓**。多模态/视觉为后续独立任务；非 data URL 的服务端 fetch 涉及 SSRF，需单独安全评审。客户端仍可上传 data URL。
+
+**2.5.2 落地关键安全约束**：
+1. **先建基线夹具、再重构**：改任何代码前，先对一组合成输入（角色卡 + WI + Persona + 记忆 + 群聊 + Swipe + 各 type）**录制浏览器当前产出**作为逐字等价基线；否则重构后无对照物。
+2. **按 §13 的 7 步逐函数抽取，每步都跑“浏览器行为不变”验证**，禁止一次性铺开。
+3. 抽取后的模块必须是**纯函数**（显式入参、不原地改入参、无 DOM/模块级状态依赖）；`prepareOpenAIMessages` 的原地 `shift/reverse` 改为入参复制。
+4. 红线照旧：`src/endpoints/chats.js`、`characters.js`、`prompt-converters.js` diff 为空。

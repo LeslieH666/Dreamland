@@ -496,3 +496,32 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 **放行第 4 步的 4 个子步**：按 1→2→3→4 顺序推进，每个子步过门槛后再做下一个；子步 4 完成后停下报告，再做第 5–7 步。
 
 **子步提交纪律（子步 1 授权）**：子步 1 以**专用一轮**执行。**每个子步 = 一个原子提交，且仅在完整门槛（`test:prompt-baseline` 8/8 + lint/test:unit/check:repo）通过后才提交**——不提交未经验证的中间态。若单轮预算不足，工作保持未提交、以 `/tmp` 备份兜底、下一轮继续；**不要**把“搬运”与“接线+验证”拆成两个提交（搬运提交会构成未验证的浏览器行为变更）。
+
+---
+
+## 附 N：长任务授权 + 全量自查检查点（Lead 已决）
+
+### N.1 长任务：自主完成 Phase 2.5.2 剩余部分
+
+Flash **连续自主执行**以下单元，每单元完整门槛通过后提交单个原子 commit（装不下保持未提交、下一单元继续）；命中附 L/M 已裁决的分叉源按 fail-closed 处理，**无需停下**：
+
+1. 第 4 步子步 2：`getSortedEntries` + `parseDecorators` + `loadWorldInfo` + lore 收集（先做 **import 感知**注入面扫描）
+2. 第 4 步子步 3：`checkWorldInfo` 扫描循环（注入 RNG/tokenizer/宏/注册表；接线 `createSeededRandom` + `resolveChatCompletionTokenizerModel`）
+3. 第 4 步子步 4：构建/位置/合并 + `getWorldInfoPrompt` 薄编排（注入 `getRegexedString` 占位 + `setExtensionPrompt`；接线 `assertWorldInfoPortable`）
+4. 第 5 步：注册表与顺序（`sanitizeServiceSettings` + `getPromptCollection` + `preparePromptsForChatCompletion`）
+5. 第 6 步：`populateChatCompletion` + `populationInjectionPrompts` + `populateChatHistory` + `populateDialogueExamples`（去原地 `shift`/`reverse`）
+6. 第 7 步：`prepareOpenAIMessages` 薄编排 + 拦截器钩子（仅 memory/reply-style）+ 两处 DOM 读取改入参
+
+**停靠条件**：完成第 7 步后停下报告（Phase 2.5.2 收口）；或出现**未在附 L/M 覆盖**的新分叉/需决策项时停下报告。每步门槛不变：`test:prompt-baseline` 8/8 + lint/test:unit/check:repo + 红线 diff 为空。
+
+### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
+
+在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：
+
+1. `npm run validate`（check:repo + lint + lint(tests) + test:unit）全绿
+2. `npm run test:prompt-baseline` 8/8 逐字一致
+3. 红线审计：`git diff refactor-base -- src/endpoints/chats.js src/endpoints/characters.js src/prompt-converters.js` 为空；并对 `refactor-base` 以来**全部 commit** 逐一扫一遍是否误改聊天核心 / 数据文件
+4. 遗留引用检测（附 B）
+5. 密钥/数据安全扫描：无密钥、无 `data/`、无聊天内容进入 Git
+6. 冒烟：真实服务注册→登录→建角色→发消息→SSE 全链路（mock 模型）
+7. 自查结果记录到 `docs/roadmap.md` 或独立 report

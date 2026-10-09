@@ -570,6 +570,11 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 - **两个 provider 枚举**（`tool_reasoning_modes`、`interleaved_reasoning_providers`）**不随迁、不硬编码**：留在 openai.js（值由 `chat_completion_sources` 构造），经 `env` 注入给 populate.js。
 - **工具链纪律（更正）**：上一轮“eslint 有陈旧缓存、行号不可信”是**误判**——实为读报错时漏看文件名头，把指向 `populate.js` 的行号当成了 `openai.js`。**lint 可信**；读报错前先确认文件名归属。仍以 **jest 加载**（纪律⑥）为主关口（它抓得到缺失具名导出与签名错位）。
 
+### N.1 6b-part-2 接线教训（Lead 已记，第 7 步沿用）
+
+- **TDZ 审计**：`openAiAssemblyEnv()` 若放在被引用 `const` 之前、且用**值**（非 getter）读取，会在初始化期触发 `ReferenceError`（页面卡 preloader）。接线前先列 `openAiAssemblyEnv()` 引用的每个绑定在 openai.js 的声明行号；凡声明晚于 env 定义处的，一律改**惰性 getter** `() => binding`，或把 env 定义移到所有被引用 `const` 之后。
+- **`openai.js` 的唯一下限关卡是浏览器基线**：没有任何测试 import `openai.js`，jest“加载成功”只证明 `populate.js` 自身可加载、不代表 `openai.js` 能用。凡改动 `openai.js`，**必须以 `test:prompt-baseline` 8/8 为准**（lint/jest 通过不等于可用）。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

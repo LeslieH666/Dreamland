@@ -1,5 +1,13 @@
 # Roadmap
 
+## Phase 1 server deployment: runtime modes, environment config, HTTPS (2026-10-09)
+
+- Added the `DREAMLAND_MODE=server|desktop` runtime switch (`src/runtime-mode.js`, resolved in `src/command-line.js`, default `server`). Server mode never opens a browser, never starts Electron or a tray, and no longer seals the encrypted user space on exit, so a container keeps its mounted data root across restarts. The Electron host marks itself as `desktop` and refuses to start with `DREAMLAND_MODE=server`.
+- Added `src/config-env.js` for 12-factor configuration: `DREAMLAND_*` variables now take priority over the legacy `SILLYTAVERN_*` variables and over `config.yaml` for the data root, port, listener, whitelist, CORS, TLS, basic auth, the cookie secret and the request proxy. Startup prints the active overrides with credentials redacted, and warns when a publicly reachable server still keeps credentials in `config.yaml`.
+- Upstream API keys can be supplied by `DREAMLAND_SECRET_<KEY>` or by a mounted secret document (`DREAMLAND_SECRETS_FILE`, default `/run/secrets/dreamland-secrets.json`). Externally supplied keys become the active entry, are returned only masked, and never need to be written into the repository config.
+- The container image now runs as the unprivileged `node` user with `tini`, and `deploy/` adds a Caddy TLS reverse proxy plus a compose stack where only Caddy publishes ports and API keys arrive as a mounted secret.
+- Documented the environment variables in the README and made the Playwright browser channel overridable (`LESLIE_E2E_CHANNEL`), because every e2e spec previously hardcoded the Microsoft Edge channel and could not run on machines without Edge.
+
 ## Phase 0 removal of the AIRI companion and managed local models (2026-10-09)
 
 - Removed the integrated `airi/` desktop companion frontend, the `src/leslie-local-model/` router, the `models/` GGUF catalog, Electron-managed AIRI and local-model service control, and the public local-model settings UI. DreamLand no longer ships, launches, scans, starts, or stops an AIRI or model process.

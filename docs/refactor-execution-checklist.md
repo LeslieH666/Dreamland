@@ -347,3 +347,12 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 - **D6**：`docs/team-plan.md` 是 Lead 在规划会话中创建的产物，非外来文件，已提交。
 - **D1**：容器构建验证延后至有 Docker 运行时的主机执行，不影响代码合入。
 - **D7**：`npm run test:e2e --prefix tests` 延后到 Phase 1 前补跑；Electron 依赖安装（`.npmrc ignore-scripts`）到 Phase 3 再处理。
+
+---
+
+## 附 F：Phase 1 裁决记录（Lead 已决，Phase 2 起按此执行）
+
+- **D2（e2e 既有失败）**：`tests/leslie-settings.e2e.js` 4 处 `.leslie-sidebar-actions [data-action="settings"]` 是**既有测试漂移**（`leslie-theme.js` 自基线未改；`dreamland-pages.css:8` 在 dreamland 设计语言下隐藏该选择器），与重构无关。**现在修复**（仅改测试、不动应用代码）：把 4 处选择器改为 `.dreamland-navigation [data-action="settings"]`（对齐已通过的 `leslie-user-preferences.e2e.js`），随后重跑 e2e 确认全绿。
+- **D3（非 root 取舍）**：**保留 `USER node`（uid 1000）非 root**。公网后端以非 root 为安全基线；bind mount 属主 `chown -R 1000:1000` 属一次性运维步骤，已在 Dockerfile/compose/README 写明。不接受回退到 root + su-exec。
+- **D1（容器链路）**：仍延后到有 Docker 的主机/CI 实跑（`docker build` + `docker compose -f deploy/docker-compose.tls.yml up -d` + `curl https://$DOMAIN/version`）；不阻塞 Phase 2/3，但**上线前必须闭环**。
+- **D4**：明文密钥告警属正向信号，保留；反代下 IP 白名单用「Caddy 精确匹配 + TLS + 可选 Basic 认证」兜底，取舍已记录，接受。

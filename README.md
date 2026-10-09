@@ -119,6 +119,9 @@ npm run test:e2e --prefix tests
 | `DREAMLAND_BASIC_AUTH_MODE` | `basicAuthMode` | HTTP Basic 认证开关 |
 | `DREAMLAND_BASIC_AUTH_USER` / `DREAMLAND_BASIC_AUTH_PASSWORD` | `basicAuthUser.*` | Basic 认证凭据，建议改用挂载密钥 |
 | `DREAMLAND_COOKIE_SECRET` | `cookieSecret` | 会话签名密钥；设置后不再读取/生成文件，也不再落 `config.yaml` |
+| `DREAMLAND_JWT_SECRET` | `apiV1.jwtSecret` | `/api/v1` access token 的签名密钥；不设置时由会话密钥派生 |
+| `DREAMLAND_API_V1_MAX_REQUESTS` | `rateLimiting.apiV1MaxRequests` | 每客户端每分钟的 `/api/v1` 请求上限（默认 120） |
+| `DREAMLAND_API_V1_ACCOUNT_MAX_REQUESTS` | `rateLimiting.apiV1AccountMaxRequests` | 每账号每分钟的 `/api/v1` 请求上限（默认 600） |
 | `DREAMLAND_HEARTBEAT_INTERVAL` | `heartbeatInterval` | 心跳文件间隔（秒），0 关闭 |
 | `DREAMLAND_SSL_ENABLED` / `_CERT_PATH` / `_KEY_PATH` | `ssl.*` | 由后端直接终止 TLS（反代终止时不需要） |
 | `DREAMLAND_CORS_ENABLED` / `_ORIGIN` / `_METHODS` / `_ALLOWED_HEADERS` / `_EXPOSED_HEADERS` / `_CREDENTIALS` / `_MAX_AGE` | `cors.*` | 列表类可传 JSON 数组 |

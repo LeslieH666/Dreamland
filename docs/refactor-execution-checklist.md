@@ -541,6 +541,17 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 
 **`preparePromptsForChatCompletion`（150 行，openai.js）随第 6 步一起搬**：它依赖 `ChatCompletion`/`Message`/`MessageCollection`/`promptManager`，正是第 6 步 `populateChatCompletion` 要搬的同一簇；单独在第 5 步搬需先预置第 6 步机制、第 6 步再改一次。排期合并、无行为变更、不涉及 fail-closed。
 
+### N.1 第 6 步拆分为 6a + 6b（Lead 已决，Q-6）
+
+侦察发现第 6 步实际 1,422 行（5 函数 621 行 + 4 类簇 801 行），是计划量的 2.3×。按附 M 先例拆为两个单元，各自过完整门槛后单个原子 commit：
+
+- **6a（类簇，~801 行）**：`TokenHandler` + `Message` + `MessageCollection` + `ChatCompletion` → `src/prompt-assembly/chat-completion.js`；`ChatCompletion` 保持 `export class` 薄 re-export（簇外 9 处引用）；媒体工具/`ToolManager`/`t` 走 `env` 注入。
+- **6b（populate 函数，~621 行）**：5 个函数 → `src/prompt-assembly/populate.js`；**去 4 处原地改写**（`:860` splice、`:865` reverse、`:909` splice、`:1313` shift，均改为对副本操作）；`ChatCompletion` 仅经 `env`（函数侧 0 处直接引用类，已实测）。
+
+**6b 的关键正确性点**：去原地改写后，必须用 `test:prompt-baseline` 8/8 证明**输出不变**，并确认无调用方依赖“调用方数组被反转/弹出”的副作用（改前/改后各记录一次）。
+
+**循环依赖规避**：`Prompt`/`INJECTION_POSITION` 走 `env` 注入（不 import PromptManager.js）；`substituteParams`/`getExtensionPrompt`/`getExtensionPromptMaxDepth`/`extension_prompt_roles`/`extension_prompt_types` 从**共享模块** import，不再从 `script.js`。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

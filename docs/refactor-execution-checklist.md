@@ -552,6 +552,18 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 
 **循环依赖规避**：`Prompt`/`INJECTION_POSITION` 走 `env` 注入（不 import PromptManager.js）；`substituteParams`/`getExtensionPrompt`/`getExtensionPromptMaxDepth`/`extension_prompt_roles`/`extension_prompt_types` 从**共享模块** import，不再从 `script.js`。
 
+### N.1 检查点放松（Lead 已决，回应“往返太密”）
+
+剩余单元（**6a 接线 → 6b → 第 7 步**）**不再逐单元停下等确认**。授权 Flash 一口气跑完，仅在以下两个条件停下报告：
+1. **Phase 2.5.2 完整收口（第 7 步完成）**；
+2. 出现**未在附 L/M/N + Q-6 覆盖**的新分叉/需决策项。
+
+理由：纪律已固化（原子提交 + 每单元门槛 + jest 关口 + fail-closed + import 感知扫描），剩余三步是同一套已验证模式、决策已全部预置，无需逐步人工审。每单元仍须过完整门槛后单个原子 commit。
+
+### N.1 6a 设计确认（configureChatCompletion 模块级 env）
+
+采纳 `configureChatCompletion(env)` + `getChatCompletionEnvironment()` 的**模块级 DI**（而非给 ~30 个方法加 `env` 参数）。约束：env 里可变绑定用 **getter**（`getOaiSettings: () => oai_settings` 等）以保持“读当前值”；`configureChatCompletion` 必须 **fail-closed** 校验 `REQUIRED_ENV_KEYS`、缺键抛错；浏览器初始化时配置一次、服务端各自配置一次。这是对“纯函数”原则的务实偏离，**仅限这些有状态类**；populate 函数（6b）仍走显式 `env` 参数。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

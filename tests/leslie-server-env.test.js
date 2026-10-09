@@ -1,5 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 
+import { Prompt } from '../src/prompt-assembly/prompt.js';
 import {
     buildServerAssemblyEnv,
     buildServerPromptManager,
@@ -53,7 +54,10 @@ describe('buildServerPromptManager', () => {
         expect(typeof manager.getPromptById('main')).toBe('object');
         expect(manager.getPromptOrderForCharacter({ id: 1 })).toEqual([{ identifier: 'main', enabled: true }]);
         expect(manager.getPromptOrderEntry({ id: 1 }, 'main')).toEqual({ identifier: 'main', enabled: true });
-        expect(manager.preparePrompt({ identifier: 'x' })).toEqual({ identifier: 'x' });
+        // PromptCollection only accepts Prompt instances, so the facade has to wrap.
+        const prepared = manager.preparePrompt({ identifier: 'x' });
+        expect(prepared).toBeInstanceOf(Prompt);
+        expect(prepared.identifier).toBe('x');
     });
 
     test('can add a prompt order for an unknown character', () => {

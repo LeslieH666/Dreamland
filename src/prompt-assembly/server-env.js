@@ -18,6 +18,8 @@
 import { countMessageTokens } from './token-counting.js';
 import { resolveChatCompletionTokenizerModel } from './tokenizer-model.js';
 import { INJECTION_POSITION } from './enums.js';
+import { Prompt } from './prompt.js';
+import { checkForMissingPrompts as checkForMissingPromptsCore, shouldTrigger as shouldTriggerCore } from './registry.js';
 
 // The server never inlines media and never performs tool calls, so these are inert
 // stand-ins rather than reimplementations: the populate cluster only reads them to
@@ -153,7 +155,17 @@ export function buildServerPromptManager({ serviceSettings, activeCharacter, tok
             this.serviceSettings.prompts = structuredClone(prompts);
         },
         preparePrompt(prompt) {
-            return prompt;
+            // PromptCollection only accepts Prompt instances, which is what the page's
+            // manager produces as well.
+            return prompt instanceof Prompt ? prompt : new Prompt(prompt);
+        },
+        // The registry functions were lifted to call these on the PromptManager instance,
+        // so the server facade has to provide them too.
+        shouldTrigger(prompt, generationType) {
+            return shouldTriggerCore(prompt, generationType);
+        },
+        checkForMissingPrompts(prompts) {
+            return checkForMissingPromptsCore(this, prompts);
         },
         log(message) {
             logs.push(String(message));

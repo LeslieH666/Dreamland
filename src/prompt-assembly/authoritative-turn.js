@@ -21,12 +21,14 @@ import { ApiError } from '../api-v1/errors.js';
 import { decodeCompositeId } from '../api-v1/ids.js';
 import { ExtensionPromptRole } from './enums.js';
 import { getExtensionPrompt, getExtensionPromptMaxDepth } from './extension-prompts.js';
+import { configureMacroEngine, evaluateMacros as evaluateMacrosCore } from './macro-engine.js';
 import { NAMES_BEHAVIOR_TYPES, formatInstructModeExamples, parseExampleIntoIndividual, parseMesExamples } from './macro-helpers.js';
 import { substituteParams } from './macros.js';
 import { setOpenAIMessageExamples, setOpenAIMessages } from './message-shaping.js';
 import { prepareOpenAIMessagesCore } from './orchestrate.js';
 import { Prompt, PromptCollection } from './prompt.js';
 import { buildServerAssemblyEnv, buildServerPromptManager, buildServerTokenHandler } from './server-env.js';
+import { sanitizeServiceSettings } from './registry.js';
 import { buildServerPowerUser } from './settings-defaults.js';
 import { createSeededRandom, WORLD_INFO_REGEX_PLACEMENT } from './world-info-portability.js';
 import { getWorldInfoPrompt } from './world-info-prompt.js';
@@ -237,6 +239,38 @@ export async function assembleAuthoritativeTurn(input) {
         createPromptCollection: () => new PromptCollection(),
     });
 
+    // The macro engine reads the chat and settings through its own configured context,
+    // because its accessors are module-level. Only the server is wired to this copy.
+    configureMacroEngine({
+        chat: chat.messages,
+        chatMetadata: chat.metadata,
+        extensionPrompts: registry,
+        getCurrentChatId: () => ref.fileName,
+        getMaxContextTokens: () => maxContext,
+        getMaxPromptTokens: () => Math.max(0, maxContext - Number(oaiSettings.openai_max_tokens ?? 0)),
+        getMaxResponseTokens: () => Number(oaiSettings.openai_max_tokens ?? 0),
+        mainApi: settings.main_api ?? 'openai',
+        substituteParams: (text, overrides) => substitute(text, overrides),
+        powerUser,
+        bannedWordsInMacros: Boolean(settings.textgenerationwebui_settings?.banned_in_macros),
+        injectIds: { QUIET_PROMPT: 'QUIET_PROMPT' },
+        jQuery: () => ({ val: () => '' }),
+        // The idle-duration macro reads the page's document title; the server has none.
+        document: { title: '' },
+        // Only reachable with the experimental engine enabled, which the server refuses.
+        macroSystem: new Proxy({}, { get() { throw new ApiError(501, 'experimental_macro_engine_unsupported', 'The experimental macro engine is not available server-side.', { type: 'server_error' }); } }),
+        // The fixture corpus uses neither instruct sequences nor variables, so these
+        // contribute no macros. A macro that did need one would stay literal in the
+        // output and the byte comparison would fail loudly rather than silently.
+        getInstructMacros: () => [],
+        getVariableMacros: () => [],
+    });
+
+    // The page sanitises its prompt manager at startup: it seeds the default prompt set
+    // and the default order when the account has none. Without this the collection is
+    // empty and the assembly returns no messages at all.
+    sanitizeServiceSettings(promptManager);
+
     const macroContext = () => ({
         name1,
         name2,
@@ -259,11 +293,9 @@ export async function assembleAuthoritativeTurn(input) {
             parseMesExamples: (text, isInstruct) => parseMesExamples(text, isInstruct, macroContext()),
             formatInstructModeExamples: (array, first, second) => formatInstructModeExamples(array, first, second, macroContext()),
             getGeneratingModel: () => oaiSettings.custom_model ?? oaiSettings.openai_model ?? '',
-            // Per the phase ruling: the nine baselines do not exercise the dynamic macro
-            // engine, so it fails closed rather than silently expanding to nothing.
-            evaluateMacros: () => {
-                throw new ApiError(501, 'experimental_macro_engine_unsupported', 'The experimental macro engine is not available server-side.', { type: 'server_error' });
-            },
+            // Plan P.1 decided this branch on evidence: all nine baselines call the macro
+            // engine, so it is the lifted implementation rather than a fail-closed stub.
+            evaluateMacros: (content, macroEnv, postProcessFn) => evaluateMacrosCore(content, macroEnv, postProcessFn),
         },
         warn: () => {},
     });
@@ -318,6 +350,25 @@ export async function assembleAuthoritativeTurn(input) {
         countTokens: async text => Number(await tokenHandler.countAsync({ role: 'system', content: String(text ?? '') })),
         substituteParams: substitute,
         escapeRegex,
+        metadataKey: 'world_info',
+        tagMap: powerUser.tag_map ?? {},
+        getStringHash: value => {
+            let hash = 0;
+            const text = String(value ?? '');
+            for (let index = 0; index < text.length; index++) {
+                hash = (hash << 5) - hash + text.charCodeAt(index);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        },
+        getInsertionStrategy: () => ({ evenly: 0, character_first: 1, global_first: 2 }),
+        getCharacterStrategy: () => Number({ character_first: 0, global_first: 1, character_only: 2 }[worldInfoSettings.world_info_character_strategy] ?? 0),
+        getRequestHeaders: () => ({}),
+        worldInfoUrl: '',
+        // The author's-note hijack writes into the shared registry.
+        setExtensionPrompt: (key, value, position, depth, scan, role) => {
+            registry[key] = { value, position, depth, scan, role, extension: true };
+        },
         getChatMetadata: () => chat.metadata,
         getContext: () => ({ chatMetadata: chat.metadata, extensionPrompts: registry }),
         getExtensionPromptByName: async () => '',
@@ -333,6 +384,7 @@ export async function assembleAuthoritativeTurn(input) {
         getCharacters: () => [{ ...card, avatar: `${ref.cardName}.png` }],
         getWorldInfo: () => worldInfoSettings.world_info ?? {},
         getSelectedWorldInfo: () => worldInfoSettings.world_info?.globalSelect ?? [],
+        getPersonaLorebook: () => String(powerUser.persona_description_lorebook ?? ''),
         getWorldInfoCharacterStrategy: () => worldInfoSettings.world_info_character_strategy ?? 'character_first',
         cache: new Map(),
         readWorldInfo: async name => {
@@ -343,6 +395,8 @@ export async function assembleAuthoritativeTurn(input) {
             }
         },
         emitScanDone: async () => {},
+        // Events are not part of the authoritative turn, but the loader expects the hook.
+        emitEntriesLoaded: async () => {},
         emitWorldInfoActivated: deps.emit ?? (async () => {}),
         notifyOverflow: () => {},
         metadataKeys: { position: 'note_position', depth: 'note_depth', role: 'note_role', prompt: 'note_prompt', interval: 'note_interval' },

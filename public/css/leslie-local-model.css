@@ -1,4 +1,4 @@
-/* Local-model setup card for the LeslieTavern API drawer. */
+/* Local-model connection card for the LeslieTavern API drawer. */
 
 body.leslie-modern .leslie-local-model-card {
     display: grid;
@@ -11,182 +11,14 @@ body.leslie-modern .leslie-local-model-card {
     border-radius: 16px;
 }
 
-body.leslie-modern .leslie-local-model-card-heading,
-body.leslie-modern .leslie-local-model-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-
 body.leslie-modern .leslie-local-model-card-heading > div:first-child {
     display: grid;
     gap: 3px;
 }
 
 body.leslie-modern .leslie-local-model-card-heading small,
-body.leslie-modern .leslie-local-model-description,
-body.leslie-modern .leslie-local-model-status,
-body.leslie-modern .leslie-local-model-loading-status {
-    color: var(--leslie-text-soft, #5e7188);
-    font-size: 12px;
-}
-
 body.leslie-modern .leslie-local-model-loading-status {
     margin-top: -2px;
-}
-
-body.leslie-modern .leslie-local-model-detect-status {
-    min-height: 16px;
-    color: var(--leslie-text-soft, #5e7188);
-    font-size: 12px;
-}
-
-body.leslie-modern .leslie-local-model-detect-status[data-state="error"] {
-    color: #b44a4a;
-}
-
-body.leslie-modern .leslie-local-model-description {
-    margin: 0;
-    line-height: 1.5;
-}
-
-body.leslie-modern .leslie-local-model-badge {
-    flex: 0 0 auto;
-    padding: 4px 8px;
-    color: var(--leslie-accent-strong, #2f7df4);
-    background: var(--leslie-surface-solid, #fff);
-    border: 1px solid var(--leslie-border, rgba(84, 119, 157, 0.24));
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-}
-
-body.leslie-modern .leslie-local-model-grid {
-    display: grid;
-    grid-template-columns: minmax(92px, 0.3fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 8px 10px;
-    font-size: 12px;
-}
-
-body.leslie-modern .leslie-local-model-grid label {
-    color: var(--leslie-text-soft, #5e7188);
-    font-weight: 700;
-}
-
-body.leslie-modern .leslie-local-model-grid code {
-    min-width: 0;
-    padding: 7px 9px;
-    overflow-wrap: anywhere;
-    color: var(--leslie-text, #23364d);
-    background: color-mix(in srgb, var(--leslie-surface-solid, #fff) 82%, transparent);
-    border: 1px solid var(--leslie-border, rgba(84, 119, 157, 0.24));
-    border-radius: 8px;
-    font-size: 11px;
-}
-
-body.leslie-modern .leslie-local-model-actions {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-}
-
-body.leslie-modern .leslie-local-model-actions button {
-    flex: 1 1 220px;
-    margin: 0;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    text-align: left;
-}
-
-body.leslie-modern .leslie-local-model-actions button:only-child {
-    flex-basis: 100%;
-}
-
-body.leslie-modern .leslie-local-model-actions button small {
-    flex-basis: 100%;
-    margin-left: 25px;
-    color: inherit;
-    font-size: 10px;
-    font-weight: 500;
-    opacity: 0.78;
-}
-
-body.leslie-modern .leslie-local-model-actions .leslie-settings-secondary-button {
-    min-height: 38px;
-    padding: 0 14px;
-    color: var(--leslie-accent-strong, #2f7df4);
-    background: var(--leslie-surface-solid, #fff);
-    border: 1px solid var(--leslie-border, rgba(84, 119, 157, 0.24));
-    border-radius: 11px;
-    box-shadow: none;
-}
-
-body.leslie-modern .leslie-local-model-actions .leslie-settings-secondary-button:hover,
-body.leslie-modern .leslie-local-model-actions .leslie-settings-secondary-button:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--leslie-accent) 28%, transparent);
-    outline-offset: 2px;
-}
-
-body.leslie-modern .leslie-local-model-status[data-state="success"] {
-    color: #27824d;
-}
-
-body.leslie-modern .leslie-local-model-status[data-state="error"] {
-    color: #b44a4a;
-}
-
-body.leslie-modern .leslie-local-runtime-card {
-    display: grid;
-    gap: 12px;
-    padding: 14px;
-    background: var(--leslie-surface-solid, #fff);
-    border: 1px solid var(--leslie-border, rgba(84, 119, 157, 0.24));
-    border-radius: 12px;
-}
-
-body.leslie-modern .leslie-local-runtime-heading {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-}
-
-body.leslie-modern .leslie-local-runtime-heading > span {
-    display: grid;
-    width: 32px;
-    height: 32px;
-    flex: 0 0 auto;
-    place-items: center;
-    color: var(--leslie-accent-strong, #2f7df4);
-    background: var(--leslie-accent-soft, #eaf3ff);
-    border-radius: 9px;
-}
-
-body.leslie-modern .leslie-local-runtime-heading > div,
-body.leslie-modern .leslie-local-model-picker {
-    display: grid;
-    gap: 5px;
-}
-
-body.leslie-modern .leslie-local-runtime-heading strong,
-body.leslie-modern .leslie-local-model-picker strong {
-    font-size: 13px;
-}
-
-body.leslie-modern .leslie-local-runtime-heading small {
-    color: var(--leslie-text-soft, #5e7188);
-    font-size: 11px;
-    line-height: 1.5;
-}
-
-body.leslie-modern .leslie-local-model-picker select {
-    width: 100%;
-    min-height: 40px;
-    padding: 0 10px;
-    color: var(--leslie-text, #23364d);
-    background: var(--leslie-surface-solid, #fff);
-    border: 1px solid var(--leslie-border, rgba(84, 119, 157, 0.24));
-    border-radius: 9px;
 }
 
 body.leslie-modern .leslie-local-advanced {
@@ -211,10 +43,9 @@ body.leslie-modern .leslie-local-advanced > summary::-webkit-details-marker {
     display: none;
 }
 
-body.leslie-modern .leslie-local-advanced > summary:focus-visible,
-body.leslie-modern .leslie-local-model-picker select:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--leslie-accent) 30%, transparent);
-    outline-offset: -3px;
+body.leslie-modern .leslie-local-advanced > summary:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--leslie-accent) 28%, transparent);
+    outline-offset: 2px;
 }
 
 body.leslie-modern .leslie-local-advanced > summary > span {
@@ -239,12 +70,6 @@ body.leslie-modern .leslie-local-advanced-content {
     display: grid;
     gap: 10px;
     padding: 0 12px 12px;
-}
-
-@media (max-width: 620px) {
-    body.leslie-modern .leslie-local-model-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 body.leslie-modern .leslie-desktop-services-card {

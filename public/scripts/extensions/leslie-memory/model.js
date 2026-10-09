@@ -7,7 +7,7 @@ export const MEMORY_MODEL_PROVIDER = Object.freeze({
     OPENAI_COMPATIBLE: 'openai-compatible',
 });
 
-const DEFAULT_LOCAL_MODEL = `koboldcpp/${LESLIE_LOCAL_MODEL.modelPath.split('\\').at(-1).replace(/\.gguf$/i, '')}`;
+const DEFAULT_LOCAL_MODEL = `koboldcpp/${LESLIE_LOCAL_MODEL.modelFile.replace(/\.gguf$/i, '')}`;
 const DEEPSEEK_API_ENDPOINT = 'https://api.deepseek.com';
 const DEFAULT_DEEPSEEK_MODEL = 'deepseek-v4-flash';
 const PROVIDERS = new Set(Object.values(MEMORY_MODEL_PROVIDER));

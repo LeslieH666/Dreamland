@@ -1,11 +1,11 @@
-import { app, BrowserWindow, ipcMain, Menu, powerMonitor, shell, Tray } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, powerMonitor, Tray } from 'electron';
 import fs from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import yargs from 'yargs';
 import { serverEvents, EVENT_NAMES } from '../server-events.js';
 import { companionSession } from '../leslie-bridge/companion-session.js';
-import { getLocalServiceStatus, runLocalServiceAction, startManagedLocalModel } from './local-services.js';
+import { getLocalServiceStatus, runLocalServiceAction } from './local-services.js';
 import { sealActiveUserSpace } from '../leslie-user-spaces/vault.js';
 import { createSealedExitHandler } from './sealed-exit.js';
 
@@ -105,18 +105,6 @@ ipcMain.handle('leslie:services:status', (event) => {
     return getLocalServiceStatus(getProjectRoot(), { busyServices: new Set(localServiceTasks.keys()) });
 });
 
-ipcMain.handle('leslie:services:open-models', async (event) => {
-    if (!isMainWindowSender(event)) {
-        throw new Error('Only the DreamLand window can open the model directory.');
-    }
-    const directory = path.join(getProjectRoot(), 'models');
-    fs.mkdirSync(directory, { recursive: true });
-    const error = await shell.openPath(directory);
-    if (error) {
-        throw new Error('Could not open the local model directory.');
-    }
-});
-
 ipcMain.handle('leslie:services:action', async (event, message) => {
     if (!isMainWindowSender(event)) {
         throw new Error('Only the DreamLand window can control desktop services.');
@@ -127,9 +115,7 @@ ipcMain.handle('leslie:services:action', async (event, message) => {
         return getLocalServiceStatus(getProjectRoot(), { busyServices: new Set(localServiceTasks.keys()) });
     }
     const root = getProjectRoot();
-    const task = service === 'localModel' && action === 'start'
-        ? startManagedLocalModel(root, String(message?.modelId || getLocalServiceStatus(root).localModels.models[0]?.id || ''))
-        : runLocalServiceAction(root, service, action);
+    const task = runLocalServiceAction(root, service, action);
     localServiceTasks.set(service, task);
     try {
         await task;

@@ -1,10 +1,12 @@
 /**
- * Pure configuration for DreamLand's small local-model setup helper.
- * Keep this separate from DOM and SillyTavern imports so it can be tested.
+ * Pure configuration for DreamLand's local model connection helper.
+ * DreamLand does not host or start these runtimes; the user runs them and
+ * points DreamLand at the endpoint. Keep this separate from DOM and
+ * SillyTavern imports so it can be tested.
  */
 
 export const LESLIE_LOCAL_MODEL = Object.freeze({
-    modelPath: 'models\\Qwen3.5-text-9B-NSFW-RP-RolePlay\\Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf',
+    modelFile: 'Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf',
     modelName: 'Qwen3.5 9B RP Q4_K_M',
     context: 8192,
     responseTokens: 384,
@@ -13,13 +15,11 @@ export const LESLIE_LOCAL_MODEL = Object.freeze({
             apiType: 'koboldcpp',
             endpoint: 'http://127.0.0.1:5001',
             label: 'KoboldCpp',
-            startupHint: '在 KoboldCpp 中加载 models\\Qwen3.5-text-9B-NSFW-RP-RolePlay\\Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf，选择 CUDA，端口设为 5001，然后回到 DreamLand 点击“应用并连接”。',
         }),
         llamacpp: Object.freeze({
             apiType: 'llamacpp',
             endpoint: 'http://127.0.0.1:8080',
             label: 'llama.cpp',
-            startupHint: '在 llama-server 中加载 models\\Qwen3.5-text-9B-NSFW-RP-RolePlay\\Qwen3.5-text-9B-NSFW-RP-RolePlay.Q4_K_M.gguf，监听 127.0.0.1:8080，然后回到 DreamLand 点击“应用并连接”。',
         }),
     }),
     generation: Object.freeze({
@@ -102,101 +102,6 @@ export function isLesliePeachRoleplayModel(model) {
 
 export function isLeslieQwenRoleplayModel(model) {
     return QWEN_ROLEPLAY_MODEL_PATTERN.test(String(model ?? ''));
-}
-
-/**
- * Detect a project-supported roleplay model from one of the local runtimes.
- * This only probes the loopback OpenAI-compatible model list; it never changes
- * SillyTavern settings or starts/stops an external process.
- * @param {object} [options] Probe options.
- * @param {typeof fetch} [options.fetchImpl] Fetch implementation.
- * @param {AbortSignal} [options.signal] Optional caller cancellation signal.
- * @param {number} [options.timeoutMs] Per-runtime probe timeout.
- * @returns {Promise<{runtime: string, apiType: string, endpoint: string, model: string} | null>} Detection result.
- */
-export async function detectLeslieLocalModel({ fetchImpl = globalThis.fetch, signal, timeoutMs = 2500 } = {}) {
-    if (typeof fetchImpl !== 'function') {
-        throw new Error('当前浏览器不支持本地模型识别。');
-    }
-
-    const probes = getLeslieLocalRuntimeKeys().map(async (runtime) => {
-        const runtimeConfig = getLeslieLocalRuntime(runtime);
-        const controller = typeof AbortController === 'function' ? new AbortController() : null;
-        let timeout;
-        const abortProbe = () => controller?.abort();
-
-        if (signal?.aborted) {
-            return null;
-        }
-        signal?.addEventListener('abort', abortProbe, { once: true });
-        if (controller && Number.isFinite(timeoutMs) && timeoutMs > 0) {
-            timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
-        }
-
-        try {
-            const response = await fetchImpl(`${runtimeConfig.endpoint}/v1/models`, {
-                method: 'GET',
-                ...(controller ? { signal: controller.signal } : {}),
-            });
-            if (!response?.ok) {
-                return null;
-            }
-
-            const payload = await response.json().catch(() => ({}));
-            const models = Array.isArray(payload?.data)
-                ? payload.data.map(entry => typeof entry === 'string' ? entry : entry?.id)
-                : [];
-            const model = models.find(isLeslieQwenRoleplayModel) ?? models.find(isLesliePeachRoleplayModel);
-            return model
-                ? {
-                    runtime,
-                    apiType: runtimeConfig.apiType,
-                    endpoint: runtimeConfig.endpoint,
-                    model: String(model),
-                }
-                : null;
-        } catch {
-            return null;
-        } finally {
-            if (timeout) {
-                globalThis.clearTimeout(timeout);
-            }
-            signal?.removeEventListener('abort', abortProbe);
-        }
-    });
-
-    const results = await Promise.all(probes);
-    return results.find(result => isLeslieQwenRoleplayModel(result?.model)) ?? results.find(Boolean) ?? null;
-}
-
-/** Probe the project-managed runtime without assuming a specific model name. */
-export async function probeLeslieLocalRuntime(runtime, { fetchImpl = globalThis.fetch, timeoutMs = 2500 } = {}) {
-    const config = LESLIE_LOCAL_MODEL.runtimes[runtime];
-    if (!config || typeof fetchImpl !== 'function') {
-        return null;
-    }
-    const controller = typeof AbortController === 'function' ? new AbortController() : null;
-    const timeout = controller ? globalThis.setTimeout(() => controller.abort(), timeoutMs) : null;
-    try {
-        const response = await fetchImpl(`${config.endpoint}/v1/models`, {
-            method: 'GET',
-            ...(controller ? { signal: controller.signal } : {}),
-        });
-        if (!response?.ok) {
-            return null;
-        }
-        const payload = await response.json();
-        const models = Array.isArray(payload?.data)
-            ? payload.data.map(entry => typeof entry === 'string' ? entry : entry?.id).filter(id => typeof id === 'string' && id.trim())
-            : [];
-        return models.length ? { runtime, apiType: config.apiType, endpoint: config.endpoint, models } : null;
-    } catch {
-        return null;
-    } finally {
-        if (timeout) {
-            globalThis.clearTimeout(timeout);
-        }
-    }
 }
 
 /**

@@ -17,7 +17,6 @@ export function isDreamLandAndroidStandalone() {
 export function getDreamLandClientCapabilities() {
     const androidClient = isDreamLandAndroidClient();
     return Object.freeze({
-        localModelManagement: !androidClient,
         airiCompanion: !androidClient,
         localServer: isDreamLandAndroidStandalone(),
     });

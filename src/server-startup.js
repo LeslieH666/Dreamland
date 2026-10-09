@@ -8,7 +8,6 @@ import { router as userDataRouter } from './users.js';
 import { router as usersPrivateRouter } from './endpoints/users-private.js';
 import { router as usersAdminRouter } from './endpoints/users-admin.js';
 import { router as leslieDemoModeRouter } from './leslie-demo-mode/router.js';
-import { router as leslieLocalModelRouter } from './leslie-local-model/router.js';
 import { router as leslieUserSpacesRouter } from './leslie-user-spaces/router.js';
 import { router as lesliePreferencesRouter } from './leslie-user-spaces/preferences-router.js';
 import { router as movingUIRouter } from './endpoints/moving-ui.js';
@@ -149,7 +148,6 @@ export function redirectDeprecatedEndpoints(app) {
 export function setupPrivateEndpoints(app) {
     app.use('/', userDataRouter);
     app.use('/api/leslie/demo-mode', leslieDemoModeRouter);
-    app.use('/api/leslie/local-model', leslieLocalModelRouter);
     app.use('/api/leslie/user-spaces', leslieUserSpacesRouter);
     app.use('/api/leslie/preferences', lesliePreferencesRouter);
     app.use('/api/users', usersPrivateRouter);

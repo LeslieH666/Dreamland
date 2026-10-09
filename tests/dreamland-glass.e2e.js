@@ -1,8 +1,9 @@
 /* global document, getComputedStyle, innerWidth */
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import fs from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-test.use({ channel: 'msedge', viewport: { width: 1280, height: 900 } });
+test.use({ channel: E2E_BROWSER_CHANNEL, viewport: { width: 1280, height: 900 } });
 const screenshotDirectory = process.env.LESLIE_SCREENSHOT_DIR || 'test-results';
 
 test('glass controls preview, persist and share with login while chat headers retain their tint', async ({ page }) => {

@@ -1,8 +1,9 @@
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import { expect, test } from '@playwright/test';
 
 /* global document, history, localStorage, requestAnimationFrame, window */
 
-test.use({ channel: 'msedge' });
+test.use({ channel: E2E_BROWSER_CHANNEL });
 
 async function preparePage(page) {
     if (process.env.LESLIE_SYNTHETIC_SHOWCASE) {

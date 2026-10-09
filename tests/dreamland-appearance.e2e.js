@@ -1,9 +1,10 @@
 /* global document, localStorage, window, getComputedStyle, globalThis */
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 
-test.use({ channel: 'msedge', viewport: { width: 1280, height: 900 } });
+test.use({ channel: E2E_BROWSER_CHANNEL, viewport: { width: 1280, height: 900 } });
 
 const screenshotDirectory = process.env.LESLIE_SCREENSHOT_DIR || 'test-results';
 async function capture(page, name) {

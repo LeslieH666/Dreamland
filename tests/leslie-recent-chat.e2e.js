@@ -1,6 +1,7 @@
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import { expect, test } from '@playwright/test';
 
-test.use({ channel: 'msedge' });
+test.use({ channel: E2E_BROWSER_CHANNEL });
 
 async function preparePage(page) {
     await page.goto('/', { waitUntil: 'domcontentloaded' });

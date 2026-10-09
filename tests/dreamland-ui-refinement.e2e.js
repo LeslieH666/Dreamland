@@ -1,4 +1,5 @@
 /* global localStorage, document, innerWidth, globalThis */
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { chromium, expect, test } from '@playwright/test';
@@ -6,7 +7,7 @@ import { chromium, expect, test } from '@playwright/test';
 test('aligned headers, random creation and feed-first Moments preserve drafts', async () => {
     test.skip(!process.env.LESLIE_SYNTHETIC_SHOWCASE, 'Requires an isolated synthetic data root.'); // eslint-disable-line playwright/no-skipped-test
     test.setTimeout(60000);
-    const browser = await chromium.launch({ channel:'msedge',headless:true });
+    const browser = await chromium.launch({ channel: E2E_BROWSER_CHANNEL,headless:true });
     const page = await browser.newPage({ viewport:{ width:1920,height:1080 } });
     const errors = [];page.on('pageerror',e=>errors.push(e.message));
     await page.addInitScript(()=>localStorage.setItem('language','zh-cn'));

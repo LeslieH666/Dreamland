@@ -1,7 +1,8 @@
 /* global document, localStorage, getComputedStyle */
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import { expect, test } from '@playwright/test';
 
-test.use({ channel: 'msedge', viewport: { width: 1280, height: 900 } });
+test.use({ channel: E2E_BROWSER_CHANNEL, viewport: { width: 1280, height: 900 } });
 
 test('five colored navigation icons separate home from chat and preserve the live draft', async ({ page }) => {
     test.skip(!process.env.LESLIE_SYNTHETIC_SHOWCASE, 'Requires an isolated synthetic data root.'); // eslint-disable-line playwright/no-skipped-test

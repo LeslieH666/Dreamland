@@ -1,9 +1,10 @@
 /* eslint-disable playwright/no-conditional-in-test */
 /* global document, localStorage, sessionStorage */
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import { expect, test } from '@playwright/test';
 
 test.use({
-    channel: 'msedge',
+    channel: E2E_BROWSER_CHANNEL,
     viewport: { width: 1280, height: 900 },
 });
 

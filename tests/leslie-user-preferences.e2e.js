@@ -1,8 +1,9 @@
 /* global document, localStorage */
 /* eslint-disable playwright/no-conditional-in-test */
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import { expect, test } from '@playwright/test';
 
-test.use({ channel: 'msedge', viewport: { width: 1280, height: 900 }, actionTimeout: 10000 });
+test.use({ channel: E2E_BROWSER_CHANNEL, viewport: { width: 1280, height: 900 }, actionTimeout: 10000 });
 const password = 'synthetic-space-password';
 
 async function api(page, url, body) {

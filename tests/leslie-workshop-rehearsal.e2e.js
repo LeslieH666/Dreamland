@@ -1,11 +1,12 @@
 /* global document, localStorage, innerWidth, getComputedStyle, requestAnimationFrame */
+import { E2E_BROWSER_CHANNEL } from './fixtures/e2e-browser.js';
 import { test, expect, chromium } from '@playwright/test';
 import fs from 'node:fs';
 
 test('three-scene rehearsal preserves human originals through generation and manual editing', async () => {
     test.skip(!process.env.LESLIE_SYNTHETIC_SHOWCASE, 'Requires an isolated synthetic data root.'); // eslint-disable-line playwright/no-skipped-test
     test.setTimeout(90000);
-    const browser = await chromium.launch({ channel: 'msedge', headless: true });
+    const browser = await chromium.launch({ channel: E2E_BROWSER_CHANNEL, headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     page.setDefaultTimeout(10000);
     page.setDefaultTimeout(10000);

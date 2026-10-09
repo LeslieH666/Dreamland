@@ -601,6 +601,10 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 1. 补附 N.2 第 6/7 项：**真实服务 SSE 冒烟**（注册→登录→建角色→发消息→SSE，mock 模型）+ 结果写入 `docs/roadmap.md`。
 2. 进入 **Phase 2.5.3**（服务端 `/generate` 权威轮次，按 `docs/authoritative-turn-spec.md`）：让 `assertWorldInfoPortable` / `createSeededRandom` / `resolveChatCompletionTokenizerModel` / `configureChatCompletion` 真正被服务端调用（当前尚无服务端调用方）。
 
+### 附 O 2.5.3 作者注验证缺口（Lead 已决）
+
+现有 8 个基线**均不含作者注**（`2_floating_prompt` 未出现），而 `note_text` 是 2.5.2 显式入参化的两处 DOM 读取之一，不能被逐字等价覆盖是不可接受的。**裁决：新增第 9 个夹具用例（作者注启用 + `note_prompt`/note 内容），经 `run-baseline.mjs` 重录其浏览器基线，并入 `corpus.mjs` 与 replay oracle**。这样作者注路径同样受逐字等价门禁。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

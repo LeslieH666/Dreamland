@@ -580,6 +580,11 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 - **先补诊断、再猜根因**：`run-baseline.mjs` 目前不捕获页面异常，只能看到“preloader 没消失”、看不到真实 JS 报错。**先做一个独立小 commit** 给 harness 加 `page.on('pageerror')` + `page.on('console', error)`，并在 8 用例全失败时打印第一条 pageerror——这样任何接线类改动都能立刻看到根因，避免“猜 TDZ → 被证伪”这类盲试。
 - **TDZ 假设已证伪**：把 `openAiAssemblyEnv()` 移到所有 `const` 之后仍无法修复页面加载；真实根因待 pageerror 揭示，不要继续用 TDZ 解释。
 
+### N.1 第 7 步 DOM 入参化范围（Lead 已决，Q-7a/Q-7b）
+
+- **Q-7a**：`$('#send_textarea').val()` 有 4 处，**只入参化组装路径 `script.js:4315`**（`Generate` 内待发文本）；其余 3 处（`4225` 斜杠命令门控、`1770`/`5692` 草稿/`sendMessageAsUser`）属浏览器 UI 关注点，**保持 DOM 读取不变**，避免扩大回归面。
+- **Q-7b**：理解正确——共享模块接收 `pendingUserText` / `noteText` 入参（DOM-free）；浏览器适配器读 `$('#send_textarea').val()` 与 `$('#extension_floating_prompt').val()` 后作为入参传入；服务端从 `/api/v1` 请求体传入。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

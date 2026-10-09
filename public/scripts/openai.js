@@ -813,6 +813,8 @@ export function formatWorldInfo(value, { wiFormat = null } = {}) {
  * @returns {Promise<Object[]>} - Array containing all messages with injections.
  */
 async function populationInjectionPrompts(prompts, messages) {
+    // Phase 2.5.2 step 6b: work on a copy so the caller's array is never mutated.
+    messages = [...messages];
     let totalInsertedMessages = 0;
 
     const roleTypes = {
@@ -919,7 +921,9 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         continueMessageCollection = new MessageCollection('continueNudge');
         const continueMessageIndex = messages.findLastIndex(x => !x.injected);
         if (continueMessageIndex >= 0) {
-            const continueMessage = messages.splice(continueMessageIndex, 1)[0];
+            const continueMessage = messages[continueMessageIndex];
+            // Removed through a copy (was an in-place splice of the caller's array).
+            messages = [...messages.slice(0, continueMessageIndex), ...messages.slice(continueMessageIndex + 1)];
             const prompt = new Prompt(continueMessage);
             const chatMessage = await Message.fromPromptAsync(promptManager.preparePrompt(prompt));
             continueMessageCollection.add(chatMessage);
@@ -1323,7 +1327,9 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     // Displace the message to be continued from its original position before performing in-chat injections
     // In case if it is an assistant message, we want to prepend the users assistant prefill on the message
     if (type === 'continue' && oai_settings.continue_prefill && messages.length) {
-        const chatMessage = messages.shift();
+        const chatMessage = messages[0];
+        // Shifted through a copy (was an in-place shift of the caller's array).
+        messages = messages.slice(1);
         const isAssistantRole = chatMessage.role === 'assistant';
         const supportsAssistantPrefill = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE;
         const namesInCompletion = oai_settings.names_behavior === character_names_behavior.COMPLETION;

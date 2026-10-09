@@ -321,7 +321,7 @@ function loadSettings() {
     $(`input[name="extension_default_position"][value="${extension_settings.note.defaultPosition}"]`).prop('checked', true);
 }
 
-export function setFloatingPrompt() {
+export function setFloatingPrompt({ noteText = $('#extension_floating_prompt').val() } = {}) {
     const context = getContext();
     if (!context.groupId && context.characterId === undefined) {
         console.debug('setFloatingPrompt: Not in a chat. Skipping.');
@@ -361,7 +361,9 @@ export function setFloatingPrompt() {
     const shouldAddPrompt = messagesTillInsertion == 0;
     shouldWIAddPrompt = shouldAddPrompt;
 
-    let prompt = shouldAddPrompt ? $('#extension_floating_prompt').val() : '';
+    // Phase 2.5.2 step 7: the DOM read now happens in the caller (or in the default
+    // above); the value arrives as the explicit noteText input.
+    let prompt = shouldAddPrompt ? noteText : '';
     if (shouldAddPrompt && extension_settings.note.chara && getContext().characterId !== undefined) {
         const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
 

@@ -1767,11 +1767,11 @@ export async function sendTextareaMessage() {
     let generateType = 'normal';
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
     // message was sent from a character (not the user or the system).
-    const textareaText = String($('#send_textarea').val());
+    const pendingUserText = String($('#send_textarea').val());
     const lastMessage = chat[chat.length - 1];
     if (power_user.continue_on_send &&
         !hasPendingFileAttachment() &&
-        !textareaText &&
+        !pendingUserText &&
         !selected_group &&
         chat.length &&
         !lastMessage.is_user &&
@@ -1780,7 +1780,7 @@ export async function sendTextareaMessage() {
         generateType = 'continue';
     }
 
-    if (textareaText && !selected_group && this_chid === undefined && name2 !== neutralCharacterName) {
+    if (pendingUserText && !selected_group && this_chid === undefined && name2 !== neutralCharacterName) {
         await newAssistantChat({ temporary: false });
     }
 
@@ -4309,13 +4309,16 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     const lastMessage = chat[chat.length - 1];
 
-    let textareaText;
+    // Phase 2.5.2 step 7: the pending user text is an explicit input. The DOM read
+    // stays here because this function is the browser adapter; no assembly code reads
+    // the textarea.
+    let pendingUserText;
     if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun && !depth) {
         is_send_press = true;
-        textareaText = String($('#send_textarea').val());
+        pendingUserText = String($('#send_textarea').val());
         $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
     } else {
-        textareaText = '';
+        pendingUserText = '';
         if (chat.length && lastMessage.is_user) {
             //do nothing? why does this check exist?
         } else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && !depth && chat.length) {
@@ -4344,7 +4347,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         deactivateSendButtons();
     }
 
-    let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
+    let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(pendingUserText, type);
 
     //*********************************
     //PRE FORMATING STRING
@@ -4359,14 +4362,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         'continue',
     ];
     //for normal messages sent from user..
-    if ((textareaText != '' || (hasPendingFileAttachment() && !noAttachTypes.includes(type))) && !automatic_trigger && type !== 'quiet' && !dryRun && !depth) {
+    if ((pendingUserText != '' || (hasPendingFileAttachment() && !noAttachTypes.includes(type))) && !automatic_trigger && type !== 'quiet' && !dryRun && !depth) {
         // If user message contains no text other than bias - send as a system message
-        if (messageBias && !removeMacros(textareaText)) {
+        if (messageBias && !removeMacros(pendingUserText)) {
             sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
         } else {
-            await sendMessageAsUser(textareaText, messageBias);
+            await sendMessageAsUser(pendingUserText, messageBias);
         }
-    } else if (textareaText == '' && !automatic_trigger && !dryRun && [undefined, 'normal'].includes(type) && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0 && !depth) {
+    } else if (pendingUserText == '' && !automatic_trigger && !dryRun && [undefined, 'normal'].includes(type) && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0 && !depth) {
         // Use send_if_empty if set and the user message is empty. Only when sending messages normally
         await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
     }
@@ -5689,10 +5692,10 @@ export function shouldAutoContinue(messageChunk, isImpersonate) {
         return false;
     }
 
-    const textareaText = String($('#send_textarea').val());
+    const pendingUserText = String($('#send_textarea').val());
     const USABLE_LENGTH = 5;
 
-    if (textareaText.length > 0) {
+    if (pendingUserText.length > 0) {
         console.log('Not triggering auto-continue because user input is not empty');
         return false;
     }
@@ -5729,14 +5732,14 @@ export function triggerAutoContinue(messageChunk, isImpersonate, { finishReason 
     }
 
     if (finishReason === 'length') {
-        const textareaText = String($('#send_textarea').val());
+        const pendingUserText = String($('#send_textarea').val());
         const decision = getLengthContinuationDecision({
             finishReason,
             messageChunk,
             isImpersonate,
             isSending: is_send_press,
             isAborted: Boolean(abortController && abortController.signal.aborted),
-            hasPendingInput: textareaText.length > 0,
+            hasPendingInput: pendingUserText.length > 0,
             isGroup: Boolean(selected_group),
             attempts: leslieLengthContinuationAttempts,
         });
@@ -5772,16 +5775,16 @@ export function triggerAutoContinue(messageChunk, isImpersonate, { finishReason 
     }
 }
 
-export function getBiasStrings(textareaText, type) {
+export function getBiasStrings(pendingUserText, type) {
     if (type == 'impersonate' || type == 'continue') {
         return { messageBias: '', promptBias: '', isUserPromptBias: false };
     }
 
     let promptBias = '';
-    let messageBias = extractMessageBias(textareaText);
+    let messageBias = extractMessageBias(pendingUserText);
 
     // If user input is not provided, retrieve the bias of the most recent relevant message
-    if (!textareaText) {
+    if (!pendingUserText) {
         for (let i = chat.length - 1; i >= 0; i--) {
             const mes = chat[i];
             if (type === 'swipe' && chat.length - 1 === i) {

@@ -1,0 +1,43 @@
+# DreamLand HTTPS reverse proxy (Caddy 2).
+#
+# Terminates TLS and forwards to the DreamLand container on port 8000.
+# Caddy obtains and renews a certificate automatically when the hostname
+# resolves to this machine and ports 80/443 are reachable.
+#
+#   DREAMLAND_DOMAIN=chat.example.com \
+#   DREAMLAND_TLS_EMAIL=ops@example.com \
+#   docker compose -f deploy/docker-compose.tls.yml up -d
+#
+# Local rehearsal with a self-signed internal certificate instead of ACME:
+#   DREAMLAND_DOMAIN=localhost CADDY_TLS=internal \
+#   docker compose -f deploy/docker-compose.tls.yml up -d
+{
+	email {$DREAMLAND_TLS_EMAIL}
+	# Uncomment during rehearsal to avoid ACME rate limits:
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$DREAMLAND_DOMAIN:localhost} {
+	# CADDY_TLS empty -> use the global ACME account email.
+	# CADDY_TLS=internal -> issue from Caddy's local CA (self-signed).
+	tls {$CADDY_TLS:{$DREAMLAND_TLS_EMAIL}}
+
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+		X-Content-Type-Options "nosniff"
+	}
+
+	# reverse_proxy sets Host, X-Forwarded-For, X-Forwarded-Proto and
+	# X-Forwarded-Host; flush_interval -1 keeps SSE token streaming unbuffered.
+	reverse_proxy dreamland:8000 {
+		flush_interval -1
+	}
+
+	log {
+		output stderr
+		format console
+	}
+}

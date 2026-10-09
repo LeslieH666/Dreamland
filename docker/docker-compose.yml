@@ -6,12 +6,26 @@ services:
     container_name: dreamland
     hostname: dreamland
     image: dreamland/server:dev
+    restart: unless-stopped
     environment:
       - NODE_ENV=production
       - FORCE_COLOR=1
       - SILLYTAVERN_HEARTBEATINTERVAL=30
+      # Runtime mode and configuration come from the environment
+      # (see the README "运行模式与 12-factor 配置" table).
+      - DREAMLAND_MODE=${DREAMLAND_MODE:-server}
+      - DREAMLAND_PORT=8000
+      - DREAMLAND_DATA_ROOT=/home/node/app/data
+      - DREAMLAND_LISTEN=${DREAMLAND_LISTEN:-false}
+      - DREAMLAND_WHITELIST_MODE=${DREAMLAND_WHITELIST_MODE:-true}
+      # Keep credentials out of config.yaml; leave empty to fall back to the
+      # per-account secrets.json file.
+      - DREAMLAND_COOKIE_SECRET=${DREAMLAND_COOKIE_SECRET:-}
+      - DREAMLAND_SECRETS_FILE=${DREAMLAND_SECRETS_FILE:-}
     ports:
       - "8000:8000"
+    # The image runs as the unprivileged "node" user (UID/GID 1000), so these
+    # bind mounts must be writable by that UID: chown -R 1000:1000 ./config ./data ./plugins ./extensions
     volumes:
       - "./config:/home/node/app/config"
       - "./data:/home/node/app/data"
@@ -21,6 +35,5 @@ services:
       test: ["CMD", "node", "src/healthcheck.js"]
       interval: 30s
       timeout: 10s
-      start_period: 20s
+      start_period: 30s
       retries: 3
-    restart: unless-stopped

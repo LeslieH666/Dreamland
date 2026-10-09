@@ -49,10 +49,15 @@ RUN \
   dos2unix "./docker-entrypoint.sh" && \
   rm -rf "./docker"
 
-# Fix extension repos permissions
+# Fix extension repos permissions (written as the runtime user on purpose)
+USER node
 RUN git config --global --add safe.directory "*"
 
 EXPOSE 8000
 
+# Drop privileges: the container runs as the unprivileged "node" user.
+# Bind-mounted config/, data/ and plugins/ must therefore be writable by that
+# UID (see docker/docker-compose.yml); start the entrypoint with
+# `--user root` plus PUID/PGID only when host-owned bind mounts need fixing.
 # Ensure proper handling of kernel signals
 ENTRYPOINT ["tini", "--", "./docker-entrypoint.sh"]

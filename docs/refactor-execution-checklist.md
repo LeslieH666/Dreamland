@@ -535,6 +535,12 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 - 剩余 3 个单元：**第 5 步 → 第 6 步 → 第 7 步**（第 7 步完成即 Phase 2.5.2 收口）。
 - 欠账：子步 4 的构建阶段专属单测（`buildWorldInfoPrompt` 四种位置分支），在第 5 步一并补上。
 
+### N.1 第 5 步范围调整（Lead 已决）
+
+**第 5 步只做「注册表/顺序」核心**：2 个常量（`chatCompletionDefaultPrompts` 81 行 + `promptManagerDefaultPromptOrder` 54 行）+ 6 个方法（`isPromptDisabledForActiveCharacter`/`sanitizeServiceSettings`/`checkForMissingPrompts`/`getPromptOrderForCharacter`/`getPromptCollection`/`shouldTrigger`，共 84 行逻辑）。注入设计：这 7 段**不引用任何 import**、只引用 `this.*` → 把 `this` 作为 `env` 传入，`this.` 机械替换为 `env.`；唯一工厂依赖 `new PromptCollection()` 注入为 `env.createPromptCollection()`。
+
+**`preparePromptsForChatCompletion`（150 行，openai.js）随第 6 步一起搬**：它依赖 `ChatCompletion`/`Message`/`MessageCollection`/`promptManager`，正是第 6 步 `populateChatCompletion` 要搬的同一簇；单独在第 5 步搬需先预置第 6 步机制、第 6 步再改一次。排期合并、无行为变更、不涉及 fail-closed。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

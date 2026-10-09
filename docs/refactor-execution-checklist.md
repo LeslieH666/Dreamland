@@ -564,6 +564,12 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 
 采纳 `configureChatCompletion(env)` + `getChatCompletionEnvironment()` 的**模块级 DI**（而非给 ~30 个方法加 `env` 参数）。约束：env 里可变绑定用 **getter**（`getOaiSettings: () => oai_settings` 等）以保持“读当前值”；`configureChatCompletion` 必须 **fail-closed** 校验 `REQUIRED_ENV_KEYS`、缺键抛错；浏览器初始化时配置一次、服务端各自配置一次。这是对“纯函数”原则的务实偏离，**仅限这些有状态类**；populate 函数（6b）仍走显式 `env` 参数。
 
+### N.1 6b-part-2 集成修正（Lead 已决）
+
+- **`getExtensionPrompt` 签名冲突**：共享核心是 `getExtensionPromptCore(registry, position, depth, opts)`，populate 代码沿用位置签名 `(position, depth, separator, role, wrap)`。**采用方案 (b)**：populate.js 内调用 `env.getExtensionPrompt(position, depth, sep, role, wrap)` / `env.getExtensionPromptMaxDepth()`，由 openai.js（浏览器）或服务端各自提供适配器（内部调共享核心 + 各自 registry）；populate.js **不感知 registry 形状**。
+- **两个 provider 枚举**（`tool_reasoning_modes`、`interleaved_reasoning_providers`）**不随迁、不硬编码**：留在 openai.js（值由 `chat_completion_sources` 构造），经 `env` 注入给 populate.js。
+- **工具链纪律**：eslint 有陈旧缓存会报过期行号；**先 `rm -rf .eslintcache` 或 `--no-cache` 再 lint**，并以 **jest 加载**（纪律⑥）为主关口。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

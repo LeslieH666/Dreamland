@@ -453,3 +453,12 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 7. `prepareOpenAIMessages` 薄编排 + 拦截器钩子（仅 memory/reply-style）+ 两处 DOM 读取改入参
 
 **执行节奏**：先做第 1–2 步并**停下中段检查**（Lead 审“逐字一致”证据后再放行 3–7）；禁止一次性铺开。
+
+---
+
+## 附 K：Phase 2.5.2 第 1–2 步中段审查（Lead 已决，3–7 步按此执行）
+
+- **§5.1（浏览器引用选型）**：**接受 `/prompt-assembly` 只读静态挂载**。调查正确：`public/script.js` 非 webpack 产物，webpack alias 与相对路径均不可行；挂载 `src/prompt-assembly/`（纯逻辑、无密钥、公开可读与 `public/scripts/**` 同级）是最小可行方案。保留 `index:false + fallthrough:false`；第 3 步补一条断言 `/prompt-assembly/extension-prompts.js` 返回 200 的单元测试。
+- **§5.2（filter 实为空操作）**：**保留现有 no-op 语义，不修**。async 谓词传入 `Array.filter` 恒真属既有行为；唯一注册者 `/inject` 按 Q4 不在服务端范围，无实际影响。作为“已知遗留怪癖”记录，不做行为变更。
+- **§5.4（实验宏引擎无法抬升）**：**服务端 Phase 2.5 只支持 legacy 宏引擎**；实验引擎 `substituteParamsExtended`/`MacroEngine` 因宏定义 import 浏览器模块而保持浏览器独占，服务端命中时**抛错（fail-closed）而非静默降级**。作为已知限制文档化，若 RN 端确需实验引擎再单独立项移植其定义。
+- **放行 3–7 步**：每步门槛不变（`test:prompt-baseline` 8/8 + lint/test:unit/check:repo + 红线 diff 为空）。**第 4 步（World Info 激活）是最后一个硬输入**：若出现“需行为取舍才能逐字一致”的差异，停下报告，不要为了凑逐字一致而偷偷改行为。

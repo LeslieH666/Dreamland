@@ -35,3 +35,6 @@ export const scan_state = {
 export const DEFAULT_DEPTH = 4;
 
 export const MAX_SCAN_DEPTH = 1000;
+
+/** Default group weight for inclusion-group scoring (moved from world-info.js). */
+export const DEFAULT_WEIGHT = 100;

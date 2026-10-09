@@ -22,6 +22,7 @@ import bodyParser from 'body-parser';
 // local library imports
 import './fetch-patch.js';
 import { serverDirectory } from './server-directory.js';
+import { mountPromptAssembly } from './prompt-assembly/mount-static.js';
 
 import { serverEvents, EVENT_NAMES } from './server-events.js';
 import { loadPlugins } from './plugin-loader.js';
@@ -263,12 +264,8 @@ app.use(express.static(path.join(serverDirectory, 'public'), {}));
 // Shared prompt-assembly modules (Phase 2.5.2). They live under src/ so both the
 // server and the browser can use one source of truth; the browser loads
 // public/script.js as a *native* ES module (only public/lib.js is bundled), so a
-// relative import from public/ cannot reach src/. Read-only static hosting of
-// this one directory is enough, and the files are pure logic with no secrets.
-app.use('/prompt-assembly', express.static(path.join(serverDirectory, 'src', 'prompt-assembly'), {
-    index: false,
-    fallthrough: false,
-}));
+// relative import from public/ cannot reach src/.
+mountPromptAssembly(app, serverDirectory);
 
 // Public API
 app.use('/api/users', usersPublicRouter);

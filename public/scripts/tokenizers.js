@@ -4,6 +4,7 @@ import { power_user, registerDebugFunction } from './power-user.js';
 import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
+import { countMessageTokens } from '/prompt-assembly/token-counting.js';
 import { kai_flags, kai_settings } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
@@ -844,46 +845,30 @@ export function countTokensOpenAI(messages, full = false) {
  * @returns {Promise<number>} Token count.
  */
 export async function countTokensOpenAIAsync(messages, full = false) {
-    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    // Phase 2.5.2 step 3: the accumulation (start at -1, per-message add, the
+    // `claude` promotion to full, the trailing -2) lives in the shared pure core.
+    // This adapter contributes the browser's model resolution, HTTP transport and
+    // per-chat cache.
     const cacheObject = getTokenCacheObject();
 
-    if (!Array.isArray(messages)) {
-        messages = [messages];
-    }
-
-    let token_count = -1;
-
-    for (const message of messages) {
-        const model = getTokenizerModel();
-
-        if (model === 'claude') {
-            full = true;
-        }
-
-        const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
-        const cachedCount = cacheObject[cacheKey];
-
-        if (typeof cachedCount === 'number') {
-            token_count += cachedCount;
-        } else {
+    return countMessageTokens(messages, {
+        resolveModel: () => getTokenizerModel(),
+        countOne: async (message, model) => {
             const data = await jQuery.ajax({
                 async: true,
                 type: 'POST', //
-                url: tokenizerEndpoint,
+                url: `/api/tokenizers/openai/count?model=${model}`,
                 data: JSON.stringify([message]),
                 dataType: 'json',
                 contentType: 'application/json',
             });
 
-            token_count += Number(data.token_count);
-            cacheObject[cacheKey] = Number(data.token_count);
-        }
-    }
-
-    if (!full) token_count -= 2;
-
-    return token_count;
+            return Number(data.token_count);
+        },
+        cache: cacheObject,
+        hash: getStringHash,
+        full,
+    });
 }
 
 /**

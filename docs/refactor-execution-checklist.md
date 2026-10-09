@@ -514,6 +514,16 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 
 **停靠条件**：完成第 7 步后停下报告（Phase 2.5.2 收口）；或出现**未在附 L/M 覆盖**的新分叉/需决策项时停下报告。每步门槛不变：`test:prompt-baseline` 8/8 + lint/test:unit/check:repo + 红线 diff 为空。
 
+### N.1 进度标记与追加纪律（子步 2 已收口后更新）
+
+- **已完成**：子步 1、子步 2（`d622433f6`；import 感知扫描 + getter 注入 + 备份/node --check/lint 兜底，导出面 70→70）。
+- **剩余 5 个单元**：子步 3 → 子步 4 → 第 5 步 → 第 6 步 → 第 7 步。
+
+**追加纪律（子步 3–7 沿用）**：
+1. **import 感知注入面扫描**：每个单元动工前先解析 `import {…} from` 绑定 + 模块级声明；可变浏览器绑定（`this_chid`/`characters`/`chat_metadata`/`world_info`/`selected_world_info`/strategy 枚举等）一律用 **getter** 注入，不捕获值（浏览器运行期会重新赋值）。
+2. **动手前备份 + `node --check` + `npm run lint`（no-undef）** 作为提交前兜底；禁止提交中间态。
+3. **测试只断言真实行为**：不把“代码并不具备的行为”写进断言（如 `parseDecorators` 剥离、`getSortedEntries` 过滤 disable）。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

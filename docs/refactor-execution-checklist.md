@@ -638,6 +638,16 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 - 命中附 L/M/N/O 已裁决分叉源按 fail-closed，**无需停下**
 - **唯一停靠条件**：出现附 L/M/N/O/P 未覆盖、且有证据的新分叉——否则一路跑到 2.5.5 收口才停
 
+### P.4 设置默认值阻塞裁决（Lead 已决，方案 A）
+
+`power_user`/`oai_settings` 默认值字面量**不是自包含的**（引用同模块局部/导入常量，级联抬升会触发 lint 未使用 + 页面 `tokenizers is not defined`）。**采用方案 A（保守、最小风险）**：
+- **只抬升组装真正读取的子集**：`power_user.context.*`（含 `example_separator`）、`power_user.instruct.*`、`persona_description*`、`persona_description_position`，及 `oai_settings` 中组装会用到的字段；
+- 共享模块提供这些子集的**默认值**，服务端以「默认值 ← settings.json 覆盖」合并；
+- **浏览器文件完全不动**（零回归风险）；
+- **逐项用 oracle 验证，缺什么补什么**，不一次性搬两个巨型字面量。
+
+**附带 harness 健壮性修复**（同轮顺带、小 commit）：`run-baseline.mjs` 启动前**探测端口占用**（被占用即报明确错误或改用随机端口），并在 `SIGINT/异常` 路径**确保 `child.kill()`**——防止残留 fixture server 伪装成代码回归（本轮已实际发生一次）。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

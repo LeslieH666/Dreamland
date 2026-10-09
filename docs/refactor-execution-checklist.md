@@ -575,6 +575,11 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 - **TDZ 审计**：`openAiAssemblyEnv()` 若放在被引用 `const` 之前、且用**值**（非 getter）读取，会在初始化期触发 `ReferenceError`（页面卡 preloader）。接线前先列 `openAiAssemblyEnv()` 引用的每个绑定在 openai.js 的声明行号；凡声明晚于 env 定义处的，一律改**惰性 getter** `() => binding`，或把 env 定义移到所有被引用 `const` 之后。
 - **`openai.js` 的唯一下限关卡是浏览器基线**：没有任何测试 import `openai.js`，jest“加载成功”只证明 `populate.js` 自身可加载、不代表 `openai.js` 能用。凡改动 `openai.js`，**必须以 `test:prompt-baseline` 8/8 为准**（lint/jest 通过不等于可用）。
 
+### N.1 6b-part-2 二次失败后的诊断纪律（Lead 已决）
+
+- **先补诊断、再猜根因**：`run-baseline.mjs` 目前不捕获页面异常，只能看到“preloader 没消失”、看不到真实 JS 报错。**先做一个独立小 commit** 给 harness 加 `page.on('pageerror')` + `page.on('console', error)`，并在 8 用例全失败时打印第一条 pageerror——这样任何接线类改动都能立刻看到根因，避免“猜 TDZ → 被证伪”这类盲试。
+- **TDZ 假设已证伪**：把 `openAiAssemblyEnv()` 移到所有 `const` 之后仍无法修复页面加载；真实根因待 pageerror 揭示，不要继续用 TDZ 解释。
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

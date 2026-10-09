@@ -13,11 +13,24 @@ import { buildMemoryIdentityBinding, upsertMemoryMetadata } from '../../../publi
 import { FIXTURE_PERSONA_AVATAR, FIXTURE_USER_NAME } from './corpus.mjs';
 
 const GROWTH_SUMMARY = '学会了先核对坐标再落笔，也更愿意把不确定的地方标出来。';
-const EVENT_SUMMARIES = [
-    '一起确认了观测记录的格式。',
-    '讨论了今晚的云量与观测条件。',
-    '约好校准设备时两人互相确认。',
-    '记住了对方喜欢简短的记录方式。',
+
+/**
+ * Active memory events, pinned so the injected list is byte-stable.
+ *
+ * The score is `levelWeight + importance*1.8 + relevance*4.5 + recency*1.6 + …`
+ * (src/leslie-memory/scoring.js:52), and `relevance` depends on the chat text.
+ * To keep one total order regardless of that term the fixtures:
+ *   - use levels A/B/B, whose weights (3.2 / 2.1) dominate the rest of the sum;
+ *   - use distinct importances, which then separate the two B entries;
+ *   - phrase every summary with no character (or bigram) in common with the
+ *     fixture chat, so relevance is 0 for all of them — splitTerms() emits both
+ *     single Han characters and bigrams (src/leslie-memory/scoring.js:1).
+ * Without this the two same-level entries can swap places between runs.
+ */
+const EVENT_PLAN = [
+    { summary: '苹果树旁亮着路灯。', level: 'A', importance: 92 },
+    { summary: '沙漠里埋着蓝图。', level: 'B', importance: 88 },
+    { summary: '糖罐放在窗台。', level: 'B', importance: 84 },
 ];
 
 /**
@@ -45,14 +58,15 @@ export function seedFixtureMemory(userRoot, chatKeys) {
             coreSnapshot: { avatar: entry.avatar, name: entry.characterName },
             identityBinding,
         });
-        const events = memories.upsertEvents(memory.manifest.id, EVENT_SUMMARIES.map((summary, index) => ({
-            summary,
-            level: index < 2 ? 'A' : 'B',
+        const events = memories.upsertEvents(memory.manifest.id, EVENT_PLAN.map(entry => ({
+            summary: entry.summary,
+            level: entry.level,
             tags: ['合成夹具'],
-            importance: 80,
+            importance: entry.importance,
             confidence: 1,
             approved: true,
-            source: [{ messageId: index + 2, swipeId: 0, hash: 'synthetic-fixture' }],
+            // One shared messageId keeps age (and therefore recency) identical.
+            source: [{ messageId: 2, swipeId: 0, hash: 'synthetic-fixture' }],
             relationshipImpact: { source: 'manual', reason: '合成夹具中的协作。', changes: { affection: 2, trust: 2, rapport: 1, security: 1, bond: 1, intimacy: 1 } },
         })));
         memories.updateState(memory.manifest.id, {

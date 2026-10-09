@@ -437,3 +437,19 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 2. **按 §13 的 7 步逐函数抽取，每步都跑“浏览器行为不变”验证**，禁止一次性铺开。
 3. 抽取后的模块必须是**纯函数**（显式入参、不原地改入参、无 DOM/模块级状态依赖）；`prepareOpenAIMessages` 的原地 `shift/reverse` 改为入参复制。
 4. 红线照旧：`src/endpoints/chats.js`、`characters.js`、`prompt-converters.js` diff 为空。
+
+---
+
+## 附 J：Phase 2.5.2 的 CC 专属 7 步分解（Lead 已确认）
+
+2.5.2 按下列 CC 专属步骤逐函数抽取；每步门槛 = `npm run test:prompt-baseline` 8/8 逐字一致 + lint/test:unit/check:repo：
+
+1. `getExtensionPrompt` 筛选/字典序/拼接（保留 async `filter` 语义）
+2. 宏引擎 `substituteParams` 适配层（显式入参，与 `power_user.experimental_macro_engine` 同款）
+3. token 计数适配层（服务端 `/api/tokenizers` 对齐；按 Q7，逐字影响仅在触发裁剪时出现，本步做“同款 tokenizer + 同算法”功能校验）
+4. World Info 激活 `checkWorldInfo`（注入 RNG 种子）
+5. 注册表与顺序：`sanitizeServiceSettings` + `getPromptCollection` + `preparePromptsForChatCompletion`
+6. `populateChatCompletion` + `populationInjectionPrompts` + `populateChatHistory` + `populateDialogueExamples`（去原地 `shift`/`reverse`）
+7. `prepareOpenAIMessages` 薄编排 + 拦截器钩子（仅 memory/reply-style）+ 两处 DOM 读取改入参
+
+**执行节奏**：先做第 1–2 步并**停下中段检查**（Lead 审“逐字一致”证据后再放行 3–7）；禁止一次性铺开。

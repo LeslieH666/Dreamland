@@ -611,6 +611,33 @@ Flash **连续自主执行**以下单元，每单元完整门槛通过后提交�
 - 每单元门槛必须**显式断言**：`Test Suites: N passed, N total` 且无 `failed`；双 lint 以**退出码 0** 为准；`check:repo`/`test:prompt-baseline` 以退出码 0 为准。任何“grep 到了成功字样”都不算通过。
 - 若失守：**用独立 commit 修复并记录**（不 `--amend` 掩盖），并在报告中如实披露。
 
+---
+
+## 附 P：P2.5 一次性收尾令（Lead 已决）
+
+### P.1 宏 helper 簇决策（新分叉已裁决）
+
+- **6a（先做）**：抬升 `parseMesExamples`（`script.js:3373`）+ `formatInstructModeExamples`（`instruct-mode.js:511`）到共享模块（env 注入其少量依赖），浏览器改薄包装。
+- **6b（`evaluateMacros`，数据驱动）**：6a 后跑 oracle——若 9 基线**不触发** `evaluateMacros`（夹具确定性、无 `{{random}}/{{roll}}/{{time}}`）→ 注入 **fail-closed 桩**（被调用即抛错，绝不静默错）；若 oracle 显示需要 → 用 package.json 已含的 npm 依赖 `handlebars`/`moment`/`seedrandom`/`droll`（已在 dependencies + node_modules）抬升；若 bundle 版本与 npm 版本不一致导致字节漂移，作为新分叉上报。
+
+### P.2 一次性完成清单（不再逐单元停靠）
+
+1. 宏 helper 簇（P.1 的 6a/6b）
+2. **解除 501**：`authoritative-turn.js` 接 `buildServerAssemblyEnv` + WI 前置（`getWorldInfoPrompt({enforcePortability:true, random:createSeededRandom(seed)})`）→ 调 `prepareOpenAIMessagesCore` → 跑 oracle 拿**首个分歧索引**
+3. **registry 重建**，顺序 `#3 reply_style → #1 growth → #2 relationship → #4 events/cross_line → #6 persona 位置 → #9 群卡合并`，**复刻 quiet 类型门控**；每补一块跑 oracle 看索引前进
+4. §6 宏 context（legacy 引擎；实验引擎 fail-closed）+ 四项服务端接线全部接通
+5. §7 `/generate` 改权威轮次（复用 `handleChatCompletionGenerate`，`timedWorldInfo` 只写 JSONL 首行）
+6. §8.5 更新 `docs/api-v1.openapi.yaml`（标注“权威轮次”）
+7. **2.5.4 回归证明**：oracle **9/9 逐字一致**
+8. **2.5.5 切换收口**：RN/后续走服务端 `/generate`（浏览器 legacy 路径保留）→ 出 P2.5 收口报告
+
+### P.3 严格执行纪律
+
+- 每单元：**断言退出码 0 + pass 计数**（不 grep 信号）→ 全绿后单个原子 commit
+- 红线 3 文件零触碰；`test:prompt-baseline` 9/9 保持
+- 命中附 L/M/N/O 已裁决分叉源按 fail-closed，**无需停下**
+- **唯一停靠条件**：出现附 L/M/N/O/P 未覆盖、且有证据的新分叉——否则一路跑到 2.5.5 收口才停
+
 ### N.2 全量自查检查点（Phase 2.5.5 完成之后执行）
 
 在 Phase 2.5 **完全收口（2.5.5 完成）后**执行一次全量自查：

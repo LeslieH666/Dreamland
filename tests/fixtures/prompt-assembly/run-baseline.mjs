@@ -198,7 +198,14 @@ try {
     provider = await startMockProvider();
     console.log(`[${mode}] mock provider ready on http://127.0.0.1:${process.env.LESLIE_FIXTURE_PROVIDER_PORT || 9099}`);
     const { chromium } = await import('playwright');
-    browser = await chromium.launch({ headless: true });
+    try {
+        browser = await chromium.launch({ headless: true });
+    } catch (error) {
+        console.error('Could not launch chromium. Install it with `npx playwright install chromium`,');
+        console.error('or point PLAYWRIGHT_BROWSERS_PATH at an existing download. Original error:');
+        console.error(`  ${error.message.split('\n')[0]}`);
+        throw error;
+    }
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
     await page.addInitScript(() => {

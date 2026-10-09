@@ -260,6 +260,16 @@ app.use(webpackMiddleware);
 app.use(userCssMiddleware);
 app.use(express.static(path.join(serverDirectory, 'public'), {}));
 
+// Shared prompt-assembly modules (Phase 2.5.2). They live under src/ so both the
+// server and the browser can use one source of truth; the browser loads
+// public/script.js as a *native* ES module (only public/lib.js is bundled), so a
+// relative import from public/ cannot reach src/. Read-only static hosting of
+// this one directory is enough, and the files are pure logic with no secrets.
+app.use('/prompt-assembly', express.static(path.join(serverDirectory, 'src', 'prompt-assembly'), {
+    index: false,
+    fallthrough: false,
+}));
+
 // Public API
 app.use('/api/users', usersPublicRouter);
 

@@ -277,6 +277,12 @@ import { initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
 import { getPresetManager, initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
+import {
+    getAllExtensionPrompts as getAllExtensionPromptsCore,
+    getExtensionPrompt as getExtensionPromptCore,
+    getExtensionPromptByName as getExtensionPromptByNameCore,
+    getExtensionPromptMaxDepth as getExtensionPromptMaxDepthCore,
+} from '/prompt-assembly/extension-prompts.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
@@ -3214,24 +3220,8 @@ function addPersonaDescriptionExtensionPrompt() {
  * @returns {Promise<string>} Combined extension prompts
  */
 async function getAllExtensionPrompts() {
-    const values = [];
-
-    for (const prompt of Object.values(extension_prompts)) {
-        const value = prompt?.value?.trim();
-
-        if (!value) {
-            continue;
-        }
-
-        const hasFilter = typeof prompt.filter === 'function';
-        if (hasFilter && !await prompt.filter()) {
-            continue;
-        }
-
-        values.push(value);
-    }
-
-    return substituteParams(values.join('\n'));
+    // Phase 2.5.2 step 1: the selection/join logic lives in the shared pure core.
+    return getAllExtensionPromptsCore(extension_prompts, { substitute: substituteParams });
 }
 
 /**
@@ -3240,23 +3230,8 @@ async function getAllExtensionPrompts() {
  * @returns {Promise<string>} Extension prompt
  */
 export async function getExtensionPromptByName(moduleName) {
-    if (!moduleName) {
-        return '';
-    }
-
-    const prompt = extension_prompts[moduleName];
-
-    if (!prompt) {
-        return '';
-    }
-
-    const hasFilter = typeof prompt.filter === 'function';
-
-    if (hasFilter && !await prompt.filter()) {
-        return '';
-    }
-
-    return substituteParams(prompt.value);
+    // Phase 2.5.2 step 1: shared pure core; the registry stays page-local.
+    return getExtensionPromptByNameCore(extension_prompts, moduleName, { substitute: substituteParams });
 }
 
 /**
@@ -3264,7 +3239,8 @@ export async function getExtensionPromptByName(moduleName) {
  * @returns {number} Maximum depth of extension prompts
  */
 export function getExtensionPromptMaxDepth() {
-    return MAX_INJECTION_DEPTH;
+    // Phase 2.5.2 step 1: delegates to the shared core (same constant).
+    return getExtensionPromptMaxDepthCore();
     /*
     const prompts = Object.values(extension_prompts);
     const maxDepth = Math.max(...prompts.map(x => x.depth ?? 0));
@@ -3284,33 +3260,12 @@ export function getExtensionPromptMaxDepth() {
  * @returns {Promise<string>} Extension prompt
  */
 export async function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
-    const filterByFunction = async (prompt) => {
-        const hasFilter = typeof prompt.filter === 'function';
-        if (hasFilter && !await prompt.filter()) {
-            return false;
-        }
-        return true;
-    };
-    const promptPromises = Object.keys(extension_prompts)
-        .sort()
-        .map((x) => extension_prompts[x])
-        .filter(x => x.position == position && x.value)
-        .filter(x => depth === undefined || x.depth === undefined || x.depth === depth)
-        .filter(x => role === undefined || x.role === undefined || x.role === role)
-        .filter(filterByFunction);
-    const prompts = await Promise.all(promptPromises);
-
-    let values = prompts.map(x => x.value.trim()).join(separator);
-    if (wrap && values.length && !values.startsWith(separator)) {
-        values = separator + values;
-    }
-    if (wrap && values.length && !values.endsWith(separator)) {
-        values = values + separator;
-    }
-    if (values.length) {
-        values = substituteParams(values);
-    }
-    return values;
+    // Phase 2.5.2 step 1: positional signature preserved for existing callers
+    // (doChatInject, the chat-completion injection walk); the selection,
+    // lexicographic ordering, wrapping and macro substitution live in the shared
+    // pure core. The adapter contributes only the page-local registry and the
+    // browser macro engine.
+    return getExtensionPromptCore(extension_prompts, position, depth, { separator, role, wrap, substitute: substituteParams });
 }
 
 /**

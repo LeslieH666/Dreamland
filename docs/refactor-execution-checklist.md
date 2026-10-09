@@ -367,3 +367,52 @@ grep -rniE "leslie-local-model/router|local-model-catalog|managed.?kobold|Start-
 - **D4**：`/capabilities` **维持需鉴权**（客户端先登录再发现能力，避免向匿名者暴露特性；D7 的域级细化留到 RN 需要时）。`GET /worldinfo` 返回全部书目（服务端无聊天上下文、激活在客户端）——接受。
 - **D5/D6**：refresh token 内存态 + 限流进程内，接受（与 P6 Redis 延后一致）；测试期服务重启会登出客户端，可接受。
 - **D7**：`/capabilities` 域级细化、`EXPOSABLE_SECRET_KEYS` 扩展，延后到 RN 需要时。
+
+---
+
+## 附 H：Phase 3 裁决记录（Lead 已决，下一步按此执行）
+
+- **D1（`characters.js:35` 的 `process.platform==='android'`）**：**保留不动**。它是 Android 内存策略的运行时能力判断，与桌面/服务器分离无关，且位于红线冻结文件；为“平台分支清零”去触碰它不划算。作为已记录的例外接受。
+- **D2**：Electron 依赖安装闭环（`allowScripts` 放行 + 缓存重定向），CI 需可写缓存目录——接受。
+- **D3**：安装包生成仍依赖 Windows PowerShell，与容器链路同性质延后——接受，桌面发行前在 Windows 主机闭环。
+- **D4**：`getPlatform()` 早于参数解析读配置导致的宿主启动崩溃，已用 `isConfigPathSet()` 守卫修复——接受，属真实修复。
+- **D5**：`verify:targets` 不并入 `validate`（避免在有 Docker 的机器误触发构建），改为 CI 强制——接受；生产必设 `DREAMLAND_SECRET_ENCRYPTION_KEY` 已在 README 提示。
+- **下一步排序**：**先做 Phase 2.5（服务端提示词组装），再做 Phase 4/5**。理由：Phase 2.5 是 Phase 5（RN App，主前端）的强制前置，且风险最高、最贴聊天核心，应尽早单独、谨慎推进。
+
+---
+
+## Phase 2.5 —— 服务端提示词组装（authoritative turn）
+
+> **状态**：Phase 5（RN App）前**强制前置**；在 Phase 3 之后执行。
+> 目标：把浏览器侧提示词组装（角色卡 / World Info / Persona / 记忆 / 群聊）移植到服务端，使后端对“完整聊天轮次”权威，Web/RN 都退化为薄客户端。
+> **红线**：不改 JSONL/聊天核心格式、不改 SillyTavern 行为；产出提示词必须与现有浏览器组装**逐字等价**（用回归夹具证明）。
+
+### 2.5.1 盘点（不写业务代码）
+- [ ] 定位并列出浏览器侧组装入口与依赖：`public/script.js` 的 `Generate`、`getWorldInfoPrompt`、`prepareOpenAIMessages`，以及 Persona / 记忆 / World Info / 群聊 / Swipe 注入点。
+- [ ] 输出 `docs/prompt-assembly-map.md`：每个函数 → 数据依赖（settings / power_user / chat / character / world_info / personas / memory）→ 输入输出。
+- [ ] 确认哪些依赖在服务端可从 `request.user.directories` 等价取得（同一 JSON/JSONL 文件），哪些是浏览器独有（需移植或改为服务端状态）。
+- [ ] **零代码改动**；提交仅此文档。
+
+### 2.5.2 抽取为共享模块（保持 web 行为不变）
+- [ ] 把组装逻辑抽到可被 `src/` 与 `public/scripts/` 共同引用的同构模块（先决定放置位置与浏览器打包方式，并在报告说明）。
+- [ ] 浏览器仍先调用共享模块（`public/script.js` 改为薄调用），**行为与输出零变化**。
+- [ ] 验证：`npm run validate` 通过；浏览器聊天冒烟输出与之前一致。
+
+### 2.5.3 服务端接 `/generate`（权威轮次）
+- [ ] `/api/v1/chats/{id}/generate` 改为调用共享模块组装完整提示词（角色卡/World Info/Persona/记忆/群聊），经既有模型代理流式返回；**旧浏览器路径与网关模式仍可用**（双轨）。
+- [ ] 保留契约里 `messages` 透传作为高级/降级能力。
+
+### 2.5.4 回归证明（逐字等价）
+- [ ] 建合成夹具语料（角色卡 + World Info + Persona + 记忆 + 群聊 + Swipe 各若干）。
+- [ ] 对同一夹具，比对「浏览器组装」与「服务端组装」产出的最终 messages/提示词**逐字一致**（写自动化断言）。
+- [ ] `npm run validate` 通过；聊天核心 diff 仍为空。
+
+### 2.5.5 切换与收口
+- [ ] 更新契约：`/generate` 文案由“网关模式”改为“权威轮次”。
+- [ ] RN/后续客户端统一走服务端 `/generate`；浏览器 legacy 路径保留至 Phase 4 收口后再择机退役。
+
+### Phase 2.5 完成标准
+1. 服务端 `/generate` 能组装与浏览器**逐字等价**的完整提示词（夹具断言通过）。
+2. 聊天核心（chats/characters/prompt-converters）diff 为空；JSONL/Swipe/WorldInfo/群聊兼容不变。
+3. `npm run validate` 通过。
+4. 契约已标注“权威轮次”。

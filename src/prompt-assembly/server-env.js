@@ -78,10 +78,14 @@ export function buildServerTokenHandler(oaiSettings = {}) {
         counts,
         getCounts: () => counts,
         getTotal: () => Object.values(counts).reduce((total, value) => total + (Number.isFinite(value) ? value : 0), 0),
-        countAsync: async message => countMessageTokens([message], {
-            resolveModel: () => model,
-            countOne: async item => estimateMessageTokens(item),
-        }),
+        countAsync: async message => {
+            const counted = await countMessageTokens([message], {
+                resolveModel: () => model,
+                countOne: async item => estimateMessageTokens(item),
+            });
+            counts.conversation = (counts.conversation ?? 0) + counted;
+            return counted;
+        },
     };
 }
 

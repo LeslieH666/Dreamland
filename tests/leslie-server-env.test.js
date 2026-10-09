@@ -26,8 +26,14 @@ describe('buildServerTokenHandler', () => {
         const handler = buildServerTokenHandler(settings().oai_settings);
         expect(typeof handler.countAsync).toBe('function');
         expect(handler.getTotal()).toBe(0);
-        await handler.countAsync({ role: 'user', content: 'hello' });
-        expect(handler.getTotal()).toBeGreaterThan(0);
+        // The shared counter applies a fixed baseline offset, so a short message can
+        // legitimately come back non-positive. What matters here is that the handler
+        // records what the counter returned and accumulates across calls.
+        const first = await handler.countAsync({ role: 'user', content: 'hello' });
+        expect(handler.getTotal()).toBe(first);
+        const second = await handler.countAsync({ role: 'user', content: 'a longer message to count' });
+        expect(handler.getTotal()).toBe(first + second);
+        expect(handler.getCounts().conversation).toBe(first + second);
     });
 
     test('fails closed for an unsupported provider instead of guessing a tokenizer', () => {

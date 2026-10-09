@@ -283,6 +283,10 @@ import {
     getExtensionPromptByName as getExtensionPromptByNameCore,
     getExtensionPromptMaxDepth as getExtensionPromptMaxDepthCore,
 } from '/prompt-assembly/extension-prompts.js';
+import {
+    substituteParams as substituteParamsCore,
+    substituteParamsLegacy as substituteParamsLegacyCore,
+} from '/prompt-assembly/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
@@ -2816,135 +2820,66 @@ export function substituteParamsExtended(content, additionalMacro = {}, postProc
  * @returns {string} The string with substituted parameters.
  */
 export function substituteParamsLegacy(content, _name1, _name2, _original, _group, _replaceCharacterCard = true, additionalMacro = {}, postProcessFn = (x) => x) {
-    if (!content) {
-        return '';
-    }
+    // Phase 2.5.2 step 2: the engine itself is lifted into the shared pure core
+    // (src/prompt-assembly/macros.js); this adapter only supplies the browser's
+    // ambient state as explicit inputs.
+    return substituteParamsLegacyCore(content, macroContext({
+        name1Override: _name1,
+        name2Override: _name2,
+        original: _original,
+        groupOverride: _group,
+        replaceCharacterCard: _replaceCharacterCard ?? true,
+        dynamicMacros: additionalMacro ?? {},
+        postProcessFn: postProcessFn ?? ((x) => x),
+    }));
+}
 
-    // If experimental macro engine is enabled, use it. This code will be cleaned up in the future.
-    if (power_user?.experimental_macro_engine) {
-        return substituteParams(content, {
-            name1Override: _name1,
-            name2Override: _name2,
-            original: _original,
-            groupOverride: _group,
-            replaceCharacterCard: _replaceCharacterCard ?? true,
-            dynamicMacros: additionalMacro ?? {},
-            postProcessFn: postProcessFn ?? ((x) => x),
-        });
-    }
+/**
+ * Build the explicit macro environment from the browser's ambient state.
+ * Phase 2.5.2 step 2: every global the lifted engine used is supplied here.
+ * @param {object} [options] Per-call macro options.
+ * @returns {object} Macro context for src/prompt-assembly/macros.js
+ */
+function macroContext(options = {}) {
+    return {
+        ...options,
+        name1,
+        name2,
+        characters,
+        groups,
+        selectedGroup: selected_group,
+        mainApi: main_api,
+        powerUser: power_user,
+        getCardFields: () => getCharacterCardFields(),
+        helpers: {
+            evaluateMacros,
+            parseMesExamples,
+            formatInstructModeExamples,
+            getGeneratingModel,
+        },
+        warn: (message, value) => console.warn(message, value),
+        shouldAnnounceExperimentalFeature: () => accountStorage.getItem('slash_command_experimental_engine_warning_shown') !== 'true',
+        onExperimentalMacroFeature: feature => void onboardingExperimentalMacroEngine(feature),
+        engines: {
+            // The experimental engine's macro definitions import browser modules,
+            // so it stays here and is injected into the shared core.
+            extended: (text, context) => {
+                const ctx = /** @type {import('./scripts/macros/engine/MacroEnvBuilder.js').MacroEnvRawContext} */ ({
+                    content: text,
+                    name1Override: context.name1Override,
+                    name2Override: context.name2Override,
+                    original: context.original,
+                    groupOverride: context.groupOverride,
+                    replaceCharacterCard: context.replaceCharacterCard ?? true,
+                    dynamicMacros: context.dynamicMacros ?? {},
+                    postProcessFn: context.postProcessFn ?? ((x) => x),
+                });
 
-    // Try to roughly detect experimental macro features to show the onboarding if needed.
-    // This does not have to be 100% accurate, only best effort what we can quickly check.
-    // Only do this if the warning wasn't shown yet, to prevent needless regex checks.
-    if (accountStorage.getItem('slash_command_experimental_engine_warning_shown') !== 'true') {
-        let feature = /** @type {string|null} */ (null);
-        if (/{{\s*if/.test(content)) feature = '{{if}} macro';
-        else if (/{{\s*\//.test(content)) feature = 'scoped macro';
-        else if (/{{\s*[!?~#/]/.test(content)) feature = 'macro flags';
-        else if (/{{\s*[.$]/.test(content)) feature = 'variable shorthands';
-        else if (/\{\{(?:(?!\}\}).)*\{\{(?=[\s\S]*?\}\}[\s\S]*?\}\})/.test(content)) feature = 'nested macro';
-        else if (/{{(?:greeting|charFirstMessage)(?:::\d+)?}}/i.test(content)) feature = 'greeting macro';
-
-        if (feature) void onboardingExperimentalMacroEngine(feature);
-    }
-
-    const environment = {};
-
-    if (typeof _original === 'string') {
-        let originalSubstituted = false;
-        environment.original = () => {
-            if (originalSubstituted) {
-                return '';
-            }
-
-            originalSubstituted = true;
-            return _original;
-        };
-    }
-
-    const getGroupValue = (includeMuted) => {
-        if (typeof _group === 'string') {
-            return _group;
-        }
-
-        if (selected_group) {
-            const members = groups.find(x => x.id === selected_group)?.members;
-            /** @type {string[]} */
-            const disabledMembers = groups.find(x => x.id === selected_group)?.disabled_members ?? [];
-            const isMuted = x => includeMuted ? true : !disabledMembers.includes(x);
-            const names = Array.isArray(members)
-                ? members.filter(isMuted).map(m => characters.find(c => c.avatar === m)?.name).filter(Boolean).join(', ')
-                : '';
-            return names;
-        } else {
-            return _name2 ?? name2;
-        }
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                return MacroEngine.evaluate(text, env);
+            },
+        },
     };
-
-    const getNotCharValue = () => {
-        const currentUser = _name1 ?? name1;
-        const currentSpeaker = _name2 ?? name2;
-
-        // Single character chat
-        if (!selected_group) {
-            return currentUser;
-        }
-
-        // Group chat
-        const members = groups.find(x => x.id === selected_group)?.members;
-
-        if (!Array.isArray(members)) {
-            return currentUser;
-        }
-
-        const memberNames = members
-            .map(m => characters.find(c => c.avatar === m)?.name)
-            .filter(Boolean); // Filter out any null/undefined names
-
-        // Filter out the current speaker and add the user
-        const otherMembers = memberNames.filter(name => name !== currentSpeaker);
-        otherMembers.push(currentUser);
-
-        return otherMembers.join(', ');
-    };
-
-    if (_replaceCharacterCard) {
-        const fields = getCharacterCardFields();
-        environment.charPrompt = fields.system || '';
-        environment.charInstruction = environment.charJailbreak = fields.jailbreak || '';
-        environment.description = fields.description || '';
-        environment.personality = fields.personality || '';
-        environment.scenario = fields.scenario || '';
-        environment.persona = fields.persona || '';
-        environment.mesExamples = () => {
-            const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
-            const mesExamplesArray = parseMesExamples(fields.mesExamples, isInstruct);
-            if (isInstruct) {
-                const instructExamples = formatInstructModeExamples(mesExamplesArray, name1, name2);
-                return instructExamples.join('');
-            }
-            return mesExamplesArray.join('');
-        };
-        environment.mesExamplesRaw = fields.mesExamples || '';
-        environment.charVersion = fields.version || '';
-        environment.char_version = fields.version || '';
-        environment.charDepthPrompt = fields.charDepthPrompt || '';
-        environment.creatorNotes = fields.creatorNotes || '';
-    }
-
-    // Must be substituted last so that they're replaced inside {{description}}
-    environment.user = _name1 ?? name1;
-    environment.char = _name2 ?? name2;
-    environment.group = environment.charIfNotGroup = getGroupValue(true);
-    environment.groupNotMuted = getGroupValue(false);
-    environment.notChar = getNotCharValue();
-    environment.model = getGeneratingModel();
-
-    if (additionalMacro && typeof additionalMacro === 'object') {
-        Object.assign(environment, additionalMacro);
-    }
-
-    return evaluateMacros(content, environment, postProcessFn);
 }
 
 /** @typedef {import('./scripts/macros/engine/MacroRegistry.js').MacroHandler} MacroHandler */
@@ -2980,25 +2915,11 @@ export function substituteParams(content, options = {}) {
         return substituteParamsLegacy.call(this, ...arguments);
     }
 
-    // Keep the new macro engine behind a feature switch for now
-    if (!power_user?.experimental_macro_engine) {
-        return substituteParamsLegacy(content, options.name1Override, options.name2Override, options.original, options.groupOverride, options.replaceCharacterCard, options.dynamicMacros, options.postProcessFn);
-    }
-
-    const ctx = /** @type {import('./scripts/macros/engine/MacroEnvBuilder.js').MacroEnvRawContext} */ ({
-        content,
-        name1Override: options.name1Override,
-        name2Override: options.name2Override,
-        original: options.original,
-        groupOverride: options.groupOverride,
-        replaceCharacterCard: options.replaceCharacterCard ?? true,
-        dynamicMacros: options.dynamicMacros ?? {},
-        postProcessFn: options.postProcessFn ?? ((x) => x),
-    });
-
-    const env = MacroEnvBuilder.buildFromRawEnv(ctx);
-    const result = MacroEngine.evaluate(content, env);
-    return result;
+    // Phase 2.5.2 step 2: engine selection and the legacy engine live in the
+    // shared pure core; this adapter supplies the browser's ambient state
+    // (including the experimental engine, which stays here because its macro
+    // definitions import browser modules).
+    return substituteParamsCore(content, macroContext(options));
 }
 
 

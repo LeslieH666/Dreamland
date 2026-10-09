@@ -24,3 +24,13 @@ export const ExtensionPromptRole = Object.freeze({
 
 /** Upper bound used when walking injection depths (public/script.js:527). */
 export const MAX_INJECTION_DEPTH = 10000;
+
+/**
+ * Where an injected extension prompt is placed.
+ * @readonly
+ * @enum {number}
+ */
+export const INJECTION_POSITION = Object.freeze({
+    RELATIVE: 0,
+    ABSOLUTE: 1,
+});

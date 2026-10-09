@@ -12,6 +12,16 @@ import { renderTemplateAsync } from './templates.js';
 import { Popup } from './popup.js';
 import { t } from './i18n.js';
 import { isMobile } from './RossAscends-mods.js';
+import {
+    CHAT_COMPLETION_DEFAULT_PROMPTS as chatCompletionDefaultPrompts,
+    PROMPT_MANAGER_DEFAULT_ORDER as promptManagerDefaultPromptOrder,
+    checkForMissingPrompts as checkForMissingPromptsCore,
+    getPromptCollection as getPromptCollectionCore,
+    getPromptOrderForCharacter as getPromptOrderForCharacterCore,
+    isPromptDisabledForActiveCharacter as isPromptDisabledForActiveCharacterCore,
+    sanitizeServiceSettings as sanitizeServiceSettingsCore,
+    shouldTrigger as shouldTriggerCore,
+} from '/prompt-assembly/registry.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -946,10 +956,19 @@ class PromptManager {
         return this.tokenHandler;
     }
 
+    /**
+     * Construct a prompt collection.
+     * Phase 2.5.2 step 5: injected into the shared registry so it never imports back
+     * into this browser module (which would be circular).
+     * @returns {PromptCollection} New collection.
+     */
+    createPromptCollection() {
+        return new PromptCollection();
+    }
+
     isPromptDisabledForActiveCharacter(identifier) {
-        const promptOrderEntry = this.getPromptOrderEntry(this.activeCharacter, identifier);
-        if (promptOrderEntry) return !promptOrderEntry.enabled;
-        return false;
+        // Phase 2.5.2 step 5: thin delegate to src/prompt-assembly/registry.js.
+        return isPromptDisabledForActiveCharacterCore(this, identifier);
     }
 
     /**
@@ -1004,34 +1023,8 @@ class PromptManager {
      * @returns {void}
      */
     sanitizeServiceSettings() {
-        this.serviceSettings.prompts = this.serviceSettings.prompts ?? [];
-        this.serviceSettings.prompt_order = this.serviceSettings.prompt_order ?? [];
-
-        if ('global' === this.configuration.promptOrder.strategy) {
-            const dummyCharacter = { id: this.configuration.promptOrder.dummyId };
-            const promptOrder = this.getPromptOrderForCharacter(dummyCharacter);
-
-            if (0 === promptOrder.length) this.addPromptOrderForCharacter(dummyCharacter, promptManagerDefaultPromptOrder);
-        }
-
-        // Check whether the referenced prompts are present.
-        this.serviceSettings.prompts.length === 0
-            ? this.setPrompts(chatCompletionDefaultPrompts.prompts)
-            : this.checkForMissingPrompts(this.serviceSettings.prompts);
-
-        // Add identifiers if there are none assigned to a prompt
-        this.serviceSettings.prompts.forEach(prompt => prompt && (prompt.identifier = prompt.identifier ?? this.getUuidv4()));
-
-        if (this.activeCharacter) {
-            const promptReferences = this.getPromptOrderForCharacter(this.activeCharacter);
-            for (let i = promptReferences.length - 1; i >= 0; i--) {
-                const reference = promptReferences[i];
-                if (reference && -1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
-                    promptReferences.splice(i, 1);
-                    this.log('Removed unused reference: ' + reference.identifier);
-                }
-            }
-        }
+        // Phase 2.5.2 step 5: thin delegate to src/prompt-assembly/registry.js.
+        return sanitizeServiceSettingsCore(this);
     }
 
     /**
@@ -1041,19 +1034,8 @@ class PromptManager {
      * @param prompts
      */
     checkForMissingPrompts(prompts) {
-        const defaultPromptIdentifiers = chatCompletionDefaultPrompts.prompts.reduce((list, prompt) => { list.push(prompt.identifier); return list; }, []);
-
-        const missingIdentifiers = defaultPromptIdentifiers.filter(identifier =>
-            !prompts.some(prompt => prompt.identifier === identifier),
-        );
-
-        missingIdentifiers.forEach(identifier => {
-            const defaultPrompt = chatCompletionDefaultPrompts.prompts.find(prompt => prompt?.identifier === identifier);
-            if (defaultPrompt) {
-                prompts.push(defaultPrompt);
-                this.log(`Missing system prompt: ${defaultPrompt.identifier}. Added default.`);
-            }
-        });
+        // Phase 2.5.2 step 5: thin delegate to src/prompt-assembly/registry.js.
+        return checkForMissingPromptsCore(this, prompts);
     }
 
     /**
@@ -1205,7 +1187,8 @@ class PromptManager {
      * @returns {Partial<Prompt>[]} The prompt list for the character, or an empty array.
      */
     getPromptOrderForCharacter(character) {
-        return !character ? [] : (this.serviceSettings.prompt_order.find(list => String(list.character_id) === String(character.id))?.order ?? []);
+        // Phase 2.5.2 step 5: thin delegate to src/prompt-assembly/registry.js.
+        return getPromptOrderForCharacterCore(this, character);
     }
 
     /**
@@ -1514,30 +1497,8 @@ class PromptManager {
      * @returns {PromptCollection} A PromptCollection object
      */
     getPromptCollection(generationType) {
-        generationType = String(generationType || 'normal').toLowerCase().trim();
-        const promptCollection = new PromptCollection();
-        const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
-
-        promptOrder.forEach(entry => {
-            const prompt = this.getPromptById(entry.identifier);
-            const allowedTrigger = entry.enabled && this.shouldTrigger(prompt, generationType);
-
-            if (!prompt) {
-                return;
-            }
-
-            if (allowedTrigger) {
-                promptCollection.add(this.preparePrompt(prompt));
-            } else if (entry.identifier === 'main') {
-                // Some extensions require main prompt to be present for relative inserts.
-                // So we make a GMO-free vegan replacement.
-                const replacementPrompt = structuredClone(prompt);
-                replacementPrompt.content = '';
-                promptCollection.add(this.preparePrompt(replacementPrompt));
-            }
-        });
-
-        return promptCollection;
+        // Phase 2.5.2 step 5: thin delegate to src/prompt-assembly/registry.js.
+        return getPromptCollectionCore(this, generationType);
     }
 
     /**
@@ -1547,9 +1508,8 @@ class PromptManager {
      * @returns {boolean} True if the prompt should be triggered, false otherwise.
      */
     shouldTrigger(prompt, generationType) {
-        if (!Array.isArray(prompt?.injection_trigger)) return true;
-        if (!prompt.injection_trigger.length) return true;
-        return prompt.injection_trigger.includes(generationType);
+        // Phase 2.5.2 step 5: thin delegate to src/prompt-assembly/registry.js.
+        return shouldTriggerCore(prompt, generationType);
     }
 
     /**
@@ -1998,142 +1958,11 @@ class PromptManager {
     }
 }
 
-const chatCompletionDefaultPrompts = {
-    'prompts': [
-        {
-            'name': 'Main Prompt',
-            'system_prompt': true,
-            'role': 'system',
-            'content': 'Write {{char}}\'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}.',
-            'identifier': 'main',
-        },
-        {
-            'name': 'Auxiliary Prompt',
-            'system_prompt': true,
-            'role': 'system',
-            'content': '',
-            'identifier': 'nsfw',
-        },
-        {
-            'identifier': 'dialogueExamples',
-            'name': 'Chat Examples',
-            'system_prompt': true,
-            'marker': true,
-        },
-        {
-            'name': 'Post-History Instructions',
-            'system_prompt': true,
-            'role': 'system',
-            'content': '',
-            'identifier': 'jailbreak',
-        },
-        {
-            'identifier': 'chatHistory',
-            'name': 'Chat History',
-            'system_prompt': true,
-            'marker': true,
-        },
-        {
-            'identifier': 'worldInfoAfter',
-            'name': 'World Info (after)',
-            'system_prompt': true,
-            'marker': true,
-        },
-        {
-            'identifier': 'worldInfoBefore',
-            'name': 'World Info (before)',
-            'system_prompt': true,
-            'marker': true,
-        },
-        {
-            'identifier': 'enhanceDefinitions',
-            'role': 'system',
-            'name': 'Enhance Definitions',
-            'content': 'If you have more knowledge of {{char}}, add to the character\'s lore and personality to enhance them but keep the Character Sheet\'s definitions absolute.',
-            'system_prompt': true,
-            'marker': false,
-        },
-        {
-            'identifier': 'charDescription',
-            'name': 'Char Description',
-            'system_prompt': true,
-            'marker': true,
-        },
-        {
-            'identifier': 'charPersonality',
-            'name': 'Char Personality',
-            'system_prompt': true,
-            'marker': true,
-        },
-        {
-            'identifier': 'scenario',
-            'name': 'Scenario',
-            'system_prompt': true,
-            'marker': true,
-        },
-        {
-            'identifier': 'personaDescription',
-            'name': 'Persona Description',
-            'system_prompt': true,
-            'marker': true,
-        },
-    ],
-};
 
 const promptManagerDefaultPromptOrders = {
     'prompt_order': [],
 };
 
-const promptManagerDefaultPromptOrder = [
-    {
-        'identifier': 'main',
-        'enabled': true,
-    },
-    {
-        'identifier': 'worldInfoBefore',
-        'enabled': true,
-    },
-    {
-        'identifier': 'personaDescription',
-        'enabled': true,
-    },
-    {
-        'identifier': 'charDescription',
-        'enabled': true,
-    },
-    {
-        'identifier': 'charPersonality',
-        'enabled': true,
-    },
-    {
-        'identifier': 'scenario',
-        'enabled': true,
-    },
-    {
-        'identifier': 'enhanceDefinitions',
-        'enabled': false,
-    },
-    {
-        'identifier': 'nsfw',
-        'enabled': true,
-    },
-    {
-        'identifier': 'worldInfoAfter',
-        'enabled': true,
-    },
-    {
-        'identifier': 'dialogueExamples',
-        'enabled': true,
-    },
-    {
-        'identifier': 'chatHistory',
-        'enabled': true,
-    },
-    {
-        'identifier': 'jailbreak',
-        'enabled': true,
-    },
-];
 
 export {
     PromptManager,

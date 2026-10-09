@@ -61,6 +61,8 @@ export const CONFIG_ENV_KEYS = Object.freeze({
     'requestProxy.url': 'DREAMLAND_REQUEST_PROXY_URL',
     'allowKeysExposure': 'DREAMLAND_ALLOW_KEYS_EXPOSURE',
     'apiV1.jwtSecret': 'DREAMLAND_JWT_SECRET',
+    'rateLimiting.apiV1MaxRequests': 'DREAMLAND_API_V1_MAX_REQUESTS',
+    'rateLimiting.apiV1AccountMaxRequests': 'DREAMLAND_API_V1_ACCOUNT_MAX_REQUESTS',
 });
 
 /** Config keys that carry a credential and must not be logged. */

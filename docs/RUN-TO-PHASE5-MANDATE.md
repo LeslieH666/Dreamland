@@ -25,6 +25,13 @@ oracle 已达 **7/9**。两例各差单点，均已从基线 JSON 确证：
 
 **下一步**：先修 regenerate 注入索引（纯服务端），再做 swipe 的旁证实验并修服务端 memory 选择。目标 oracle **9/9**；随后按 §2.2 走完 2.5.4/2.5.5 → Phase 4 → Phase 5 到结束。
 
+### 2.1.1 取不到的顺序事实（Lead 已决：确定性探针 + 交叉推断）
+
+两处都卡在「浏览器侧 `populationInjectionPromptsCore` 调用点上 `messages` 数组的真实顺序」这个探针竞态上。
+
+- **允许确定性单次交互探针**：先 `selectCharacter`，再**一次** `evaluate` 触发 `Generate` 并**同步**读 `window.__capture`（在异步续体前取输入数组），消除竞态。这是 test-harness 改动，不碰产品代码。
+- **交叉推断（探针为准，若探针仍失败再信此条）**：代码里 `populationInjectionPrompts` 末尾有 `messages.reverse()`、且 depth 是「从末尾起算」，故浏览器侧该函数收到的 `messages` 应为**新在前（newest-first）**——服务端是旧在前，正是「反转后方向相反」的根源。修法应是把服务端喂给该函数的数组**反向**（或对齐浏览器的新在前语义），而非继续调 `depthDelta`。
+
 ### 2.2 P2.5 剩余清单（严格顺序）
 
 1. **解示例/历史放置语义**（§2.1）→ 跑 oracle，目标消息数回到 19–24 且首分歧后移。

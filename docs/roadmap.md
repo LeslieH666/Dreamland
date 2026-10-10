@@ -270,6 +270,100 @@
 - One-click standard Character Card V2/V3 JSON import in the manual character editor, with an optional avatar upload synchronized to the native create form before saving.
 - A default-off group-chat orchestrator with deterministic mention/relevance/turn-balance scoring, bounded reply batches, an automatic-reply ceiling, server-validated namespaced settings, and native natural-order fallback. Current-chat temporary roles use JSONL-only versioned metadata, manual creation, hidden in-memory card adapters, active/dormant/archived lifecycle states, branch pruning, Swipe continuity, and shared-memory speaker attribution without entering the character library. A third-stage isolated structured review can propose one editable role draft, an optionally immediate confirmed reply, or confirmed retirement choices on demand, with optional cooldown-based suggestions disabled by default and no direct model writes. See [group-chat-orchestrator.md](group-chat-orchestrator.md).
 
+## P2.5 里程碑报告：服务端权威轮次（2026-10-10）
+
+**结论：P2.5 未收口。** 服务端 `/generate` 权威轮次已能逐字复现浏览器组装，oracle 从
+`0/9` 前进到 **`5/9 byte-identical`**，首分歧从 message 10 后移到
+`group-normal` / `solo-persona-depth` 的 depth 注入处；剩余 4 例各有具体证据，见下。
+按令状 §6「2.5.4 = 9/9 逐字一致是硬关口」，本阶段**不标记完成**，也未进入 Phase 4/5 的
+收口结论。
+
+### 已达成的门禁（全部断言退出码与计数）
+
+| 门禁 | 结果 |
+| --- | --- |
+| `npm run lint`（root） | exit 0 |
+| `npm run lint --prefix tests` | exit 0（0 errors，155 warnings 为既有存量） |
+| `npm run test:unit` | **80 suites / 944 tests passed**，无 failed |
+| `npm run check:repo` | exit 0（1474 tracked files） |
+| 红线 3 文件（`src/endpoints/chats.js`、`src/endpoints/characters.js`、`src/prompt-converters.js`） | 累计 diff 空 |
+| `test:prompt-baseline`（浏览器 9 例） | **本环境无法运行**：Playwright Chromium 缺失，缓存目录被沙箱拒绝写入 |
+
+### oracle 现状
+
+`node tests/fixtures/prompt-assembly/replay-server.mjs`
+
+| 用例 | 状态 |
+| --- | --- |
+| solo-normal / solo-continue / solo-quiet / solo-persona-depth / solo-author-note | **byte-identical**（24 / 25 / 21 / 23 / 24 messages） |
+| group-normal | 首分歧 message 15；expected 20，got 19 |
+| solo-regenerate | 首分歧 message 17；expected 23，got 24 |
+| solo-swipe | 首分歧 message 2；expected 19，got 20 |
+| solo-impersonate | 首分歧 message 2；expected 24，got 24 |
+
+### 本阶段修复的根因（每条都先插桩取证、跑完即还原）
+
+1. **示例对话未做宏替换**：`setOpenAIMessageExamples` 收到的是含 `{{user}}:` / `{{char}}:`
+   的原文，说话人前缀匹配不到，示例块全部为空。页面先走 `baseChatReplace`（替换名字、
+   不替换角色卡宏），原始数组只留给 story string。
+2. **组装环境拿到未合并的 `oai_settings`**：`new_chat_prompt` / `new_example_chat_prompt`
+   为 undefined，两个标记消息被静默丢弃。
+3. **枚举未接线**：`systemMessageTypes` / `characterNamesBehavior` 传空对象，使
+   `extra.type` 比较恒真，整段聊天历史被判成 narrator 的 system 消息。现已落入
+   `src/prompt-assembly/enums.js`。
+4. **扩展提示词注册表缺项**：quiet prompt、角色卡 depth prompt、Persona 描述
+   （at-depth 与 A/N 合并）、World Info 的 at-depth/outlet 条目都是页面侧扩展提示词，
+   服务端一个都没注册，对应块全部丢失。
+5. **continue 轮次没有 `cyclePrompt`**：continue-nudge 对从未进入组装；
+   `continue_postfix` 补进 assembly 默认值（按页面的字符串语义）。
+6. **World Info 上下文不是完整扩展上下文**：作者注劫持会在 `getContext()` 上写回，
+   两字段桩会抛错并丢掉作者注。
+7. **memory 子块按类型分别门控**：growth + 记忆列表跳过 quiet；关系投影额外跳过
+   swipe 与 impersonate。
+8. **群聊完全不可用**：群聊 id 是聊天文件名而非群 id，改为按持久化 `chat_id` 匹配；
+   首个未禁用成员成为活动卡；成员卡读入 `characters` 以解析 `{{group}}`；
+   `getSelectedGroup()` 接线，使新建群聊标记与 group nudge 不再退化成单人。
+9. **`setOpenAIMessages` 两处抬升缺陷**：游标 `j` 从未自增（每个槽位都填 `chat[0]`）；
+   倒序填充 `messages[i]` 在前部留下空洞。该模块浏览器也在加载，输出顺序即基准，
+   现改为「按聊天顺序收集、倒序交出」，并更新了编码空洞行为的单测。
+10. **harness 自身两处缺陷**：replay oracle 从未给 `note` profile 播种作者注元数据、
+    也从未传 `quietPrompt`，两例都静默退化成 default profile。
+
+### 剩余 4 例的证据与判断
+
+- **group-normal / solo-persona-depth（同一根因，继续追）**：depth 注入落点比基线早 1。
+  共享模块 `populationInjectionPromptsCore` 用 `injectIdx = i + totalInsertedMessages`
+  在「最新在前」的消息数组里按深度定位；实测 group 用例 `messages` 为
+  `[北纬, user, 极光]`、`idx` 计算为 2，实际落在「新聊标记」与「用户消息」之间，基线要求
+  落在「用户消息」之后；`solo-persona-depth` 的 depth prompt 同样早 1 位置，两者消息总数
+  也因此差 1。**未做「把索引 +1」的凑数修改**：实测直接应用该偏移会让 9 例全部失配，
+  说明数组方向与深度语义必须一起改，不能单点平移。
+- **solo-swipe（基线自相矛盾，按用户裁决如实披露）**：`solo-swipe` 的 memory 块是已提交
+  基线内部的矛盾。`git show 58cfc2b32 -- tests/fixtures/prompt-assembly/baseline/solo-swipe.json`
+  显示同一次重录**只从 swipe 用例删掉了 `[与当前对话相关的过往记忆]` 块**（20→19
+  messages），而同一 commit 里其余基线都保留 memory；当前 `memory-seed.mjs` 对 swipe
+  聊天与其他聊天注入完全相同的确定性记忆（`selectContext` 对两者都返回
+  `enabled: true, memories: 3`）。按用户裁决：不改基线、不伪造通过，保持代码语义。
+- **solo-impersonate**：消息总数已对齐（24 = 24），仅剩 growth / relationship /
+  reply-style 三个相对位置未对齐。基线要求 impersonate 保留关系投影却不出现 growth，
+  与「growth 与记忆列表同门控」的实现冲突，需要单独裁决 impersonate 的 memory 子块
+  语义。
+
+### 停靠声明
+
+按令状 §7：group-normal / solo-persona-depth 的 depth 注入语义、solo-impersonate 的
+memory 子块组合，均属**本文件与附 L/M/N/O/P 未覆盖且有具体证据的新分叉**。Phase 4（Web
+PWA）与 Phase 5（RN App）依赖 §3「服务端 `/generate` 权威轮次可用」；在 depth 注入语义
+未定论前开工，会把客户端叠在错误的组装语义上，故在此停靠报告，等待裁决后继续。
+
+### 环境缺口（非产品问题）
+
+- Playwright Chromium 未安装且本会话无法下载：`~/Library/Caches/ms-playwright` 被沙箱
+  拒绝写入，`playwright install chromium` 返回 `EPERM`。因此
+  `npm run test:prompt-baseline` 无法在本会话内执行；oracle 的比对基准仍是仓库中已提交的
+  9 个 baseline JSON。若要重录基线，需要提供 Chromium 或允许写该缓存目录
+  （`PLAYWRIGHT_BROWSERS_PATH`）。
+
 ## Prompt-assembly lift and authoritative-turn groundwork (2026-10-09)
 
 - Phase 2.5.2 (prompt-assembly lift) is closed. Prompt building now runs through shared

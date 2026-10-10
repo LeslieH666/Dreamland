@@ -1,6 +1,11 @@
 # Roadmap
 
-## iOS development verification and the Xcode 27 Simulator gap (2026-10-10)
+## Ubuntu LAN server deployment and the operations dashboard (2026-10-10)
+
+- Deployed the backend to the LAN Ubuntu box (`192.168.5.222`, hostname `dreamland-server`, Ubuntu 26.04) with Docker: the host has Docker but no Node, and Docker Hub is unreachable from this network, so the image is built with a `docker.m.daocloud.io` base-image mirror and run with `--network host` on port `8000` plus `--restart unless-stopped`. Host networking is required because the Docker bridge otherwise hides the real client IP from the IP whitelist and rejects every LAN request with 403. Data and config persist in `~/dreamland-data` and `~/dreamland-config` (container name `dreamland`).
+- Added the administrator operations dashboard (`/api/v1/ops/*` + `/ops`, commit `d9ad896ae`): server status, per-user storage, gateway/provider status with masked secrets, and rate-limit usage, all gated behind a JWT `admin` claim (`requireOpsAdmin`). `/ops` is a zero-dependency HTML shell.
+- Pre-created an `admin` account and set a random password on the passwordless `default-user` so the web UI no longer opens without authentication (auto-login stopped).
+- Remaining manual steps: re-point the existing cloudflared tunnel (remotely-managed) to `http://localhost:8000` in Cloudflare Zero Trust, and change the placeholder admin password.
 
 - Verified the React Native client bundles for iOS. Metro could not resolve `@babel/runtime/helpers/interopRequireDefault` because pnpm's strict `node_modules` isolation keeps the transitive `@babel/runtime` unhoisted while `babel-preset-expo` injects that helper at build time. `tsc --noEmit` cannot catch this, so the earlier Phase 5 "typecheck passes" was a false green. Added `@babel/runtime@^7.29.10` to `apps/mobile/package.json` (commit `2c9d8d6a9`), after which the iOS bundle compiles to ~5.6 MB of valid JavaScript.
 - Headless simulator verification went as far as the environment allows: the backend runs, Metro serves a correct Expo manifest, Expo Go 2.32.18 (SDK 52) downloads, installs and launches on a booted simulator, and the onboarding flag `isOnboardingFinished` was located in the app's AsyncStorage. The remaining step — Expo Go actually fetching the manifest over the `exp://` deep link — does not trigger in headless mode and could not be completed without a display.

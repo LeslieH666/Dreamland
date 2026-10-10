@@ -1,0 +1,275 @@
+/**
+ * Server-managed model gateway — authoritative configuration store.
+ *
+ * The Web and mobile clients no longer carry provider keys/endpoints. The administrator
+ * configures providers and a model catalog here (under the server data root, not per
+ * account); clients pick a `model_id` from `listAvailableModels()` and the adapter resolves
+ * it to a provider + api key + real model name via `resolveModelConfig`.
+ *
+ * Provider API keys are stored in the global secrets file through `SecretManager`; only a
+ * key id is referenced here, never a plaintext value.
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+
+import { SecretManager } from '../endpoints/secrets.js';
+
+export const MODEL_GATEWAY_FILE = 'model-gateway.json';
+export const MODEL_GATEWAY_SCHEMA_VERSION = 1;
+
+/** Global secrets manager (server-scoped, not per account). */
+function globalSecretManager() {
+    const root = String(globalThis.DATA_ROOT ?? '');
+    return new SecretManager({
+        root,
+        backups: path.join(root, 'backups'),
+        characters: '',
+        chats: '',
+        groups: '',
+        groupChats: '',
+        worlds: '',
+        avatars: '',
+        user: '',
+        vectors: '',
+    });
+}
+
+/** @returns {string} Absolute path of the gateway config file. */
+export function modelGatewayFilePath() {
+    return path.join(String(globalThis.DATA_ROOT ?? ''), MODEL_GATEWAY_FILE);
+}
+
+/** @returns {object} The default (empty) gateway document. */
+export function createDefaultGateway() {
+    return { schemaVersion: MODEL_GATEWAY_SCHEMA_VERSION, providers: [], models: [] };
+}
+
+/**
+ * Read the gateway document, creating an empty one on first use.
+ * @param {object} [fsImpl] Node fs module (injectable for tests).
+ * @returns {{schemaVersion: number, providers: object[], models: object[]}} Gateway config.
+ */
+export function readModelGateway(fsImpl = fs) {
+    const file = modelGatewayFilePath();
+    try {
+        const parsed = JSON.parse(fsImpl.readFileSync(file, 'utf8'));
+        return {
+            schemaVersion: Number(parsed.schemaVersion ?? MODEL_GATEWAY_SCHEMA_VERSION),
+            providers: Array.isArray(parsed.providers) ? parsed.providers : [],
+            models: Array.isArray(parsed.models) ? parsed.models : [],
+        };
+    } catch {
+        return createDefaultGateway();
+    }
+}
+
+/**
+ * Persist the gateway document atomically.
+ * @param {object} config Gateway config.
+ * @param {object} [fsImpl] Node fs module.
+ * @returns {object} The saved config.
+ */
+export function writeModelGateway(config, fsImpl = fs) {
+    const file = modelGatewayFilePath();
+    fsImpl.mkdirSync(path.dirname(file), { recursive: true });
+    writeFileAtomicSync(file, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+    return config;
+}
+
+/**
+ * Read the active gateway config for server-side use.
+ * @returns {{schemaVersion: number, providers: object[], models: object[]}} Gateway config.
+ */
+export function getServerModelGateway() {
+    return readModelGateway();
+}
+
+/** @returns {object[]} Providers, with secret references left as key ids (no plaintext). */
+export function listProviders() {
+    return readModelGateway().providers;
+}
+
+/** @param {string} id Provider id. @returns {object | undefined} Provider entry. */
+export function getProviderById(id) {
+    return readModelGateway().providers.find(provider => provider.id === id);
+}
+
+/** @returns {object[]} All models (admin view), including disabled ones. */
+export function listAllModels() {
+    return readModelGateway().models;
+}
+
+/**
+ * The client-visible model catalog: only id/name/enabled, no provider details or secrets.
+ * @returns {{id: string, name: string, enabled: boolean}[]} Enabled models.
+ */
+export function listAvailableModels() {
+    return readModelGateway().models
+        .filter(model => model.enabled !== false)
+        .map(model => ({ id: String(model.id), name: String(model.name ?? model.id), enabled: true }));
+}
+
+/**
+ * Look up one model entry by id.
+ * @param {string} id Model id.
+ * @returns {object | undefined} Full model entry.
+ */
+export function getModelById(id) {
+    return readModelGateway().models.find(model => model.id === id);
+}
+
+/**
+ * Resolve a catalog model id to a concrete provider + api key + real model name.
+ * @param {string} modelId Model id.
+ * @returns {{source: string, model: string, endpoint: string, apiKey: string, params: object, providerId: string}}
+ * @throws {Error} When the model or provider is missing/disabled.
+ */
+export function resolveModelConfig(modelId) {
+    const model = getModelById(modelId);
+    if (!model) {
+        throw new Error(`Model "${modelId}" is not in the server model catalog.`);
+    }
+    if (model.enabled === false) {
+        throw new Error(`Model "${modelId}" is disabled.`);
+    }
+    const provider = getProviderById(model.provider);
+    if (!provider) {
+        throw new Error(`Provider "${model.provider}" for model "${modelId}" does not exist.`);
+    }
+    if (provider.enabled === false) {
+        throw new Error(`Provider "${model.provider}" is disabled.`);
+    }
+    let apiKey = '';
+    if (provider.apiKeySecretId) {
+        apiKey = globalSecretManager().readSecret(provider.apiKeySecretId);
+    }
+    return {
+        source: String(provider.source ?? provider.id ?? 'custom'),
+        model: String(model.apiModel ?? model.id),
+        endpoint: String(provider.endpoint ?? ''),
+        apiKey,
+        params: model.params && typeof model.params === 'object' ? model.params : {},
+        providerId: String(provider.id),
+    };
+}
+
+/**
+ * Replace the whole gateway document (admin write).
+ * @param {object} config Gateway config.
+ * @returns {object} The saved config.
+ */
+export function saveServerModelGateway(config) {
+    const normalized = {
+        schemaVersion: MODEL_GATEWAY_SCHEMA_VERSION,
+        providers: Array.isArray(config?.providers) ? config.providers : [],
+        models: Array.isArray(config?.models) ? config.models : [],
+    };
+    return writeModelGateway(normalized);
+}
+
+/**
+ * Add or replace a provider. When `apiKey` is provided, it is written to the global
+ * secrets file and only its key id is stored on the provider.
+ * @param {object} provider Provider input (id, name, source, endpoint, enabled, apiKey?).
+ * @returns {object} The saved provider (no plaintext key).
+ */
+export function upsertProvider(provider) {
+    const config = readModelGateway();
+    const id = String(provider.id ?? '').trim();
+    if (!id) {
+        throw new Error('A provider id is required.');
+    }
+    const secretId = provider.apiKeySecretId ?? `provider:${id}`;
+    if (typeof provider.apiKey === 'string' && provider.apiKey.length > 0) {
+        globalSecretManager().writeSecret(secretId, provider.apiKey, String(provider.name ?? id));
+    }
+    const existing = config.providers.findIndex(entry => entry.id === id);
+    const next = {
+        id,
+        name: String(provider.name ?? id),
+        source: String(provider.source ?? 'custom'),
+        endpoint: String(provider.endpoint ?? ''),
+        apiKeySecretId: secretId,
+        enabled: provider.enabled !== false,
+    };
+    if (existing === -1) {
+        config.providers.push(next);
+    } else {
+        config.providers[existing] = { ...config.providers[existing], ...next };
+    }
+    writeModelGateway(config);
+    return next;
+}
+
+/**
+ * Remove a provider and, when `alsoDeleteSecret` is true, its stored API key.
+ * @param {string} id Provider id.
+ * @param {boolean} [alsoDeleteSecret] Delete the referenced secret too.
+ * @returns {{deleted: boolean}} Result.
+ */
+export function deleteProvider(id, alsoDeleteSecret = false) {
+    const config = readModelGateway();
+    const index = config.providers.findIndex(entry => entry.id === id);
+    if (index === -1) {
+        return { deleted: false };
+    }
+    const [removed] = config.providers.splice(index, 1);
+    if (alsoDeleteSecret && removed?.apiKeySecretId) {
+        globalSecretManager().deleteSecret(removed.apiKeySecretId, null);
+    }
+    // Drop models that referenced the removed provider.
+    config.models = config.models.filter(model => model.provider !== id);
+    writeModelGateway(config);
+    return { deleted: true };
+}
+
+/**
+ * Add or replace a model in the catalog.
+ * @param {object} model Model input (id, name, provider, apiModel, enabled, params).
+ * @returns {object} The saved model.
+ */
+export function upsertModel(model) {
+    const config = readModelGateway();
+    const id = String(model.id ?? '').trim();
+    if (!id) {
+        throw new Error('A model id is required.');
+    }
+    const provider = getProviderById(model.provider);
+    if (!provider) {
+        throw new Error(`Provider "${model.provider}" does not exist.`);
+    }
+    const next = {
+        id,
+        name: String(model.name ?? id),
+        provider: String(model.provider),
+        apiModel: String(model.apiModel ?? id),
+        enabled: model.enabled !== false,
+        params: model.params && typeof model.params === 'object' ? model.params : {},
+    };
+    const existing = config.models.findIndex(entry => entry.id === id);
+    if (existing === -1) {
+        config.models.push(next);
+    } else {
+        config.models[existing] = next;
+    }
+    writeModelGateway(config);
+    return next;
+}
+
+/**
+ * Remove a model from the catalog.
+ * @param {string} id Model id.
+ * @returns {{deleted: boolean}} Result.
+ */
+export function deleteModel(id) {
+    const config = readModelGateway();
+    const index = config.models.findIndex(entry => entry.id === id);
+    if (index === -1) {
+        return { deleted: false };
+    }
+    config.models.splice(index, 1);
+    writeModelGateway(config);
+    return { deleted: true };
+}

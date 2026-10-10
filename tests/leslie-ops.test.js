@@ -167,7 +167,7 @@ describe('GET /api/v1/ops/* over a real listener', () => {
         const { setSecret } = await import('../src/api-v1/secrets.js');
         const { SECRET_KEYS } = await import('../src/endpoints/secrets.js');
         const plaintext = 'sk-ops-plaintext-must-not-leak';
-        await setSecret(users.getUserDirectories(ADMIN_HANDLE), SECRET_KEYS.OPENAI, plaintext, 'ops-test');
+        await setSecret(SECRET_KEYS.OPENAI, plaintext, 'ops-test');
         const gateway = await getJson('/ops/gateway', adminToken);
         expect(gateway.status).toBe(200);
         expect(gateway.body).toHaveProperty('source');

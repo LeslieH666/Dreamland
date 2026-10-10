@@ -359,37 +359,27 @@ describe('API v1 pagination', () => {
 
 describe('API v1 secret key ids', () => {
     test('stores a secret and lists only masked metadata', () => {
-        const directories = { root: fs.mkdtempSync(path.join(os.tmpdir(), 'leslie-api-v1-secrets-')) };
         const keyId = SECRET_KEYS.OPENAI;
-        try {
-            const { entry_id } = setSecret(directories, keyId, 'sk-super-secret-value', 'unit');
-            expect(entry_id).toBeTruthy();
+        const { entry_id } = setSecret(keyId, 'sk-super-secret-value', 'unit');
+        expect(entry_id).toBeTruthy();
 
-            const listing = listSecretIds(directories).find(entry => entry.key_id === keyId);
-            expect(listing.configured).toBe(true);
-            expect(listing.label).toBe('unit');
-            expect(JSON.stringify(listing)).not.toContain('sk-super-secret-value');
-            expect(listing.preview).not.toContain('secret-value');
+        const listing = listSecretIds().find(entry => entry.key_id === keyId);
+        expect(listing.configured).toBe(true);
+        expect(listing.label).toBe('unit');
+        expect(JSON.stringify(listing)).not.toContain('sk-super-secret-value');
+        expect(listing.preview).not.toContain('secret-value');
 
-            // Server-side callers can still read the plaintext.
-            expect(getSecret(directories, keyId)).toBe('sk-super-secret-value');
+        // Server-side callers can still read the plaintext.
+        expect(getSecret(keyId)).toBe('sk-super-secret-value');
 
-            expect(deleteSecret(directories, keyId)).toEqual({ deleted: true });
-            expect(getSecret(directories, keyId)).toBe('');
-        } finally {
-            fs.rmSync(directories.root, { recursive: true, force: true });
-        }
+        expect(deleteSecret(keyId)).toEqual({ deleted: true });
+        expect(getSecret(keyId)).toBe('');
     });
 
     test('rejects an unknown key id, an empty value and a missing entry', () => {
-        const directories = { root: fs.mkdtempSync(path.join(os.tmpdir(), 'leslie-api-v1-secrets-')) };
-        try {
-            expect(() => setSecret(directories, 'not_a_key', 'value')).toThrow(ApiError);
-            expect(() => setSecret(directories, SECRET_KEYS.OPENAI, '  ')).toThrow(ApiError);
-            expect(() => deleteSecret(directories, SECRET_KEYS.OPENAI)).toThrow(ApiError);
-        } finally {
-            fs.rmSync(directories.root, { recursive: true, force: true });
-        }
+        expect(() => setSecret('not_a_key', 'value')).toThrow(ApiError);
+        expect(() => setSecret(SECRET_KEYS.OPENAI, '  ')).toThrow(ApiError);
+        expect(() => deleteSecret(SECRET_KEYS.OPENAI)).toThrow(ApiError);
     });
 });
 

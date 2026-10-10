@@ -15,13 +15,12 @@ import { toApiList } from '../presenters.js';
 
 export const secretsRouter = express.Router();
 
-secretsRouter.get('/', asyncRoute(async (request, response) => {
-    response.send(toApiList(listSecretIds(request.user.directories)));
+secretsRouter.get('/', asyncRoute(async (_request, response) => {
+    response.send(toApiList(listSecretIds()));
 }, 'Listing secret key ids failed.'));
 
 secretsRouter.put('/:keyId', asyncRoute(async (request, response) => {
     const result = setSecret(
-        request.user.directories,
         request.params.keyId,
         request.body?.value,
         request.body?.label ?? 'API',
@@ -30,6 +29,6 @@ secretsRouter.put('/:keyId', asyncRoute(async (request, response) => {
 }, 'Storing a secret failed.'));
 
 secretsRouter.delete('/:keyId', asyncRoute(async (request, response) => {
-    deleteSecret(request.user.directories, request.params.keyId, request.body?.entry_id ?? null);
+    deleteSecret(request.params.keyId, request.body?.entry_id ?? null);
     response.sendStatus(204);
 }, 'Deleting a secret failed.'));

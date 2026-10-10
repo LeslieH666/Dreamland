@@ -199,9 +199,10 @@ describe('POST /api/v1/chats/{id}/generate over a real listener', () => {
                 stream_openai: true,
             },
         }));
-        const { setSecret } = await import('../src/api-v1/secrets.js');
-        const { SECRET_KEYS } = await import('../src/endpoints/secrets.js');
-        await setSecret(directories, SECRET_KEYS.CUSTOM, 'fixture-key');
+        // T1 made the public /api/v1/secrets surface server-global, but the adapter still
+        // reads the per-account key here, so seed the per-account store directly.
+        const { SECRET_KEYS, writeSecret } = await import('../src/endpoints/secrets.js');
+        writeSecret(directories, SECRET_KEYS.CUSTOM, 'fixture-key');
 
         // 5. stream a generation
         const response = await fetch(`${baseUrl}${API_V1_ROOT}/chats/${encodeURIComponent(chatId)}/generate`, {

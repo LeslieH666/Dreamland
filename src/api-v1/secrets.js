@@ -14,8 +14,32 @@
  * environment secret and the external-source precedence all stay in one place.
  */
 
+import path from 'node:path';
+
 import { EXTERNAL_SECRET_ID, SECRET_KEYS, SecretManager } from '../endpoints/secrets.js';
 import { badRequest, notFound } from './errors.js';
+
+/**
+ * The public secret surface is server-global (not per account) after the server-managed
+ * model gateway landed: provider API keys belong to the operator, so they live under the
+ * server data root rather than a user directory.
+ * @returns {import('../users.js').UserDirectoryList} A global directory descriptor.
+ */
+function globalSecretDirectories() {
+    const root = String(globalThis.DATA_ROOT ?? '');
+    return {
+        root,
+        backups: path.join(root, 'backups'),
+        characters: '',
+        chats: '',
+        groups: '',
+        groupChats: '',
+        worlds: '',
+        avatars: '',
+        user: '',
+        vectors: '',
+    };
+}
 
 /** Keys that may be configured through the API (the well-known provider slots). */
 export const EXPOSABLE_SECRET_KEYS = Object.freeze(
@@ -37,12 +61,11 @@ export function assertSecretKeyId(keyId) {
 }
 
 /**
- * List the account's secret slots. Never returns a plaintext value.
- * @param {import('../users.js').UserDirectoryList} directories User directories.
+ * List the server's global secret slots. Never returns a plaintext value.
  * @returns {object[]} Key-id list.
  */
-export function listSecretIds(directories) {
-    const manager = new SecretManager(directories);
+export function listSecretIds() {
+    const manager = new SecretManager(globalSecretDirectories());
     const state = manager.getSecretState();
     return EXPOSABLE_SECRET_KEYS.map(keyId => {
         const entries = Array.isArray(state?.[keyId]) ? state[keyId] : [];
@@ -62,44 +85,41 @@ export function listSecretIds(directories) {
 
 /**
  * Read a secret value for server-side use only.
- * @param {import('../users.js').UserDirectoryList} directories User directories.
  * @param {string} keyId Secret key id.
  * @param {string | null} [entryId] Specific stored entry.
  * @returns {string} Plaintext value, or an empty string when unset.
  */
-export function getSecret(directories, keyId, entryId = null) {
-    return new SecretManager(directories).readSecret(assertSecretKeyId(keyId), entryId);
+export function getSecret(keyId, entryId = null) {
+    return new SecretManager(globalSecretDirectories()).readSecret(assertSecretKeyId(keyId), entryId);
 }
 
 /**
  * Store a secret value.
- * @param {import('../users.js').UserDirectoryList} directories User directories.
  * @param {string} keyId Secret key id.
  * @param {string} value Secret value.
  * @param {string} [label] Human-readable label.
  * @returns {{entry_id: string}} The new entry id (never the value).
  * @throws {ApiError} 400 when the value is empty.
  */
-export function setSecret(directories, keyId, value, label = 'API') {
+export function setSecret(keyId, value, label = 'API') {
     const key = assertSecretKeyId(keyId);
     const normalized = String(value ?? '');
     if (normalized.trim() === '') {
         throw badRequest('value must not be empty.');
     }
-    const entryId = new SecretManager(directories).writeSecret(key, normalized, String(label).slice(0, 64));
+    const entryId = new SecretManager(globalSecretDirectories()).writeSecret(key, normalized, String(label).slice(0, 64));
     return { entry_id: entryId };
 }
 
 /**
  * Delete a stored secret entry.
- * @param {import('../users.js').UserDirectoryList} directories User directories.
  * @param {string} keyId Secret key id.
  * @param {string | null} [entryId] Entry to delete; the active entry when omitted.
  * @returns {{deleted: boolean}} Result.
  */
-export function deleteSecret(directories, keyId, entryId = null) {
+export function deleteSecret(keyId, entryId = null) {
     const key = assertSecretKeyId(keyId);
-    const manager = new SecretManager(directories);
+    const manager = new SecretManager(globalSecretDirectories());
     const state = manager.getSecretState();
     const entries = Array.isArray(state?.[key]) ? state[key] : [];
     const target = entryId ?? entries.find(entry => entry.active)?.id ?? null;

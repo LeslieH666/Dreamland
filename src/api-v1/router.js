@@ -66,7 +66,7 @@ export function createApiV1Router({ rateLimiters = createApiV1RateLimiters() } =
     router.use('/chats', chatsRouter);
     router.use('/groups', groupsRouter);
     router.use('/worldinfo', worldInfoRouter);
-    router.use('/secrets', secretsRouter);
+    router.use('/secrets', requireOpsAdmin, secretsRouter);
     router.use('/ops', requireOpsAdmin, createOpsRouter({ accountLimiter: rateLimiters.limiters.account }));
     router.use('/', voiceRouter);
     router.use('/', leslieRouter);

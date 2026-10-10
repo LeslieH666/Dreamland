@@ -18,6 +18,7 @@ import { CHAT_COMPLETION_SOURCES } from '../../constants.js';
 import { SECRET_KEYS } from '../../endpoints/secrets.js';
 import { LeslieMomentsStore } from '../../leslie-moments/store.js';
 import { getRuntimeMode } from '../../runtime-mode.js';
+import { deleteModel, deleteProvider, listAllModels, listProvidersMasked, upsertModel, upsertProvider } from '../../model-gateway/store.js';
 import { getPasswordHash, getPasswordSalt, getAllUserHandles, getUserDirectories, toKey } from '../../users.js';
 import { registerAccount } from '../auth.js';
 import { listSecretIds } from '../secrets.js';
@@ -499,6 +500,37 @@ export function createOpsRouter({ accountLimiter } = {}) {
         // invalidates every access/refresh token and cookie session issued before the change.
         response.send({ handle, updated: true });
     }, 'Resetting a password failed.'));
+
+    // ---- Server-managed model gateway ------------------------------------------
+    opsRouter.get('/model-gateway', asyncRoute(async (_request, response) => {
+        response.send({ providers: listProvidersMasked(), models: listAllModels() });
+    }, 'Listing the model gateway failed.'));
+
+    opsRouter.post('/model-gateway/providers', asyncRoute(async (request, response) => {
+        const provider = upsertProvider(request.body ?? {});
+        response.status(201).send({ provider });
+    }, 'Saving a model gateway provider failed.'));
+
+    opsRouter.delete('/model-gateway/providers/:id', asyncRoute(async (request, response) => {
+        const result = deleteProvider(String(request.params.id), true);
+        if (!result.deleted) {
+            throw notFound('That provider does not exist.');
+        }
+        response.sendStatus(204);
+    }, 'Deleting a model gateway provider failed.'));
+
+    opsRouter.post('/model-gateway/models', asyncRoute(async (request, response) => {
+        const model = upsertModel(request.body ?? {});
+        response.status(201).send({ model });
+    }, 'Saving a model gateway model failed.'));
+
+    opsRouter.delete('/model-gateway/models/:id', asyncRoute(async (request, response) => {
+        const result = deleteModel(String(request.params.id));
+        if (!result.deleted) {
+            throw notFound('That model does not exist.');
+        }
+        response.sendStatus(204);
+    }, 'Deleting a model gateway model failed.'));
 
     return opsRouter;
 }

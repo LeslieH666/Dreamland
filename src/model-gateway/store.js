@@ -91,6 +91,46 @@ export function listProviders() {
     return readModelGateway().providers;
 }
 
+/**
+ * Mask a secret for display: keep the first 4 and last 4 characters.
+ * @param {string} value Plaintext secret.
+ * @returns {string} Masked preview, or '' when empty.
+ */
+export function maskSecret(value) {
+    const v = String(value ?? '');
+    if (!v) return '';
+    if (v.length <= 8) return '••••••••';
+    return `${v.slice(0, 4)}••••${v.slice(-4)}`;
+}
+
+/**
+ * Describe one provider for the ops panel: secret kept out, only a masked preview and
+ * a configured flag are exposed.
+ * @param {object} provider Provider entry.
+ * @returns {object} Provider with `apiKeyPreview` / `apiKeyConfigured` added.
+ */
+export function describeProvider(provider) {
+    const apiKey = provider?.apiKeySecretId ? globalSecretManager().readSecret(provider.apiKeySecretId) : '';
+    return {
+        id: String(provider?.id ?? ''),
+        name: String(provider?.name ?? provider?.id ?? ''),
+        source: String(provider?.source ?? 'custom'),
+        endpoint: String(provider?.endpoint ?? ''),
+        apiKeySecretId: String(provider?.apiKeySecretId ?? ''),
+        enabled: provider?.enabled !== false,
+        apiKeyPreview: maskSecret(apiKey),
+        apiKeyConfigured: Boolean(apiKey),
+    };
+}
+
+/**
+ * Providers for the ops panel, with secrets masked.
+ * @returns {object[]} Masked provider list.
+ */
+export function listProvidersMasked() {
+    return listProviders().map(describeProvider);
+}
+
 /** @param {string} id Provider id. @returns {object | undefined} Provider entry. */
 export function getProviderById(id) {
     return readModelGateway().providers.find(provider => provider.id === id);

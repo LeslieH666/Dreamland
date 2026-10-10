@@ -99,10 +99,38 @@
             </section>
 
             <section class="card">
-                <h2>网关供应商</h2>
-                <div id="gateway-summary" class="muted"></div>
-                <table id="gateway">
-                    <thead><tr><th>供应商</th><th>状态</th><th>密钥</th><th>来源</th></tr></thead>
+                <h2>模型网关</h2>
+                <div id="mg-status" class="muted"></div>
+                <div id="mg-error" class="error"></div>
+
+                <div class="subhead">供应商管理</div>
+                <div class="form-row">
+                    <input id="pv-id" type="text" placeholder="id（如 deepseek）" autocomplete="off">
+                    <input id="pv-name" type="text" placeholder="名称" autocomplete="off">
+                    <input id="pv-source" type="text" placeholder="source（如 openai/custom/deepseek）" autocomplete="off">
+                    <input id="pv-endpoint" type="text" placeholder="endpoint（留空用默认）" autocomplete="off">
+                    <input id="pv-key" type="password" placeholder="API key（留空保留）" autocomplete="new-password">
+                    <label><input id="pv-enabled" type="checkbox" checked> 启用</label>
+                    <button id="pv-save" type="button">保存</button>
+                </div>
+                <table id="providers">
+                    <thead><tr><th>id</th><th>名称</th><th>source</th><th>endpoint</th><th>密钥</th><th>启用</th><th>操作</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="subhead">模型清单管理</div>
+                <div class="form-row">
+                    <input id="md-id" type="text" placeholder="id（如 deepseek-chat）" autocomplete="off">
+                    <input id="md-name" type="text" placeholder="名称" autocomplete="off">
+                    <select id="md-provider"></select>
+                    <input id="md-apimodel" type="text" placeholder="apiModel（真实模型名）" autocomplete="off">
+                    <input id="md-temp" type="text" placeholder="temperature（默认）" autocomplete="off">
+                    <input id="md-maxtokens" type="text" placeholder="max_tokens（默认）" autocomplete="off">
+                    <label><input id="md-enabled" type="checkbox" checked> 启用</label>
+                    <button id="md-save" type="button">保存</button>
+                </div>
+                <table id="catalog">
+                    <thead><tr><th>id</th><th>名称</th><th>供应商</th><th>apiModel</th><th>默认参数</th><th>启用</th><th>操作</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
@@ -201,11 +229,11 @@
             setDashboardError('');
             try {
                 const [status, users, gateway, rateLimits] = await Promise.all([
-                    api('/ops/status'), api('/ops/users'), api('/ops/gateway'), api('/ops/rate-limits'),
+                    api('/ops/status'), api('/ops/users'), api('/ops/model-gateway'), api('/ops/rate-limits'),
                 ]);
                 renderStatus(status);
                 renderUsers(users.users);
-                renderGateway(gateway);
+                renderModelGateway(gateway);
                 renderRateLimits(rateLimits);
             } catch (error) {
                 if (error.message === 'AUTH_EXPIRED') {
@@ -300,15 +328,120 @@
             });
         }
 
-        function renderGateway(gateway) {
-            const summary = document.getElementById('gateway-summary');
-            summary.textContent = '当前网关：' + (gateway.source || '（未配置）') + ' · 模型：' + (gateway.model || '（未配置）');
-            const tbody = document.querySelector('#gateway tbody');
-            tbody.innerHTML = (gateway.providers || []).map(p => {
-                const status = p.configured ? '<span class="ok">已配置</span>' : '<span class="muted">未配置</span>';
-                const active = p.active ? '（当前）' : '';
-                return '<tr><td class="mono">' + p.source + active + '</td><td>' + status + '</td><td class="mono">' + (p.preview || '—') + '</td><td>' + (p.secret_source || '—') + '</td></tr>';
+        let lastGateway = null;
+
+        function renderModelGateway(gateway) {
+            lastGateway = gateway;
+            const providers = gateway.providers || [];
+            const models = gateway.models || [];
+            const enabledModels = models.filter(m => m.enabled !== false);
+            document.getElementById('mg-status').textContent = '当前生效：' + enabledModels.length + ' 个模型 · ' + providers.filter(p => p.enabled).length + ' 个供应商（共 ' + models.length + ' / ' + providers.length + '）';
+
+            document.querySelector('#providers tbody').innerHTML = providers.map(p =>
+                '<tr><td class="mono">' + esc(p.id) + '</td><td>' + esc(p.name) + '</td><td class="mono">' + esc(p.source) + '</td><td class="mono">' + esc(p.endpoint || '—') + '</td><td class="mono">' + (p.apiKeyConfigured ? esc(p.apiKeyPreview) : '<span class="muted">未配置</span>') + '</td><td>' + (p.enabled ? '<span class="ok">是</span>' : '<span class="warn">否</span>') + '</td>' +
+                '<td class="actions"><button data-act="pv-toggle" data-id="' + esc(p.id) + '">' + (p.enabled ? '停用' : '启用') + '</button><button data-act="pv-delete" data-id="' + esc(p.id) + '" class="danger">删除</button></td></tr>'
+            ).join('');
+
+            const modelProviderSelect = document.getElementById('md-provider');
+            modelProviderSelect.innerHTML = providers.map(p => '<option value="' + esc(p.id) + '">' + esc(p.name || p.id) + '</option>').join('');
+
+            document.querySelector('#catalog tbody').innerHTML = models.map(m => {
+                const params = (m.params && typeof m.params === 'object')
+                    ? [m.params.temperature !== undefined ? 'temp=' + m.params.temperature : '', m.params.max_tokens !== undefined ? 'max_tokens=' + m.params.max_tokens : ''].filter(Boolean).join(' ')
+                    : '';
+                return '<tr><td class="mono">' + esc(m.id) + '</td><td>' + esc(m.name) + '</td><td class="mono">' + esc(m.provider) + '</td><td class="mono">' + esc(m.apiModel ?? m.id) + '</td><td class="mono">' + esc(params || '—') + '</td><td>' + (m.enabled !== false ? '<span class="ok">是</span>' : '<span class="warn">否</span>') + '</td>' +
+                '<td class="actions"><button data-act="md-toggle" data-id="' + esc(m.id) + '">' + (m.enabled !== false ? '停用' : '启用') + '</button><button data-act="md-delete" data-id="' + esc(m.id) + '" class="danger">删除</button></td></tr>';
             }).join('');
+
+            document.querySelectorAll('#providers button[data-act]').forEach(button => {
+                button.addEventListener('click', () => onProviderAction(button.getAttribute('data-act'), button.getAttribute('data-id')));
+            });
+            document.querySelectorAll('#catalog button[data-act]').forEach(button => {
+                button.addEventListener('click', () => onModelAction(button.getAttribute('data-act'), button.getAttribute('data-id')));
+            });
+        }
+
+        async function saveProvider() {
+            const body = {
+                id: document.getElementById('pv-id').value.trim(),
+                name: document.getElementById('pv-name').value.trim(),
+                source: document.getElementById('pv-source').value.trim() || 'custom',
+                endpoint: document.getElementById('pv-endpoint').value.trim(),
+                enabled: document.getElementById('pv-enabled').checked,
+            };
+            const apiKey = document.getElementById('pv-key').value;
+            if (apiKey) body.apiKey = apiKey;
+            setMgError('');
+            try {
+                await apiMutation('POST', '/ops/model-gateway/providers', body);
+                ['pv-id', 'pv-name', 'pv-source', 'pv-endpoint', 'pv-key'].forEach(id => { document.getElementById(id).value = ''; });
+                await loadDashboard();
+            } catch (error) {
+                if (handleAuthError(error)) return;
+                setMgError(error.message || String(error));
+            }
+        }
+
+        async function onProviderAction(action, id) {
+            setMgError('');
+            try {
+                if (action === 'pv-delete') {
+                    await apiMutation('DELETE', '/ops/model-gateway/providers/' + encodeURIComponent(id), {});
+                } else if (action === 'pv-toggle') {
+                    const provider = (lastGateway?.providers || []).find(p => p.id === id);
+                    if (!provider) return;
+                    await apiMutation('POST', '/ops/model-gateway/providers', { id: provider.id, name: provider.name, source: provider.source, endpoint: provider.endpoint, enabled: !provider.enabled });
+                }
+                await loadDashboard();
+            } catch (error) {
+                if (handleAuthError(error)) return;
+                setMgError(error.message || String(error));
+            }
+        }
+
+        async function saveModel() {
+            const body = {
+                id: document.getElementById('md-id').value.trim(),
+                name: document.getElementById('md-name').value.trim(),
+                provider: document.getElementById('md-provider').value,
+                apiModel: document.getElementById('md-apimodel').value.trim(),
+                enabled: document.getElementById('md-enabled').checked,
+                params: {},
+            };
+            const temp = document.getElementById('md-temp').value.trim();
+            const maxTokens = document.getElementById('md-maxtokens').value.trim();
+            if (temp) body.params.temperature = Number(temp);
+            if (maxTokens) body.params.max_tokens = Number(maxTokens);
+            setMgError('');
+            try {
+                await apiMutation('POST', '/ops/model-gateway/models', body);
+                ['md-id', 'md-name', 'md-apimodel', 'md-temp', 'md-maxtokens'].forEach(id => { document.getElementById(id).value = ''; });
+                await loadDashboard();
+            } catch (error) {
+                if (handleAuthError(error)) return;
+                setMgError(error.message || String(error));
+            }
+        }
+
+        async function onModelAction(action, id) {
+            setMgError('');
+            try {
+                if (action === 'md-delete') {
+                    await apiMutation('DELETE', '/ops/model-gateway/models/' + encodeURIComponent(id), {});
+                } else if (action === 'md-toggle') {
+                    const model = (lastGateway?.models || []).find(m => m.id === id);
+                    if (!model) return;
+                    await apiMutation('POST', '/ops/model-gateway/models', { id: model.id, name: model.name, provider: model.provider, apiModel: model.apiModel, enabled: model.enabled === false, params: model.params || {} });
+                }
+                await loadDashboard();
+            } catch (error) {
+                if (handleAuthError(error)) return;
+                setMgError(error.message || String(error));
+            }
+        }
+
+        function setMgError(message) {
+            document.getElementById('mg-error').textContent = message || '';
         }
 
         function renderRateLimits(rateLimits) {
@@ -480,6 +613,8 @@
         }
 
         document.getElementById('create-button').addEventListener('click', createUser);
+        document.getElementById('pv-save').addEventListener('click', saveProvider);
+        document.getElementById('md-save').addEventListener('click', saveModel);
         document.getElementById('modal-close').addEventListener('click', closeModal);
         document.getElementById('modal-overlay').addEventListener('click', (event) => {
             if (event.target === document.getElementById('modal-overlay')) closeModal();

@@ -73,6 +73,16 @@ async function patchJson(path, body, token) {
     return { status: response.status, body: parsed };
 }
 
+/** @param {string} path Path under /api/v1. @param {string} [token] Bearer token. */
+async function deleteJson(path, token) {
+    const response = await fetch(`${baseUrl}${API_V1_ROOT}${path}`, {
+        method: 'DELETE',
+        headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
+        signal: AbortSignal.timeout(20_000),
+    });
+    return { status: response.status };
+}
+
 beforeAll(async () => {
     configRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dl-ops-config-'));
     fs.writeFileSync(path.join(configRoot, 'config.yaml'), 'allowKeysExposure: false\n');
@@ -249,6 +259,41 @@ describe('GET /api/v1/models', () => {
         expect(JSON.stringify(authed.body)).not.toContain('sk-secret-do-not-leak');
         const entry = authed.body.models.find(model => model.id === 'model-a');
         expect(entry).toEqual({ id: 'model-a', name: 'Model A', enabled: true });
+    });
+});
+
+describe('ops model gateway', () => {
+    test('creates providers/models, masks keys and resolves the config', async () => {
+        const adminToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: ADMIN_HANDLE, password: PASSWORD })).body?.access_token;
+        expect(typeof adminToken).toBe('string');
+
+        const provider = await postJson(`${baseUrl}${API_V1_ROOT}/ops/model-gateway/providers`, {
+            id: 'mg-prov', name: 'MG Prov', source: 'custom', endpoint: 'http://127.0.0.1:1', apiKey: 'sk-mg-secret-key-1234', enabled: true,
+        }, adminToken);
+        expect(provider.status).toBe(201);
+
+        const model = await postJson(`${baseUrl}${API_V1_ROOT}/ops/model-gateway/models`, {
+            id: 'mg-model', name: 'MG Model', provider: 'mg-prov', apiModel: 'real-model', enabled: true, params: { temperature: 0.7, max_tokens: 500 },
+        }, adminToken);
+        expect(model.status).toBe(201);
+
+        const gateway = await getJson('/ops/model-gateway', adminToken);
+        expect(gateway.status).toBe(200);
+        const listedProvider = gateway.body.providers.find(p => p.id === 'mg-prov');
+        expect(listedProvider.apiKeyConfigured).toBe(true);
+        expect(listedProvider.apiKeyPreview).toBeTruthy();
+        expect(JSON.stringify(gateway.body)).not.toContain('sk-mg-secret-key-1234');
+        expect(gateway.body.models.some(m => m.id === 'mg-model')).toBe(true);
+
+        const { resolveModelConfig } = await import('../src/model-gateway/store.js');
+        expect(resolveModelConfig('mg-model').apiKey).toBe('sk-mg-secret-key-1234');
+        expect(resolveModelConfig('mg-model').model).toBe('real-model');
+        expect(resolveModelConfig('mg-model').params.temperature).toBe(0.7);
+
+        const delModel = await deleteJson('/ops/model-gateway/models/mg-model', adminToken);
+        expect(delModel.status).toBe(204);
+        const delProvider = await deleteJson('/ops/model-gateway/providers/mg-prov', adminToken);
+        expect(delProvider.status).toBe(204);
     });
 });
 

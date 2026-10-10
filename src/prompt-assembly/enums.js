@@ -34,3 +34,39 @@ export const INJECTION_POSITION = Object.freeze({
     RELATIVE: 0,
     ABSOLUTE: 1,
 });
+
+/**
+ * Chat-message `extra.type` values the assembly can treat specially, mirrored from
+ * public/scripts/system-messages.js. Only NARRATOR is read by the shared message
+ * shaping; the full set is mirrored so callers compare against the real values.
+ * @readonly
+ * @enum {string}
+ */
+export const SYSTEM_MESSAGE_TYPES = Object.freeze({
+    HELP: 'help',
+    WELCOME: 'welcome',
+    EMPTY: 'empty',
+    GENERIC: 'generic',
+    NARRATOR: 'narrator',
+    COMMENT: 'comment',
+    SLASH_COMMANDS: 'slash_commands',
+    FORMATTING: 'formatting',
+    HOTKEYS: 'hotkeys',
+    MACROS: 'macros',
+    WELCOME_PROMPT: 'welcome_prompt',
+    ASSISTANT_NOTE: 'assistant_note',
+    ASSISTANT_MESSAGE: 'assistant_message',
+});
+
+/**
+ * How a speaker name is attached to a chat-completion message
+ * (public/scripts/openai.js:223).
+ * @readonly
+ * @enum {number}
+ */
+export const CHARACTER_NAMES_BEHAVIOR = Object.freeze({
+    NONE: -1,
+    DEFAULT: 0,
+    COMPLETION: 1,
+    CONTENT: 2,
+});

@@ -19,7 +19,7 @@ import path from 'node:path';
 
 import { ApiError } from '../api-v1/errors.js';
 import { decodeCompositeId } from '../api-v1/ids.js';
-import { ExtensionPromptRole, ExtensionPromptType, MAX_INJECTION_DEPTH } from './enums.js';
+import { CHARACTER_NAMES_BEHAVIOR, ExtensionPromptRole, ExtensionPromptType, MAX_INJECTION_DEPTH, SYSTEM_MESSAGE_TYPES } from './enums.js';
 import { getExtensionPrompt, getExtensionPromptMaxDepth } from './extension-prompts.js';
 import { LeslieMemoryStore } from '../leslie-memory/store.js';
 import { configureMacroEngine, evaluateMacros as evaluateMacrosCore } from './macro-engine.js';
@@ -41,6 +41,36 @@ const SETTINGS_FILE = 'settings.json';
 
 /** Chat metadata key holding the author's note body. */
 const NOTE_PROMPT_KEY = 'note_prompt';
+
+/** Registry key the character depth prompt is injected under (public/scripts/constants.js). */
+const DEPTH_PROMPT_KEY = 'DEPTH_PROMPT';
+
+/** Default injection depth for a card that has a depth prompt but no explicit depth. */
+const DEPTH_PROMPT_DEPTH_DEFAULT = 4;
+
+/** Default role name for a card depth prompt (public/script.js). */
+const DEPTH_PROMPT_ROLE_DEFAULT = 'system';
+
+/**
+ * Map a stored extension-prompt role (a name or an already-numeric value) to the enum.
+ * Mirrors `getExtensionPromptRoleByName` in public/script.js.
+ * @param {string|number|undefined} roleName Stored role.
+ * @returns {number} ExtensionPromptRole value.
+ */
+export function extensionRoleByName(roleName) {
+    if (typeof roleName === 'number' && Object.values(ExtensionPromptRole).includes(roleName)) {
+        return roleName;
+    }
+    switch (roleName) {
+        case 'user':
+            return ExtensionPromptRole.USER;
+        case 'assistant':
+            return ExtensionPromptRole.ASSISTANT;
+        case 'system':
+        default:
+            return ExtensionPromptRole.SYSTEM;
+    }
+}
 
 /**
  * Escape a string for literal use inside a regular expression.
@@ -323,7 +353,11 @@ export async function assembleAuthoritativeTurn(input) {
     };
 
     const assemblyEnv = buildServerAssemblyEnv({
-        settings,
+        // The shared assembly reads `settings.oai_settings` directly, so hand it the
+        // merged copy: passing the persisted object alone left every un-persisted default
+        // undefined (and produced empty `new_chat_prompt` / `new_example_chat_prompt`
+        // blocks that the message shaper then drops).
+        settings: { ...settings, oai_settings: oaiSettings, power_user: powerUser },
         card,
         promptManager,
         tokenHandler,
@@ -376,6 +410,21 @@ export async function assembleAuthoritativeTurn(input) {
             position: chat.metadata?.note_position,
             depth: chat.metadata?.note_depth,
             role: chat.metadata?.note_role,
+            scan: Boolean(extensionSettings.note?.allowWIScan),
+            extension: true,
+        };
+    }
+
+    // Character depth prompt (the card's "character-specific author's note"). The page
+    // registers it as an in-chat injection at the depth stored on the card, so the server
+    // has to do the same or every card with a depth prompt loses that block.
+    const cardDepthPrompt = card.extensions?.depth_prompt ?? {};
+    if (String(cardDepthPrompt.prompt ?? '').length > 0) {
+        registry[DEPTH_PROMPT_KEY] = {
+            value: String(cardDepthPrompt.prompt).trim(),
+            position: ExtensionPromptType.IN_CHAT,
+            depth: Number(cardDepthPrompt.depth ?? DEPTH_PROMPT_DEPTH_DEFAULT),
+            role: extensionRoleByName(cardDepthPrompt.role ?? DEPTH_PROMPT_ROLE_DEFAULT),
             scan: Boolean(extensionSettings.note?.allowWIScan),
             extension: true,
         };
@@ -534,12 +583,48 @@ export async function assembleAuthoritativeTurn(input) {
         getShouldWIAddPrompt: () => shouldWIAddPrompt,
     });
 
+    // The page drains World Info's at-depth and outlet entries into the extension registry
+    // right after the scan (`flushWIInjections` in public/script.js). Without this the
+    // in-chat depth entries are computed and then thrown away, so every at-depth lore
+    // entry disappears from the assembled turn.
+    for (const depthEntry of Array.isArray(wi.worldInfoDepth) ? wi.worldInfoDepth : []) {
+        if (!Array.isArray(depthEntry?.entries) || depthEntry.entries.length === 0) {
+            continue;
+        }
+        const depth = depthEntry.depth ?? 0;
+        const role = depthEntry.role ?? ExtensionPromptRole.SYSTEM;
+        registry[`customDepthWI_${depth}_${role}`] = {
+            value: depthEntry.entries.join('\n'),
+            position: ExtensionPromptType.IN_CHAT,
+            depth,
+            role,
+            scan: false,
+            extension: true,
+        };
+    }
+    for (const [outletName, entries] of Object.entries(wi.outletEntries ?? {})) {
+        if (!Array.isArray(entries) || entries.length === 0) {
+            continue;
+        }
+        // Outlets are addressed by the `{{outlet::name}}` macro, never placed by position.
+        registry[`customWIOutlet_${outletName}`] = {
+            value: entries.join('\n'),
+            position: ExtensionPromptType.NONE,
+            depth: 0,
+            scan: false,
+            extension: true,
+        };
+    }
+
     const shapingContext = {
         oaiSettings,
         getChatCompletionModel: () => oaiSettings.custom_model ?? oaiSettings.openai_model ?? '',
         ignoreSymbol: deps.ignoreSymbol ?? '__ignore',
-        systemMessageTypes: deps.systemMessageTypes ?? {},
-        characterNamesBehavior: deps.characterNamesBehavior ?? {},
+        // Both enums are compared against chat-message fields; an empty object made every
+        // `extra.type` comparison undefined and turned every history message into a
+        // narrator system message.
+        systemMessageTypes: deps.systemMessageTypes ?? SYSTEM_MESSAGE_TYPES,
+        characterNamesBehavior: deps.characterNamesBehavior ?? CHARACTER_NAMES_BEHAVIOR,
         selectedGroup: null,
         name1,
         name2,
@@ -548,7 +633,12 @@ export async function assembleAuthoritativeTurn(input) {
     };
     const messages = setOpenAIMessages(chat.messages, shapingContext);
     const mesExamplesArray = parseMesExamples(String(card.mes_example ?? ''), false, macroContext());
-    const messageExamples = setOpenAIMessageExamples(mesExamplesArray, {
+    // The page substitutes the example dialog with `baseChatReplace` before the message
+    // shaper splits it into `{{user}}:` / `{{char}}:` blocks (and keeps the raw array for
+    // the story string). `baseChatReplace` substitutes names but explicitly leaves
+    // character-card macros alone, hence `replaceCharacterCard: false`. Without this step
+    // the split finds no speaker prefixes and every example block comes back empty.
+    const messageExamples = setOpenAIMessageExamples(mesExamplesArray.map(example => substitute(example, { replaceCharacterCard: false })), {
         name1,
         name2,
         selectedGroup: null,

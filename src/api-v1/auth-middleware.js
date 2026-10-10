@@ -90,3 +90,51 @@ export async function apiV1AuthenticationMiddleware(request, response, next) {
 export function requireApiV1Auth(router) {
     router.use(apiV1AuthenticationMiddleware);
 }
+
+/**
+ * Optional bearer-token authentication for the legacy cookie track.
+ *
+ * The desktop web UI authenticates with its cookie session. The public web client
+ * (DREAMLAND_MODE=server) authenticates with a `/api/v1` access token instead, but its
+ * data operations still hit the same legacy `/api/*` endpoints. This middleware binds
+ * `request.user` from a valid bearer token when one is present, and otherwise falls
+ * through to the cookie session untouched. A token that is present but invalid fails
+ * closed so an expired session cannot silently degrade into an unauthenticated request.
+ *
+ * @param {import('express').Request} request Express request.
+ * @param {import('express').Response} response Express response.
+ * @param {import('express').NextFunction} next Next middleware.
+ * @returns {Promise<void>} Resolves when the request continues.
+ */
+export async function bearerTokenFallbackMiddleware(request, response, next) {
+    const token = parseBearerToken(request.get('authorization'));
+    if (!token) {
+        return next();
+    }
+
+    let payload;
+    try {
+        payload = verifyAccessToken(token);
+    } catch (error) {
+        return next(error);
+    }
+
+    const profile = await storage.getItem(toKey(payload.sub));
+    if (!profile || !profile.enabled || getAccountVersion(profile) !== payload.ver) {
+        return next(unauthorized('The account for this token is unavailable. Sign in again.'));
+    }
+
+    const user = await resolveRequestUser(profile.handle);
+    if (!user) {
+        return next(unauthorized('The account for this token no longer exists.'));
+    }
+
+    request.user = user;
+    request.bearerAuthenticated = true;
+    request.apiAuth = {
+        handle: profile.handle,
+        tokenId: payload.jti,
+        expiresAt: payload.exp,
+    };
+    return next();
+}

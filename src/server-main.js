@@ -74,10 +74,11 @@ import {
 import { UPLOADS_DIRECTORY } from './constants.js';
 
 // Routers
-import { isServerMode, resolveBrowserLaunchEnabled, shouldSealUserSpaceOnExit } from './runtime-mode.js';
+import { getRuntimeMode, isServerMode, resolveBrowserLaunchEnabled, shouldSealUserSpaceOnExit } from './runtime-mode.js';
 import { getPlatform } from './platform/index.js';
 import { API_V1_ROOT } from './api-v1/protocol.js';
 import { router as apiV1Router } from './api-v1/router.js';
+import { bearerTokenFallbackMiddleware } from './api-v1/auth-middleware.js';
 import { SECRET_CONFIG_KEYS, findDreamlandEnvOverride, listConfigEnvOverrides } from './config-env.js';
 import { router as usersPublicRouter } from './endpoints/users-public.js';
 import { init as statsInit, onExit as statsOnExit } from './endpoints/stats.js';
@@ -202,6 +203,11 @@ app.use(cookieSession({
 
 app.use(LESLIE_BRIDGE_API_ROOT, leslieBridgeAuthenticationMiddleware);
 app.use(setUserDataMiddleware);
+// The public web client (DREAMLAND_MODE=server) authenticates with a `/api/v1` bearer
+// token, but its data operations hit the same legacy endpoints as the cookie-based
+// desktop UI. This binds `request.user` from a valid token when one is present, and
+// otherwise leaves the cookie session path untouched.
+app.use(bearerTokenFallbackMiddleware);
 
 // CSRF Protection //
 if (!cliArgs.disableCsrf) {
@@ -225,7 +231,9 @@ if (!cliArgs.disableCsrf) {
         },
         skipCsrfProtection: (req) => {
             const corsProxyRequest = cliArgs.enableCorsProxy ? /^\/proxy\//.test(req.path) : false;
-            return corsProxyRequest || isLeslieBridgeRequestAuthenticated(req);
+            // A bearer-token request is not vulnerable to CSRF: the token is sent as a
+            // header, not an ambient cookie, so the CSRF gate can be skipped for it.
+            return corsProxyRequest || isLeslieBridgeRequestAuthenticated(req) || req.bearerAuthenticated === true;
         },
         size: 32,
     });
@@ -318,7 +326,7 @@ app.use(multerMonkeyPatch);
 
 app.get('/version', async function (_, response) {
     const data = await getVersion();
-    response.send(data);
+    response.send({ ...data, mode: getRuntimeMode() });
 });
 
 redirectDeprecatedEndpoints(app);

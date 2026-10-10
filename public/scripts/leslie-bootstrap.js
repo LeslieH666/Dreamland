@@ -1,4 +1,10 @@
 import { initializeUserSpacePreferences } from './leslie-user-preferences.js';
+import { installTokenInjection } from './token-auth.js';
+
+// Install the bearer-token header injection before any chat module issues a request, so
+// a public-web session authenticated through /api/v1 carries its token on the legacy
+// endpoints too. It is a no-op when no token is stored (desktop cookie session).
+installTokenInjection();
 
 // Register the offline-shell service worker. Service workers require a secure context
 // (https, or loopback for local development); on an insecure LAN origin the registration

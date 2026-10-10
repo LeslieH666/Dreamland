@@ -1,5 +1,6 @@
 import { initAccessibility } from './a11y.js';
 import { clearUserSpaceBrowserState } from './leslie-user-space-browser.js';
+import { storeTokenPair } from './token-auth.js';
 
 /**
  * CRSF token for requests.
@@ -237,6 +238,66 @@ function displayError(message) {
  * Redirects the user to the home page.
  * Preserves the query string.
  */
+/**
+ * Log in through `/api/v1/auth/token` (the public web client's bearer-token track).
+ * The access + refresh tokens are stored and the page redirects to the app, which then
+ * attaches `Authorization: Bearer` to its same-origin requests.
+ * @param {string} handle Account handle.
+ * @param {string} password Account password.
+ * @returns {Promise<void>} Resolves when the login attempt settles.
+ */
+async function performTokenLogin(handle, password) {
+    if (loginPending) return;
+    loginPending = true;
+    const button = $('#loginButton');
+    const originalLabel = button.text();
+    button.prop('disabled', true).text('正在登录…');
+    $('#userHandle, #userPassword').prop('disabled', true);
+    displayError('');
+    try {
+        const response = await fetch('/api/v1/auth/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ grant_type: 'password', handle, password }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            displayError(errorData?.error?.message || errorData?.error || errorData?.message || '登录失败，请稍后重试。');
+            return;
+        }
+        const data = await response.json();
+        storeTokenPair(data);
+        redirectToHome();
+    } catch (error) {
+        console.error('Error logging in:', error);
+        displayError(String(error));
+    } finally {
+        loginPending = false;
+        button.prop('disabled', false).text(originalLabel);
+        $('#userHandle, #userPassword').prop('disabled', false);
+    }
+}
+
+/**
+ * Configure the login page for the public web client: a handle + password form that
+ * authenticates against `/api/v1` instead of the desktop cookie session.
+ * @returns {void}
+ */
+function configureTokenLogin() {
+    $('#handleEntryBlock').show();
+    $('#normalLoginPrompt').hide();
+    $('#discreetLoginPrompt').show();
+    $('#userList').hide();
+    $('#passwordRecoveryBlock').hide();
+    $('#recoverPassword').hide();
+    $('#passwordEntryBlock').show();
+    $('#loginButton').off('click').on('click', async () => {
+        const handle = String($('#userHandle').val());
+        const password = String($('#userPassword').val());
+        await performTokenLogin(handle, password);
+    });
+}
+
 function redirectToHome() {
     // Create a URL object based on the current location
     const currentUrl = new URL(window.location.href);
@@ -326,6 +387,20 @@ function configureDiscreetLogin() {
 
 (async function () {
     initAccessibility();
+
+    // The public web client authenticates with a bearer token through /api/v1; the
+    // desktop host keeps its cookie-session login. The mode is reported by /version.
+    let serverMode = false;
+    try {
+        const version = await fetch('/version').then(response => response.json());
+        serverMode = version.mode === 'server';
+    } catch { /* fall back to the cookie login */ }
+
+    if (serverMode) {
+        configureTokenLogin();
+        document.getElementById('shadow_popup').style.opacity = '';
+        return;
+    }
 
     csrfToken = await getCsrfToken();
     encryptedSpaces = await fetch('/api/users/mode').then(response => response.json()).then(mode => {

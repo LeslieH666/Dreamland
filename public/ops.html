@@ -461,12 +461,12 @@
 
         async function changePassword(handle) {
             const body = '<div class="form-row">'
-                + '<input id="new-password" type="password" placeholder="新密码（至少 8 位）" autocomplete="new-password">'
+                + '<input id="change-password" type="password" placeholder="新密码（至少 8 位）" autocomplete="new-password">'
                 + '<button id="password-save" type="button">重置</button>'
                 + '</div><div class="muted">重置后旧密码立即失效。</div>';
             openModal('重置密码 · ' + esc(handle), body);
             document.getElementById('password-save').addEventListener('click', async () => {
-                const password = document.getElementById('new-password').value;
+                const password = document.getElementById('change-password').value;
                 if (!password || password.length < 8) { alert('密码至少需要 8 位。'); return; }
                 try {
                     await apiMutation('POST', '/ops/users/' + encodeURIComponent(handle) + '/password', { password });

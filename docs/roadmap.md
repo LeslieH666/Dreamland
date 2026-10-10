@@ -270,6 +270,56 @@
 - One-click standard Character Card V2/V3 JSON import in the manual character editor, with an optional avatar upload synchronized to the native create form before saving.
 - A default-off group-chat orchestrator with deterministic mention/relevance/turn-balance scoring, bounded reply batches, an automatic-reply ceiling, server-validated namespaced settings, and native natural-order fallback. Current-chat temporary roles use JSONL-only versioned metadata, manual creation, hidden in-memory card adapters, active/dormant/archived lifecycle states, branch pruning, Swipe continuity, and shared-memory speaker attribution without entering the character library. A third-stage isolated structured review can propose one editable role draft, an optionally immediate confirmed reply, or confirmed retirement choices on demand, with optional cooldown-based suggestions disabled by default and no direct model writes. See [group-chat-orchestrator.md](group-chat-orchestrator.md).
 
+## P2.5 收口报告：服务端权威轮次（2026-10-10，续）
+
+**结论：P2.5 收口。** `/api/v1/chats/{id}/generate` 已升级为「权威轮次」——服务端从
+持久化状态组装完整提示词（角色卡 / World Info / Persona / 记忆 / 作者注），经既有
+`handleChatCompletionGenerate` 流式返回，不再复制业务逻辑。**服务端 replay oracle 达到
+9/9 byte-identical**，与浏览器逐字一致，2.5.4 硬关口通过。
+
+### 收口的最后两处差异（令状 §2.1.3，Lead 已裁决）
+
+- **solo-regenerate 切片**：服务端此前在 newest-first 数组上 `slice(0,-1)`，丢掉了末尾
+  问候 `first_mes`、保留了被重掷的最新 assistant `A2`。改为 `slice(1)` 丢掉首元素 `A2`、
+  保留问候，产出 `[U2,A1,U1,FM]` 与浏览器同序同内容。
+- **solo-swipe 关系投影**：基线关系块 = 七维全 `0/100` = `calculateRelationship([], state)`。
+  服务端此前经 `getRelationship`（读入 events）得到 `4/100`。改为 swipe 用**空事件列表**
+  投影关系，与浏览器「swipe 不加载 events」一致；swipe 的 events 块本身仍关闭。
+
+### 收口新接线
+
+- **四项服务端接线全部闭环**：`assertWorldInfoPortable`（`enforcePortability=true`）、
+  `createSeededRandom`、`resolveChatCompletionTokenizerModel`（经 `buildServerTokenHandler`）、
+  `configureChatCompletion`（`assembleAuthoritativeTurn` 内，每账户 oai_settings + 惰性
+  media 桩 + token 计数）。
+- **timedWorldInfo 写回**：World Info 时间效果在组装后**只写回 JSONL 首行**（保留 header
+  包装与正文行逐字节不变，且仅当扫描确实改动 `chat_metadata` 时才写）。
+- **metadata 首行保留**：`/generate` 追加新用户消息改用 `getChatData` 全量读，不再丢
+  metadata 头。
+- **契约**：`docs/contracts/api-v1.openapi.yaml` 已标注「权威轮次」，补充 `type` /
+  `random_seed` / `note_text` / `top_p` 字段。
+
+### 门禁（全部断言退出码与计数）
+
+| 门禁 | 结果 |
+| --- | --- |
+| `lint`（root） / `lint`（tests） | exit 0 / exit 0（0 errors） |
+| `test:unit` | 80 suites / 944 tests passed，无 failed |
+| `check:repo` | exit 0 |
+| 红线 3 文件 | 累计 diff 空 |
+| `test:prompt-baseline`（浏览器 9 例） | 9/9 byte-identical |
+| replay oracle（服务端） | **9/9 byte-identical** |
+
+### commit 清单（P2.5 收尾）
+
+- `68041e282` fix: align regenerate slice and swipe empty-events memory with the baselines
+- `c985c2ef0` feat: make /generate an authoritative turn and wire the server ChatCompletion env
+
+### 结论
+
+服务端权威轮次已与浏览器逐字一致（9/9）；红线 3 文件零触碰；导出面守恒（本阶段未触碰
+`openai.js` / `PromptManager.js` / `world-info.js`）。P2.5 完成，进入 Phase 4。
+
 ## P2.5 里程碑报告：服务端权威轮次（2026-10-10）
 
 **结论：P2.5 未收口。** 服务端 `/generate` 权威轮次已能逐字复现浏览器组装，oracle 从

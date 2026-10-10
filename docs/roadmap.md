@@ -270,6 +270,54 @@
 - One-click standard Character Card V2/V3 JSON import in the manual character editor, with an optional avatar upload synchronized to the native create form before saving.
 - A default-off group-chat orchestrator with deterministic mention/relevance/turn-balance scoring, bounded reply batches, an automatic-reply ceiling, server-validated namespaced settings, and native natural-order fallback. Current-chat temporary roles use JSONL-only versioned metadata, manual creation, hidden in-memory card adapters, active/dormant/archived lifecycle states, branch pruning, Swipe continuity, and shared-memory speaker attribution without entering the character library. A third-stage isolated structured review can propose one editable role draft, an optionally immediate confirmed reply, or confirmed retirement choices on demand, with optional cooldown-based suggestions disabled by default and no direct model writes. See [group-chat-orchestrator.md](group-chat-orchestrator.md).
 
+## Phase 4 里程碑报告：Web PWA 解耦（2026-10-10）
+
+**结论：Phase 4 完成。** Web UI 支持「公网 Token 登录 / 桌面 Cookie 登录」双轨；PWA 可安装；
+CSP 从 `false` 收紧为显式策略；`leslie-settings.js` 已按行为不变原则拆分。
+
+### 改动清单
+
+- **P4.1 Token 鉴权**：`bearerTokenFallbackMiddleware`（`src/api-v1/auth-middleware.js`）让
+  遗留 `/api/*` cookie 轨道也接受有效 `/api/v1` access token（无 token 时回落到 cookie，
+  无效 token fail-closed）；CSRF 对 bearer 请求跳过（不携带 ambient cookie）。`/version` 上报
+  运行模式；`login.js` 在 server 模式走 `/api/v1/auth/token` 并存 token；新增
+  `public/scripts/token-auth.js` 给同源请求注入 `Authorization: Bearer`（fetch 包装 + jQuery
+  prefilter，**绝不下发到模型供应商等跨域请求**）。
+- **P4.2 PWA**：`public/sw.js` 只缓存同源静态壳资源（HTML/CSS/JS/字体/内置图），**绝不缓存
+  `/api/*`（聊天/角色/密钥）、跨域供应商、非 GET 请求**；`leslie-bootstrap.js` 在 secure/loopback
+  源注册。`manifest.json` 已具备 PWA 安装所需字段。
+- **P4.3 CSP**：`src/server-main.js` 的 `contentSecurityPolicy:false` 改为显式策略
+  （`object-src 'none'`、`base-uri 'self'`、`frame-ancestors 'self'`，script 保留
+  `unsafe-inline`/`unsafe-eval` 以满足内联 resize 脚本与 lib.js 模板编译器）。CORS 沿用
+  `cors.origin` 配置（默认仅 `null` 源）。
+- **P4.4 模块拆分**：把 `leslie-settings.js` 约 484 行静态本地化 COPY 表拆到
+  `leslie-settings-copy.js` 并 import 回来（纯数据、无依赖、行为不变）。`chats.js` 的
+  函数高度 DOM 耦合，未在本轮强行拆分（记录为后续项）。
+
+### 验证
+
+| 门禁 | 结果 |
+| --- | --- |
+| `lint`（root）/ `lint`（tests） | exit 0 / exit 0（0 errors） |
+| `test:unit` | 81 suites / 947 tests passed |
+| `check:repo` | exit 0 |
+| 红线 3 文件 | 累计 diff 空 |
+| `test:prompt-baseline`（浏览器 9 例） | 9/9 byte-identical |
+| replay oracle（服务端） | 9/9 byte-identical |
+| 公网 Token 链路 | `leslie-api-v1-generate-smoke`（注册→token→建角色→建聊天→SSE 生成）+ `leslie-bearer-middleware`（3 用例） |
+| 桌面 Cookie 链路 | 浏览器 baseline 9/9（真实浏览器驱动 Generate） |
+
+### commit 清单（Phase 4）
+
+- `f973a6379` feat: add the offline-shell service worker and an explicit CSP
+- `43e37cda4` feat: add the public-web bearer-token login path
+- `ca5d3f09c` refactor: split the leslie-settings copy table into its own module
+
+### 后续项
+
+- `chats.js` 与 `script.js` 的 DOM 耦合函数拆分（本轮仅拆 `leslie-settings.js`）。
+- access token 到期后的自动刷新（当前 15 分钟 TTL，够一次聊天；refresh token 已落库）。
+
 ## P2.5 收口报告：服务端权威轮次（2026-10-10，续）
 
 **结论：P2.5 收口。** `/api/v1/chats/{id}/generate` 已升级为「权威轮次」——服务端从

@@ -63,7 +63,7 @@ export function ChatScreen({ session, character, onBack }: {
         setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '', streaming: true }]);
 
         try {
-            await session.chats.generate(chatId, { message: text, type: 'normal' }, delta => {
+            await session.chats.generate(chatId, { message: text, type: 'normal', model_id: session.selectedModelId ?? undefined }, delta => {
                 setMessages(prev => prev.map(item => item.id === assistantId
                     ? { ...item, content: item.content + delta }
                     : item));

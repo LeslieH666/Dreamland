@@ -39,6 +39,9 @@ export class Session {
     moments: MomentsApi;
     voice: VoiceApi;
 
+    /** Selected server-managed model id (chosen in Settings, used by the chat turn). */
+    selectedModelId: string | null = null;
+
     private constructor(client: ApiClient) {
         this.client = client;
         this.auth = new AuthApi(client);

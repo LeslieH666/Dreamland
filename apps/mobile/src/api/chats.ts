@@ -1,9 +1,14 @@
 import { ApiClient, StreamHandler } from './client';
-import { Chat, ChatCompletionChunk, ChatMessage, ChatSummary, GenerateRequest } from './types';
+import { Chat, ChatCompletionChunk, ChatMessage, ChatSummary, GenerateRequest, ModelCatalogEntry } from './types';
 
 /** Chat endpoints of the versioned API. */
 export class ChatsApi {
     constructor(private readonly client: ApiClient) {}
+
+    /** List the server-managed model catalog (id/name/enabled only). */
+    listModels(): Promise<ModelCatalogEntry[]> {
+        return this.client.request<{ models: ModelCatalogEntry[] }>('/api/v1/models').then(body => body.models);
+    }
 
     /** List the account's chats. */
     list(): Promise<ChatSummary[]> {

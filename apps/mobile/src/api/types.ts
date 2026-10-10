@@ -72,6 +72,15 @@ export interface GenerateRequest {
     top_p?: number | null;
     random_seed?: number;
     note_text?: string;
+    /** Server model catalog id (server-managed gateway). */
+    model_id?: string;
+}
+
+/** Client-visible model catalog entry (no provider details or keys). */
+export interface ModelCatalogEntry {
+    id: string;
+    name: string;
+    enabled: boolean;
 }
 
 /** One OpenAI-compatible streamed chunk. */

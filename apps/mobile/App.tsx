@@ -6,9 +6,9 @@ import { Session } from './src/store/session';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { HomeScreen } from './src/features/home/HomeScreen';
 
-// The server origin is injected at build/launch time. The first release points at a
-// developer-chosen origin; production reads it from a native config.
-const DEFAULT_BASE_URL = 'http://127.0.0.1:18790';
+// The server origin is injected at build/launch time via EXPO_PUBLIC_API_URL; it
+// defaults to the developer loopback so simulator/emulator runs work out of the box.
+const DEFAULT_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:18790';
 
 export default function App() {
     const [session, setSession] = useState<Session | null>(null);

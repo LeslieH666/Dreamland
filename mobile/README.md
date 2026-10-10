@@ -1,5 +1,10 @@
 # DreamLand Android apps
 
+> **Status: deprecated (Phase 5).** This WebView-based Android shell is superseded by the
+> React Native client in `apps/mobile/`, which speaks the versioned `/api/v1` contract
+> (typed client, SSE streaming, TTS). This tree is kept for build reference only and is
+> no longer the target mobile client; do not extend it.
+
 This workspace builds two Android apps from the same native shell and shared capability module: `clientDebug` connects to a DreamLand server on a trusted local network, while `standaloneDebug` runs the DreamLand Node.js service inside the app and stores data in the phone's private app directory. The first standalone beta targets Android arm64 devices (Android 8+).
 
 The standalone beta uses the Node.js 24 Android runtime from the `fogtape/nodejs-mobile` pre-release line. The pinned archive is checked against its SHA-256 digest before staging. Tracked DreamLand server files, production npm dependencies and the Android capability shim are bundled; the computer's `data/`, `Config/`, secrets, logs and runtime folders are excluded.

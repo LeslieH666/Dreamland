@@ -28,10 +28,20 @@ const MEDIA_DISPLAY = Object.freeze({ LIST: 'list', GALLERY: 'gallery' });
 const MEDIA_TYPE = Object.freeze({ IMAGE: 'image', VIDEO: 'video', AUDIO: 'audio' });
 const EXTENSION_PROMPT_TYPES = Object.freeze({ NONE: -1, IN_PROMPT: 0, IN_CHAT: 1 });
 
-/** A tool manager that reports no available tools. */
+/**
+ * A tool manager that reports no available tools.
+ *
+ * The server never performs tool calls, so every probe answers false and every lookup is
+ * empty. The method set mirrors what the shared assembly and populate functions call.
+ */
 const TOOL_MANAGER_STUB = Object.freeze({
     canPerformToolCalls: () => false,
+    isToolCallingSupported: () => false,
     getTools: () => [],
+    getToolNames: () => [],
+    getRegisteredTools: () => [],
+    isToolAvailable: () => false,
+    getToolByName: () => null,
 });
 
 /**

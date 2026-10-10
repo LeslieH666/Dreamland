@@ -75,6 +75,8 @@ export const POWER_USER_INSTRUCT_DEFAULTS = Object.freeze({
 
 /** Persona-related power_user defaults. */
 export const POWER_USER_PERSONA_DEFAULTS = Object.freeze({
+    // Controls whether dialogue examples are added before the chat history (page default).
+    pin_examples: false,
     persona_descriptions: {},
     persona_description: '',
     persona_description_position: PERSONA_DESCRIPTION_POSITIONS.IN_PROMPT,

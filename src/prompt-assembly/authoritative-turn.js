@@ -32,7 +32,7 @@ import { prepareOpenAIMessagesCore } from './orchestrate.js';
 import { Prompt, PromptCollection } from './prompt.js';
 import { buildServerAssemblyEnv, buildServerPromptManager, buildServerTokenHandler } from './server-env.js';
 import { sanitizeServiceSettings } from './registry.js';
-import { buildServerPowerUser } from './settings-defaults.js';
+import { OAI_SETTINGS_ASSEMBLY_DEFAULTS, PERSONA_DESCRIPTION_POSITIONS, buildServerPowerUser, mergeSettings } from './settings-defaults.js';
 import { createSeededRandom, WORLD_INFO_REGEX_PLACEMENT } from './world-info-portability.js';
 import { getWorldInfoPrompt } from './world-info-prompt.js';
 
@@ -221,7 +221,9 @@ export async function assembleAuthoritativeTurn(input) {
     // so the server has to merge the same defaults before anything reads them.
     // oai_settings comes from settings.json as-is for now; only the power_user subset the
     // assembly reads needs the page's defaults merged in.
-    const oaiSettings = settings.oai_settings ?? {};
+    // The page starts from default_settings and overlays what was persisted; the server
+    // needs the same prompt formats and caps, or blocks like "[Example Chat]" come out empty.
+    const oaiSettings = mergeSettings(OAI_SETTINGS_ASSEMBLY_DEFAULTS, settings.oai_settings ?? {});
     const powerUser = buildServerPowerUser(settings.power_user);
     const worldInfoSettings = settings.world_info_settings ?? {};
     const extensionSettings = settings.extension_settings ?? {};
@@ -329,6 +331,9 @@ export async function assembleAuthoritativeTurn(input) {
         deps: {
             ...deps.assemblyDeps,
             Prompt,
+            // The shared assembly compares persona_description_position against this enum;
+            // an empty object made every comparison undefined and dropped the persona block.
+            personaDescriptionPositions: PERSONA_DESCRIPTION_POSITIONS,
             createPromptCollection: () => new PromptCollection(),
             substituteParams: substitute,
             substituteParamsExtended: substitute,

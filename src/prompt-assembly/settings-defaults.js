@@ -118,3 +118,31 @@ export function buildServerPowerUser(persisted) {
         ...structuredClone(POWER_USER_PERSONA_DEFAULTS),
     }, persisted);
 }
+
+/**
+ * The chat-completion defaults assembly actually reads.
+ *
+ * Extracted from openai.js default_settings with every reference resolved, so the server
+ * starts from the same prompt formats and caps the page does. Kept to the fields the
+ * assembly touches rather than the whole 107-line default object.
+ */
+export const OAI_SETTINGS_ASSEMBLY_DEFAULTS = Object.freeze({
+    new_chat_prompt: '[Start a new Chat]',
+    new_example_chat_prompt: '[Example Chat]',
+    new_group_chat_prompt: '[Start a new group chat. Group members: {{group}}]',
+    continue_nudge_prompt: '[Continue your last message without repeating its original content.]',
+    group_nudge_prompt: '[Write the next reply only as {{char}}.]',
+    impersonation_prompt: '[Write your next reply from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don\'t write as {{char}} or system. Don\'t describe actions of {{char}}.]',
+    scenario_format: '{{scenario}}',
+    personality_format: '{{personality}}',
+    wi_format: '{0}',
+    names_behavior: 0,
+    squash_system_messages: false,
+    openai_max_context: 4095,
+    openai_max_tokens: 300,
+    continue_prefill: false,
+    stream_openai: false,
+    media_inlining: true,
+    request_images: false,
+    custom_prompt_post_processing: '',
+});

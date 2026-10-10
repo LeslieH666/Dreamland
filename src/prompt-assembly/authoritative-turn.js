@@ -19,7 +19,7 @@ import path from 'node:path';
 
 import { ApiError } from '../api-v1/errors.js';
 import { decodeCompositeId } from '../api-v1/ids.js';
-import { ExtensionPromptRole } from './enums.js';
+import { ExtensionPromptRole, ExtensionPromptType, MAX_INJECTION_DEPTH } from './enums.js';
 import { getExtensionPrompt, getExtensionPromptMaxDepth } from './extension-prompts.js';
 import { configureMacroEngine, evaluateMacros as evaluateMacrosCore } from './macro-engine.js';
 import { NAMES_BEHAVIOR_TYPES, formatInstructModeExamples, parseExampleIntoIndividual, parseMesExamples } from './macro-helpers.js';
@@ -301,6 +301,13 @@ export async function assembleAuthoritativeTurn(input) {
     });
     const substitute = (text, overrides) => substituteParams(text, { ...macroContext(), ...(overrides ?? {}) });
 
+    // The orchestrator catches assembly errors and reports them through notify. A no-op
+    // would turn a real failure into silently empty output, so the server surfaces them.
+    const notify = deps.notify ?? {
+        error: message => console.error('[assembly:error]', String(message)),
+        warning: message => console.warn('[assembly:warning]', String(message)),
+    };
+
     const assemblyEnv = buildServerAssemblyEnv({
         settings,
         card,
@@ -315,13 +322,39 @@ export async function assembleAuthoritativeTurn(input) {
             substituteParamsExtended: substitute,
             getExtensionPrompt: (position, depth, separator, role, wrap) => getExtensionPrompt(registry, position, depth, { separator, role, wrap, substitute }),
             getExtensionPromptMaxDepth,
-            notify: deps.notify,
+            notify,
             emit: deps.emit,
             eventTypes: deps.eventTypes,
             getGenerationTokenBudget: deps.getGenerationTokenBudget,
             setOpenaiMessagesCount: deps.setOpenaiMessagesCount,
         },
     });
+
+    // The author's note has to be in the registry before World Info runs: the WI-to-AN
+    // hijack reads it out of the registry while building the prompt. This mirrors
+    // setFloatingPrompt, including its interval gate.
+    const noteInterval = Number(chat.metadata?.note_interval ?? 0);
+    let lastMessageNumber = chat.messages.filter(entry => entry?.is_user).length;
+    if (noteInterval === 1) {
+        lastMessageNumber = 1;
+    }
+    let shouldWIAddPrompt = false;
+    if (lastMessageNumber <= 0 || noteInterval <= 0) {
+        registry['2_floating_prompt'] = { value: '', position: ExtensionPromptType.NONE, depth: MAX_INJECTION_DEPTH };
+    } else {
+        const messagesTillInsertion = lastMessageNumber >= noteInterval
+            ? (lastMessageNumber % noteInterval)
+            : (noteInterval - lastMessageNumber);
+        shouldWIAddPrompt = messagesTillInsertion === 0;
+        registry['2_floating_prompt'] = {
+            value: shouldWIAddPrompt ? String(resolveNoteText(input.noteText, chat.metadata)) : '',
+            position: chat.metadata?.note_position,
+            depth: chat.metadata?.note_depth,
+            role: chat.metadata?.note_role,
+            scan: Boolean(extensionSettings.note?.allowWIScan),
+            extension: true,
+        };
+    }
 
     // World Info runs first: its output is an input to the assembly, and the portability
     // guard is enforced here on the server (the browser is the reference implementation).
@@ -403,7 +436,7 @@ export async function assembleAuthoritativeTurn(input) {
         noteModuleName: '2_floating_prompt',
         extensionPromptRoles: ExtensionPromptRole,
         regexPlacement: { worldInfo: WORLD_INFO_REGEX_PLACEMENT },
-        getShouldWIAddPrompt: () => true,
+        getShouldWIAddPrompt: () => shouldWIAddPrompt,
     });
 
     const shapingContext = {

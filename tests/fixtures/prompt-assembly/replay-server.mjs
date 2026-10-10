@@ -101,6 +101,15 @@ async function main() {
             seedMemory: seedFixtureMemory,
         });
 
+        // Turn on prompt logging so an assembly error that the orchestrator catches is
+        // printed instead of being swallowed into empty output.
+        try {
+            const settingsPath = path.join(seeded.userRoot, 'settings.json');
+            const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+            settings.power_user = { ...(settings.power_user ?? {}), console_log_prompts: true };
+            fs.writeFileSync(settingsPath, JSON.stringify(settings));
+        } catch { /* logging stays off; the run continues */ }
+
         const directories = {
             root: seeded.userRoot,
             characters: path.join(seeded.userRoot, 'characters'),

@@ -19,7 +19,7 @@ import { countMessageTokens } from './token-counting.js';
 import { resolveChatCompletionTokenizerModel } from './tokenizer-model.js';
 import { INJECTION_POSITION } from './enums.js';
 import { Prompt } from './prompt.js';
-import { checkForMissingPrompts as checkForMissingPromptsCore, shouldTrigger as shouldTriggerCore } from './registry.js';
+import { checkForMissingPrompts as checkForMissingPromptsCore, getPromptCollection as getPromptCollectionCore, shouldTrigger as shouldTriggerCore } from './registry.js';
 
 // The server never inlines media and never performs tool calls, so these are inert
 // stand-ins rather than reimplementations: the populate cluster only reads them to
@@ -166,6 +166,9 @@ export function buildServerPromptManager({ serviceSettings, activeCharacter, tok
         },
         checkForMissingPrompts(prompts) {
             return checkForMissingPromptsCore(this, prompts);
+        },
+        getPromptCollection(generationType) {
+            return getPromptCollectionCore(this, generationType);
         },
         log(message) {
             logs.push(String(message));

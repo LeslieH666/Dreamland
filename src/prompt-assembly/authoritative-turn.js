@@ -306,6 +306,7 @@ export function resolveNoteText(noteText, metadata) {
  * @param {string} [input.pendingUserText]  New user message.
  * @param {string} [input.noteText]         Author's note body.
  * @param {number} [input.randomSeed]       World Info probability seed.
+ * @param {string} [input.chatCompletionSource] Server-gateway source, used for the tokenizer instead of the per-account setting.
  * @param {object} [input.deps]             Injected modules for testing.
  * @returns {Promise<{messages: Array<object>, counts: object, context: object}>} Assembled turn.
  */
@@ -362,6 +363,11 @@ export async function assembleAuthoritativeTurn(input) {
     // The page starts from default_settings and overlays what was persisted; the server
     // needs the same prompt formats and caps, or blocks like "[Example Chat]" come out empty.
     const oaiSettings = mergeSettings(OAI_SETTINGS_ASSEMBLY_DEFAULTS, settings.oai_settings ?? {});
+    // The tokenizer is resolved from the server gateway source (the model actually used),
+    // not from a per-account model setting that T4 clears.
+    if (input.chatCompletionSource) {
+        oaiSettings.chat_completion_source = String(input.chatCompletionSource);
+    }
     const powerUser = buildServerPowerUser(settings.power_user);
     const worldInfoSettings = settings.world_info_settings ?? {};
     const extensionSettings = settings.extension_settings ?? {};

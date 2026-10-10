@@ -19,7 +19,7 @@ import sanitize from 'sanitize-filename';
 
 import { getChatData, getChatInfo, trySaveChat } from '../../endpoints/chats.js';
 import { handleChatCompletionGenerate } from '../../endpoints/backends/chat-completions.js';
-import { getModelById } from '../../model-gateway/store.js';
+import { getModelById, resolveModelConfig } from '../../model-gateway/store.js';
 import { parse as parseCard } from '../../character-card-parser.js';
 import { assembleAuthoritativeTurn } from '../../prompt-assembly/authoritative-turn.js';
 import { ChatCompletion } from '../../prompt-assembly/chat-completion.js';
@@ -331,23 +331,6 @@ chatsRouter.post('/:id/generate', asyncRoute(async (request, response) => {
         await trySaveChat(fullChat, ref.filePath, false, handle, ref.cardName ?? '', request.user.directories.backups);
     }
 
-    // Authoritative turn: the full prompt (character card, World Info, persona, memory,
-    // author's note) is assembled server-side from the persisted state and then streamed
-    // through the existing model proxy. No prompt-building logic is duplicated here.
-    const assembled = await assembleAuthoritativeTurn({
-        user: request.user,
-        chatId: request.params.id,
-        type: body.type ?? 'normal',
-        noteText: body.note_text,
-        randomSeed: body.random_seed,
-        deps: {
-            fs,
-            readCard: async cardPath => await parseCard(cardPath, 'png'),
-            getChatData,
-            ChatCompletion,
-        },
-    });
-
     // Server-managed model gateway: the turn only accepts a catalog model_id. Any
     // client-provided source/key/endpoint fields are ignored; sampling parameters
     // remain overridable.
@@ -355,6 +338,26 @@ chatsRouter.post('/:id/generate', asyncRoute(async (request, response) => {
     if (!modelId || !getModelById(modelId)) {
         throw new ApiError(409, 'chat_model_not_configured', `Model "${modelId}" is not in the server model catalog.`, { type: 'conflict_error' });
     }
+    const resolvedModel = resolveModelConfig(modelId);
+
+    // Authoritative turn: the full prompt (character card, World Info, persona, memory,
+    // author's note) is assembled server-side from the persisted state and then streamed
+    // through the existing model proxy. The gateway source drives token counting, not the
+    // per-account model setting.
+    const assembled = await assembleAuthoritativeTurn({
+        user: request.user,
+        chatId: request.params.id,
+        type: body.type ?? 'normal',
+        noteText: body.note_text,
+        randomSeed: body.random_seed,
+        chatCompletionSource: resolvedModel.source,
+        deps: {
+            fs,
+            readCard: async cardPath => await parseCard(cardPath, 'png'),
+            getChatData,
+            ChatCompletion,
+        },
+    });
 
     // Streaming stays unbuffered through a reverse proxy.
     response.set('X-Accel-Buffering', 'no');

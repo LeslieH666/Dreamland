@@ -16,10 +16,12 @@ import storage from 'node-persist';
 
 import { CHAT_COMPLETION_SOURCES } from '../../constants.js';
 import { SECRET_KEYS } from '../../endpoints/secrets.js';
+import { LeslieMomentsStore } from '../../leslie-moments/store.js';
 import { getRuntimeMode } from '../../runtime-mode.js';
-import { getAllUserHandles, getUserDirectories, toKey } from '../../users.js';
+import { getPasswordHash, getPasswordSalt, getAllUserHandles, getUserDirectories, toKey } from '../../users.js';
+import { registerAccount } from '../auth.js';
 import { listSecretIds } from '../secrets.js';
-import { asyncRoute } from '../errors.js';
+import { asyncRoute, badRequest, notFound } from '../errors.js';
 
 /** Chat-completion source → secret slot holding that provider's API key. */
 const CHAT_SOURCE_SECRET_KEY = Object.freeze({
@@ -149,6 +151,166 @@ function readSettings(rootDir, fsImpl = fs) {
 }
 
 /**
+ * List the direct children of a directory (files and directories).
+ * @param {string} directory Directory to list.
+ * @param {object} [fsImpl] Node fs module.
+ * @returns {{name: string, isDirectory: boolean, size: number}[]} Entries, sorted by name.
+ */
+function listDirectory(directory, fsImpl = fs) {
+    let entries;
+    try {
+        entries = fsImpl.readdirSync(directory, { withFileTypes: true });
+    } catch {
+        return [];
+    }
+    return entries
+        .map(entry => {
+            const full = path.join(directory, entry.name);
+            let size = 0;
+            if (entry.isFile()) {
+                try { size = fsImpl.statSync(full).size; } catch { size = 0; }
+            }
+            return { name: entry.name, isDirectory: entry.isDirectory(), size };
+        })
+        .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+/**
+ * Count the lines of a JSONL chat file. The first line is the metadata header, so the
+ * number of messages is one less (never negative).
+ * @param {string} filePath File path.
+ * @param {object} [fsImpl] Node fs module.
+ * @returns {{lines: number, messages: number}} Line and message counts.
+ */
+function countJsonlLines(filePath, fsImpl = fs) {
+    let lines = 0;
+    try {
+        const text = fsImpl.readFileSync(filePath, 'utf8');
+        lines = text.length === 0 ? 0 : text.split('\n').filter(Boolean).length;
+    } catch {
+        lines = 0;
+    }
+    return { lines, messages: Math.max(0, lines - 1) };
+}
+
+/** Redaction mask for secret-like settings keys. */
+const SECRET_LIKE_KEY = /key|secret|password|token|api[-_]?key|cookie|credential|signature/i;
+
+/**
+ * Build a masked settings summary. Never returns a secret-like value.
+ * @param {string} rootDir User root directory.
+ * @param {object} [fsImpl] Node fs module.
+ * @returns {object} Summary.
+ */
+function summarizeSettings(rootDir, fsImpl = fs) {
+    const settings = readSettings(rootDir, fsImpl);
+    if (!settings) {
+        return { present: false };
+    }
+    const oaiSettings = settings.oai_settings && typeof settings.oai_settings === 'object'
+        ? settings.oai_settings
+        : {};
+    const source = String(oaiSettings.chat_completion_source ?? '');
+    const modelField = MODEL_FIELD_BY_SOURCE[source];
+    const topLevelKeys = Object.keys(settings);
+    const secretLikeKeys = topLevelKeys.filter(key => SECRET_LIKE_KEY.test(key));
+    return {
+        present: true,
+        main_api: String(settings.main_api ?? ''),
+        chat_completion_source: source,
+        model: modelField ? String(oaiSettings[modelField] ?? '') : '',
+        top_level_keys: topLevelKeys,
+        redacted_secret_like_keys: secretLikeKeys.length,
+    };
+}
+
+/**
+ * Read the character cards of a user.
+ * @param {string} charactersDir Character cards directory.
+ * @param {string} avatarsDir User Avatars directory.
+ * @param {object} [fsImpl] Node fs module.
+ * @returns {object[]} Card summaries.
+ */
+function readCharacters(charactersDir, avatarsDir, fsImpl = fs) {
+    const avatars = new Set(listDirectory(avatarsDir, fsImpl).map(entry => entry.name.toLowerCase()));
+    return listDirectory(charactersDir, fsImpl)
+        .filter(entry => !entry.isDirectory)
+        .map(entry => {
+            const extension = path.extname(entry.name).toLowerCase();
+            const base = path.basename(entry.name, path.extname(entry.name));
+            const isImage = ['.png', '.webp', '.jpg', '.jpeg', '.gif'].includes(extension);
+            const matchingAvatar = ['.png', '.webp', '.jpg', '.jpeg']
+                .map(ext => `${base}${ext}`)
+                .find(name => avatars.has(name.toLowerCase())) ?? null;
+            return { name: base, size: entry.size, has_image: isImage, avatar: matchingAvatar };
+        });
+}
+
+/**
+ * Read the solo chats of a user (`chats/<character>/<chat>.jsonl`).
+ * @param {string} chatsDir Chats directory.
+ * @param {object} [fsImpl] Node fs module.
+ * @returns {object[]} Chat summaries.
+ */
+function readSoloChats(chatsDir, fsImpl = fs) {
+    const result = [];
+    for (const character of listDirectory(chatsDir, fsImpl)) {
+        if (!character.isDirectory) {
+            continue;
+        }
+        const characterDir = path.join(chatsDir, character.name);
+        for (const file of listDirectory(characterDir, fsImpl)) {
+            if (!file.isDirectory && file.name.endsWith('.jsonl')) {
+                const counts = countJsonlLines(path.join(characterDir, file.name), fsImpl);
+                result.push({
+                    kind: 'solo',
+                    character: character.name,
+                    filename: file.name.replace(/\.jsonl$/, ''),
+                    message_count: counts.messages,
+                    size: file.size,
+                });
+            }
+        }
+    }
+    return result;
+}
+
+/**
+ * Read the group chats of a user (`group chats/*.jsonl`).
+ * @param {string} groupChatsDir Group chats directory.
+ * @param {object} [fsImpl] Node fs module.
+ * @returns {object[]} Group chat summaries.
+ */
+function readGroupChats(groupChatsDir, fsImpl = fs) {
+    return listDirectory(groupChatsDir, fsImpl)
+        .filter(entry => !entry.isDirectory && entry.name.endsWith('.jsonl'))
+        .map(entry => {
+            const counts = countJsonlLines(path.join(groupChatsDir, entry.name), fsImpl);
+            return { filename: entry.name.replace(/\.jsonl$/, ''), message_count: counts.messages, size: entry.size };
+        });
+}
+
+/**
+ * Read the moments feed of a user (count + masked previews).
+ * @param {string} userRoot User root directory.
+ * @returns {{count: number, previews: object[]}} Moments summary.
+ */
+function readMoments(userRoot) {
+    try {
+        const { posts } = new LeslieMomentsStore(userRoot).listPosts({ includeArchived: true });
+        const previews = posts.slice(0, 10).map(post => ({
+            id: post.id,
+            content_preview: String(post.content ?? '').slice(0, 120),
+            status: post.status ?? 'active',
+            created_at: post.createdAt ?? null,
+        }));
+        return { count: posts.length, previews };
+    } catch {
+        return { count: 0, previews: [] };
+    }
+}
+
+/**
  * Build the operations router.
  * @param {object} [options] Options.
  * @param {import('rate-limiter-flexible').RateLimiterMemory} [options.accountLimiter] The per-account quota limiter, for reading current usage.
@@ -256,6 +418,87 @@ export function createOpsRouter({ accountLimiter } = {}) {
             accounts,
         });
     }, 'Reading rate-limit usage failed.'));
+
+    opsRouter.get('/users/:handle/data', asyncRoute(async (request, response) => {
+        const handle = String(request.params.handle ?? '').trim();
+        const profile = await storage.getItem(toKey(handle));
+        if (!profile) {
+            throw notFound(`No account named "${handle}".`);
+        }
+        const directories = getUserDirectories(handle);
+        const characters = readCharacters(directories.characters, directories.avatars);
+        const soloChats = readSoloChats(directories.chats);
+        const groupChats = readGroupChats(directories.groupChats);
+        const moments = readMoments(directories.root);
+        const settings = summarizeSettings(directories.root);
+        response.send({
+            handle,
+            admin: Boolean(profile.admin),
+            enabled: profile.enabled !== false,
+            characters,
+            chats: soloChats,
+            group_chats: groupChats,
+            moments,
+            settings,
+            storage: {
+                characters: duDirectory(directories.characters),
+                chats: duDirectory(directories.chats),
+                group_chats: duDirectory(directories.groupChats),
+                groups: duDirectory(directories.groups),
+                worlds: duDirectory(directories.worlds),
+                avatars: duDirectory(directories.avatars),
+                user: duDirectory(directories.user),
+                vectors: duDirectory(directories.vectors),
+                total: duDirectory(directories.root),
+            },
+        });
+    }, 'Reading user data failed.'));
+
+    opsRouter.post('/users', asyncRoute(async (request, response) => {
+        const handle = String(request.body?.handle ?? '').trim();
+        const password = String(request.body?.password ?? '');
+        const admin = Boolean(request.body?.admin);
+        if (!handle || !password) {
+            throw badRequest('handle and password are required.');
+        }
+        const user = await registerAccount({ handle, password, admin });
+        response.status(201).send({ handle: user.handle, admin: Boolean(user.admin), enabled: user.enabled !== false });
+    }, 'Creating an account failed.'));
+
+    opsRouter.patch('/users/:handle', asyncRoute(async (request, response) => {
+        const handle = String(request.params.handle ?? '').trim();
+        const user = await storage.getItem(toKey(handle));
+        if (!user) {
+            throw notFound(`No account named "${handle}".`);
+        }
+        if (typeof request.body?.admin === 'boolean') {
+            user.admin = request.body.admin;
+        }
+        if (typeof request.body?.enabled === 'boolean') {
+            user.enabled = request.body.enabled;
+        }
+        await storage.setItem(toKey(handle), user);
+        response.send({ handle, admin: Boolean(user.admin), enabled: user.enabled !== false });
+    }, 'Updating an account failed.'));
+
+    opsRouter.post('/users/:handle/password', asyncRoute(async (request, response) => {
+        const handle = String(request.params.handle ?? '').trim();
+        const password = String(request.body?.password ?? '');
+        if (!password || password.length < 8) {
+            throw badRequest('The new password must be at least 8 characters.');
+        }
+        const user = await storage.getItem(toKey(handle));
+        if (!user) {
+            throw notFound(`No account named "${handle}".`);
+        }
+        const salt = getPasswordSalt();
+        user.salt = salt;
+        user.password = getPasswordHash(password, salt);
+        await storage.setItem(toKey(handle), user);
+        // Changing the password bumps getAccountVersion (handle + password + salt), which
+        // invalidates every access/refresh token and cookie session issued before the change.
+        response.send({ handle, updated: true });
+    }, 'Resetting a password failed.'));
 
     return opsRouter;
 }

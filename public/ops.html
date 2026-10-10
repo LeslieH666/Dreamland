@@ -35,6 +35,23 @@
         .logout { border: 1px solid rgba(255,255,255,0.5); background: transparent; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
         .logout:hover { background: rgba(255,255,255,0.15); }
         .hidden { display: none !important; }
+
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .actions button { padding: 4px 10px; border: 1px solid #c4cfd9; border-radius: 6px; background: #eef1f5; color: #526172; cursor: pointer; font-size: 12px; }
+        .actions button:hover { background: #f5f6f9; }
+        .actions button.danger { background: #fff0f1; color: #b94651; border-color: #f3c6cb; }
+
+        .form-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+        .form-row input[type=text], .form-row input[type=password] { padding: 9px; border: 1px solid #c4cfd9; border-radius: 6px; font-size: 13px; min-width: 180px; }
+        .form-row label { font-size: 13px; color: #5a6b7c; display: inline-flex; align-items: center; gap: 4px; }
+        .form-row button { padding: 9px 16px; border: 0; border-radius: 6px; background: #163c63; color: #fff; cursor: pointer; font-size: 13px; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,28,41,0.4); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
+        .modal { background: #fff; border: 1px solid #e4e8ef; border-radius: 10px; max-width: 760px; width: 100%; max-height: 85vh; overflow: auto; padding: 18px; }
+        .modal h2 { margin: 0 0 12px; font-size: 16px; color: #163c63; }
+        .modal .close { float: right; border: 0; background: transparent; color: #5a6b7c; font-size: 20px; cursor: pointer; line-height: 1; }
+        .modal .kv { grid-template-columns: 180px 1fr; }
+        .subhead { font-size: 13px; font-weight: 600; color: #5a6b7c; margin: 14px 0 6px; }
     </style>
 </head>
 <body>
@@ -63,9 +80,20 @@
             </section>
 
             <section class="card">
+                <h2>新增账号</h2>
+                <div id="create-error" class="error"></div>
+                <div class="form-row">
+                    <input id="new-handle" type="text" placeholder="账号" autocomplete="off">
+                    <input id="new-password" type="password" placeholder="密码（至少 8 位）" autocomplete="new-password">
+                    <label><input id="new-admin" type="checkbox"> 管理员</label>
+                    <button id="create-button" type="button">创建</button>
+                </div>
+            </section>
+
+            <section class="card">
                 <h2>账户与存储</h2>
                 <table id="users">
-                    <thead><tr><th>handle</th><th>admin</th><th>启用</th><th>存储占用</th></tr></thead>
+                    <thead><tr><th>handle</th><th>admin</th><th>启用</th><th>存储占用</th><th>操作</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
@@ -89,6 +117,14 @@
             </section>
         </div>
     </main>
+
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <button id="modal-close" class="close" type="button">×</button>
+            <h2 id="modal-title"></h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
 
     <script>
         const TOKEN_KEY = 'dreamland.ops.token';
@@ -244,9 +280,24 @@
 
         function renderUsers(users) {
             const tbody = document.querySelector('#users tbody');
-            tbody.innerHTML = (users || []).map(u =>
-                '<tr><td class="mono">' + u.handle + '</td><td>' + (u.admin ? '<span class="ok">是</span>' : '否') + '</td><td>' + (u.enabled ? '是' : '<span class="warn">否</span>') + '</td><td class="mono">' + bytes(u.storage_bytes) + '</td></tr>'
-            ).join('');
+            tbody.innerHTML = (users || []).map(u => {
+                const handle = String(u.handle).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+                return '<tr><td class="mono">' + handle + '</td><td>' + (u.admin ? '<span class="ok">是</span>' : '否') + '</td><td>' + (u.enabled ? '是' : '<span class="warn">否</span>') + '</td><td class="mono">' + bytes(u.storage_bytes) + '</td>' +
+                    '<td class="actions">' +
+                    '<button data-act="data" data-handle="' + handle + '">数据</button>' +
+                    '<button data-act="edit" data-handle="' + handle + '">编辑</button>' +
+                    '<button data-act="password" data-handle="' + handle + '" class="danger">改密码</button>' +
+                    '</td></tr>';
+            }).join('');
+            tbody.querySelectorAll('button[data-act]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const act = button.getAttribute('data-act');
+                    const handle = button.getAttribute('data-handle');
+                    if (act === 'data') viewUserData(handle);
+                    else if (act === 'edit') editUser(handle);
+                    else if (act === 'password') changePassword(handle);
+                });
+            });
         }
 
         function renderGateway(gateway) {
@@ -268,6 +319,171 @@
                 '<tr><td class="mono">' + a.handle + '</td><td>' + a.used + '</td><td>' + a.remaining + '</td><td class="muted">' + Math.max(1, Math.ceil(a.reset_in_ms / 1000)) + 's</td></tr>'
             ).join('');
         }
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        function openModal(title, bodyHtml) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = bodyHtml;
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('modal-body').innerHTML = '';
+        }
+
+        async function apiMutation(method, path, body) {
+            const response = await fetch('/api/v1' + path, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken },
+                body: JSON.stringify(body),
+            });
+            if (response.status === 401) throw new Error('AUTH_EXPIRED');
+            if (response.status === 403) throw new Error('AUTH_FORBIDDEN');
+            if (!response.ok) {
+                let message = 'HTTP ' + response.status;
+                try { message = (await response.json())?.error?.message || message; } catch { /* ignore */ }
+                throw new Error(message);
+            }
+            return response.json();
+        }
+
+        function handleAuthError(error) {
+            if (error.message === 'AUTH_EXPIRED') { clearToken(); showLogin('会话已过期，请重新登录。'); return true; }
+            if (error.message === 'AUTH_FORBIDDEN') { clearToken(); showLogin('需要管理员账号。'); return true; }
+            return false;
+        }
+
+        async function createUser() {
+            const handle = document.getElementById('new-handle').value.trim();
+            const password = document.getElementById('new-password').value;
+            const admin = document.getElementById('new-admin').checked;
+            const errorBox = document.getElementById('create-error');
+            errorBox.textContent = '';
+            if (!handle || !password) { errorBox.textContent = '请输入账号和密码。'; return; }
+            try {
+                await apiMutation('POST', '/ops/users', { handle, password, admin });
+                document.getElementById('new-handle').value = '';
+                document.getElementById('new-password').value = '';
+                document.getElementById('new-admin').checked = false;
+                await loadDashboard();
+            } catch (error) {
+                if (handleAuthError(error)) return;
+                errorBox.textContent = error.message || String(error);
+            }
+        }
+
+        async function viewUserData(handle) {
+            try {
+                const data = await api('/ops/users/' + encodeURIComponent(handle) + '/data');
+                const storage = data.storage || {};
+                const charRows = (data.characters || []).map(c =>
+                    '<tr><td class="mono">' + esc(c.name) + '</td><td>' + (c.has_image ? '是' : '否') + '</td><td class="mono">' + esc(c.avatar || '—') + '</td><td class="mono">' + bytes(c.size) + '</td></tr>'
+                ).join('');
+                const chatRows = (data.chats || []).map(c =>
+                    '<tr><td class="mono">' + esc(c.character) + '</td><td class="mono">' + esc(c.filename) + '</td><td>' + c.message_count + '</td><td class="mono">' + bytes(c.size) + '</td></tr>'
+                ).join('');
+                const groupRows = (data.group_chats || []).map(c =>
+                    '<tr><td class="mono">' + esc(c.filename) + '</td><td>' + c.message_count + '</td><td class="mono">' + bytes(c.size) + '</td></tr>'
+                ).join('');
+                const momentRows = (data.moments?.previews || []).map(m =>
+                    '<tr><td class="mono">' + esc(m.id) + '</td><td>' + esc(m.content_preview) + '</td><td>' + (m.status || '') + '</td></tr>'
+                ).join('');
+
+                let body = '<div class="kv">'
+                    + '<dt>admin</dt><dd>' + (data.admin ? '是' : '否') + '</dd>'
+                    + '<dt>启用</dt><dd>' + (data.enabled ? '是' : '否') + '</dd>'
+                    + '<dt>存储总量</dt><dd class="mono">' + bytes(storage.total) + '</dd>'
+                    + '</div>';
+
+                body += '<div class="subhead">角色（' + (data.characters || []).length + '）</div>'
+                    + '<table><thead><tr><th>名称</th><th>含图</th><th>头像</th><th>大小</th></tr></thead><tbody>' + (charRows || '<tr><td colspan="4" class="muted">无</td></tr>') + '</tbody></table>';
+
+                body += '<div class="subhead">单聊（' + (data.chats || []).length + '）</div>'
+                    + '<table><thead><tr><th>角色</th><th>文件名</th><th>消息数</th><th>大小</th></tr></thead><tbody>' + (chatRows || '<tr><td colspan="4" class="muted">无</td></tr>') + '</tbody></table>';
+
+                body += '<div class="subhead">群聊（' + (data.group_chats || []).length + '）</div>'
+                    + '<table><thead><tr><th>文件名</th><th>消息数</th><th>大小</th></tr></thead><tbody>' + (groupRows || '<tr><td colspan="3" class="muted">无</td></tr>') + '</tbody></table>';
+
+                body += '<div class="subhead">朋友圈（' + (data.moments?.count ?? 0) + ' 条，最多预览 10 条）</div>'
+                    + '<table><thead><tr><th>id</th><th>内容预览</th><th>状态</th></tr></thead><tbody>' + (momentRows || '<tr><td colspan="3" class="muted">无</td></tr>') + '</tbody></table>';
+
+                body += '<div class="subhead">设置概要</div><div class="kv">'
+                    + '<dt>main_api</dt><dd class="mono">' + esc(data.settings?.main_api || '—') + '</dd>'
+                    + '<dt>网关</dt><dd class="mono">' + esc(data.settings?.chat_completion_source || '—') + '</dd>'
+                    + '<dt>模型</dt><dd class="mono">' + esc(data.settings?.model || '—') + '</dd>'
+                    + '<dt>顶层键</dt><dd class="mono">' + esc((data.settings?.top_level_keys || []).join(', ')) + '</dd>'
+                    + '<dt>脱敏密钥类键</dt><dd>' + (data.settings?.redacted_secret_like_keys ?? 0) + ' 个（已隐藏）</dd>'
+                    + '</div>';
+
+                body += '<div class="subhead">各目录存储</div><div class="kv">'
+                    + Object.entries(storage).filter(([k]) => k !== 'total').map(([k, v]) => '<dt>' + esc(k) + '</dt><dd class="mono">' + bytes(v) + '</dd>').join('')
+                    + '</div>';
+
+                openModal('用户数据 · ' + esc(handle), body);
+            } catch (error) {
+                if (handleAuthError(error)) return;
+                alert(error.message || String(error));
+            }
+        }
+
+        async function editUser(handle) {
+            let data;
+            try {
+                data = await api('/ops/users/' + encodeURIComponent(handle) + '/data');
+            } catch (error) {
+                if (handleAuthError(error)) return;
+                alert(error.message || String(error));
+                return;
+            }
+            const body = '<div class="form-row">'
+                + '<label><input id="edit-admin" type="checkbox"' + (data.admin ? ' checked' : '') + '> 管理员</label>'
+                + '<label><input id="edit-enabled" type="checkbox"' + (data.enabled ? ' checked' : '') + '> 启用</label>'
+                + '<button id="edit-save" type="button">保存</button>'
+                + '</div>';
+            openModal('编辑账号 · ' + esc(handle), body);
+            document.getElementById('edit-save').addEventListener('click', async () => {
+                const admin = document.getElementById('edit-admin').checked;
+                const enabled = document.getElementById('edit-enabled').checked;
+                try {
+                    await apiMutation('PATCH', '/ops/users/' + encodeURIComponent(handle), { admin, enabled });
+                    closeModal();
+                    await loadDashboard();
+                } catch (error) {
+                    if (handleAuthError(error)) return;
+                    alert(error.message || String(error));
+                }
+            });
+        }
+
+        async function changePassword(handle) {
+            const body = '<div class="form-row">'
+                + '<input id="new-password" type="password" placeholder="新密码（至少 8 位）" autocomplete="new-password">'
+                + '<button id="password-save" type="button">重置</button>'
+                + '</div><div class="muted">重置后旧密码立即失效。</div>';
+            openModal('重置密码 · ' + esc(handle), body);
+            document.getElementById('password-save').addEventListener('click', async () => {
+                const password = document.getElementById('new-password').value;
+                if (!password || password.length < 8) { alert('密码至少需要 8 位。'); return; }
+                try {
+                    await apiMutation('POST', '/ops/users/' + encodeURIComponent(handle) + '/password', { password });
+                    closeModal();
+                    await loadDashboard();
+                } catch (error) {
+                    if (handleAuthError(error)) return;
+                    alert(error.message || String(error));
+                }
+            });
+        }
+
+        document.getElementById('create-button').addEventListener('click', createUser);
+        document.getElementById('modal-close').addEventListener('click', closeModal);
+        document.getElementById('modal-overlay').addEventListener('click', (event) => {
+            if (event.target === document.getElementById('modal-overlay')) closeModal();
+        });
 
         loginButton.addEventListener('click', login);
         passwordInput.addEventListener('keydown', (event) => {

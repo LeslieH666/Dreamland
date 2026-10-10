@@ -56,6 +56,23 @@ async function getJson(path, token) {
     return { status: response.status, body: parsed };
 }
 
+/** @param {string} path Path under /api/v1. @param {object} body JSON body. @param {string} [token] Bearer token. */
+async function patchJson(path, body, token) {
+    const response = await fetch(`${baseUrl}${API_V1_ROOT}${path}`, {
+        method: 'PATCH',
+        headers: {
+            'content-type': 'application/json',
+            ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(20_000),
+    });
+    const text = await response.text();
+    let parsed = null;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    return { status: response.status, body: parsed };
+}
+
 beforeAll(async () => {
     configRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dl-ops-config-'));
     fs.writeFileSync(path.join(configRoot, 'config.yaml'), 'allowKeysExposure: false\n');
@@ -165,6 +182,54 @@ describe('GET /api/v1/ops/* over a real listener', () => {
         expect(rateLimits.status).toBe(200);
         expect(typeof rateLimits.body.limit).toBe('number');
         expect(Array.isArray(rateLimits.body.accounts)).toBe(true);
+    }, 40_000);
+});
+
+describe('ops account management', () => {
+    test('create, patch, reset password and read user data', async () => {
+        const adminToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: ADMIN_HANDLE, password: PASSWORD })).body?.access_token;
+        expect(typeof adminToken).toBe('string');
+
+        // Create a new account (default non-admin).
+        const created = await postJson(`${baseUrl}${API_V1_ROOT}/ops/users`, { handle: 'ops-new', password: 'new-password-123' }, adminToken);
+        expect(created.status).toBe(201);
+        expect(created.body.admin).toBe(false);
+        expect(created.body.enabled).toBe(true);
+
+        // The new account can log in.
+        const newToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: 'ops-new', password: 'new-password-123' })).body?.access_token;
+        expect(typeof newToken).toBe('string');
+
+        // Patch admin (keep enabled true so the password-reset login still works).
+        const patched = await patchJson('/ops/users/ops-new', { admin: true }, adminToken);
+        expect(patched.status).toBe(200);
+        expect(patched.body.admin).toBe(true);
+        expect(patched.body.enabled).toBe(true);
+
+        // Reset password: old password invalid, new works.
+        const reset = await postJson(`${baseUrl}${API_V1_ROOT}/ops/users/ops-new/password`, { password: 'reset-password-456' }, adminToken);
+        expect(reset.status).toBe(200);
+        const oldLogin = await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: 'ops-new', password: 'new-password-123' });
+        expect(oldLogin.status).toBe(401);
+        const newLogin = await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: 'ops-new', password: 'reset-password-456' });
+        expect(newLogin.status).toBe(200);
+
+        // Patch enabled off; the account can no longer log in.
+        const disabled = await patchJson('/ops/users/ops-new', { enabled: false }, adminToken);
+        expect(disabled.status).toBe(200);
+        expect(disabled.body.enabled).toBe(false);
+        const disabledLogin = await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: 'ops-new', password: 'reset-password-456' });
+        expect(disabledLogin.status).toBe(401);
+
+        // Read user data (character/chats/moments/settings/storage).
+        const data = await getJson('/ops/users/ops-new/data', adminToken);
+        expect(data.status).toBe(200);
+        expect(Array.isArray(data.body.characters)).toBe(true);
+        expect(Array.isArray(data.body.chats)).toBe(true);
+        expect(Array.isArray(data.body.group_chats)).toBe(true);
+        expect(data.body.moments).toHaveProperty('count');
+        expect(data.body.settings).toHaveProperty('present');
+        expect(data.body.storage).toHaveProperty('total');
     }, 40_000);
 });
 

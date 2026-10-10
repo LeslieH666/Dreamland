@@ -1,6 +1,10 @@
 # Roadmap
 
-## Phase 3 dual packaging: platform injection and two build targets (2026-10-09)
+## iOS development verification and the Xcode 27 Simulator gap (2026-10-10)
+
+- Verified the React Native client bundles for iOS. Metro could not resolve `@babel/runtime/helpers/interopRequireDefault` because pnpm's strict `node_modules` isolation keeps the transitive `@babel/runtime` unhoisted while `babel-preset-expo` injects that helper at build time. `tsc --noEmit` cannot catch this, so the earlier Phase 5 "typecheck passes" was a false green. Added `@babel/runtime@^7.29.10` to `apps/mobile/package.json` (commit `2c9d8d6a9`), after which the iOS bundle compiles to ~5.6 MB of valid JavaScript.
+- Headless simulator verification went as far as the environment allows: the backend runs, Metro serves a correct Expo manifest, Expo Go 2.32.18 (SDK 52) downloads, installs and launches on a booted simulator, and the onboarding flag `isOnboardingFinished` was located in the app's AsyncStorage. The remaining step — Expo Go actually fetching the manifest over the `exp://` deep link — does not trigger in headless mode and could not be completed without a display.
+- Xcode 27 on this host does not bundle the Simulator.app GUI: `Contents/Developer/Applications/Simulator.app` is absent, `xcodebuild -downloadComponent` only supports MetalToolchain, and `-downloadPlatform iOS` only covers the runtime (already installed). On-screen verification is therefore recommended through the Expo Go app on a real device.
 
 - The Electron shell is now explicitly a pure desktop host owning three responsibilities: the system tray, automatic startup of the bundled backend and window, and sealed exit. The only IPC left is the moments status/tick channel that drives the tray label; the companion frontend and in-app model controls were removed in Phase 0.
 - Added `src/platform/` as the single place that inspects the process platform. It injects two interfaces — data root (a mounted server volume versus an install-relative desktop directory) and secret storage (Windows DPAPI versus AES-256-GCM under `DREAMLAND_SECRET_ENCRYPTION_KEY`, with both formats readable during a migration). Business code asks for a capability instead of branching: `src/util.js`, `src/server-main.js` and `src/endpoints/secrets.js` no longer contain platform checks.

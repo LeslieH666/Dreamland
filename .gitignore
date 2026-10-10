@@ -2,6 +2,8 @@
 node_modules/
 yarn.lock
 /.pnpm-store/
+/.pnpm-cache/
+/.expo-home/
 
 # Local environment and credentials
 .env

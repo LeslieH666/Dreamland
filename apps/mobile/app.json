@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "dreamland",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dreamland.mobile"
@@ -16,6 +15,10 @@
       "adaptiveIcon": {
         "backgroundColor": "#163c63"
       }
-    }
+    },
+    "plugins": [
+      "expo-audio",
+      "expo-asset"
+    ]
   }
 }

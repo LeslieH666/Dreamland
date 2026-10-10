@@ -270,6 +270,54 @@
 - One-click standard Character Card V2/V3 JSON import in the manual character editor, with an optional avatar upload synchronized to the native create form before saving.
 - A default-off group-chat orchestrator with deterministic mention/relevance/turn-balance scoring, bounded reply batches, an automatic-reply ceiling, server-validated namespaced settings, and native natural-order fallback. Current-chat temporary roles use JSONL-only versioned metadata, manual creation, hidden in-memory card adapters, active/dormant/archived lifecycle states, branch pruning, Swipe continuity, and shared-memory speaker attribution without entering the character library. A third-stage isolated structured review can propose one editable role draft, an optionally immediate confirmed reply, or confirmed retirement choices on demand, with optional cooldown-based suggestions disabled by default and no direct model writes. See [group-chat-orchestrator.md](group-chat-orchestrator.md).
 
+## Phase 5 里程碑报告：React Native 首版（2026-10-10）
+
+**结论：RN App 首版已交付（代码完成 + 类型检查通过）。** `apps/mobile/`（Expo + TypeScript）已就位，
+含与 UI 彻底解耦的 typed API 客户端层与按功能模块组织的首版界面；`tsc --noEmit` 通过。**唯一未闭环的是
+iOS/Android 模拟器冒烟**——本机有 Xcode 但未启动模拟器、无 Android SDK，故「登录→建角色→发消息→流式回复→TTS」
+的端到端实机冒烟需在有模拟器的宿主补跑（见下）。
+
+### 交付内容
+
+- **脚手架**：`apps/mobile/`（Expo blank-typescript + pnpm 独立边界，`pnpm-lock.yaml` 已提交），
+  **不污染根 `src/`、`public/`**。旧 `mobile/android`（WebView）已在 `mobile/README.md` 标注停用、未删除。
+- **API 客户端 + 领域类型共享层**（`src/api/`，**与 UI 组件彻底解耦**、无 React/RN import）：
+  `client.ts`（fetch + ReadableStream + TextDecoder 的 SSE 解析，处理 `[DONE]` 与中断、401 自动刷新）、
+  `types.ts`（对齐 `docs/contracts/api-v1.openapi.yaml`）、`auth/characters/chats/memory/moments/voice`
+  六个域模块、`index.ts` 统一出口。
+- **功能模块**（`src/features/`）：`auth`（登录/注册）、`characters`、`chat`（SSE 打字机 + 停止）、
+  `voice`（TTS，`expo-av`）、`feed`（记忆/朋友圈只读）、`settings`、`home`（tab 导航）。
+- **会话层**（`src/store/session.ts`）：token 对持久化（secure-storage 抽象 + 回退）与客户端装配。
+
+### 验证
+
+| 门禁 | 结果 |
+| --- | --- |
+| `tsc --noEmit`（apps/mobile） | exit 0 |
+| 后端 `check:repo` / `lint` / `lint(tests)` | exit 0 / 0 / 0（0 errors） |
+| 后端 `test:unit` | 81 suites / 947 tests passed |
+| 红线 3 文件 | 累计 diff 空 |
+| `test:prompt-baseline`（浏览器） | 9/9 byte-identical |
+| replay oracle（服务端） | 9/9 byte-identical |
+
+### 环境门控（如实披露）
+
+- `npx create-expo-app` 经 `pnpm dlx` 受沙箱缓存目录限制（EPERM），改为手写 blank-typescript 模板 +
+  `pnpm install --store-dir <workspace>` 成功；依赖与锁文件已落地。
+- **iOS/Android 模拟器冒烟未在本机执行**：Xcode 已装但未启动模拟器；Android SDK 缺失（`ANDROID_HOME` 空）。
+  「SSE 无丢字」的端到端断言尚未在实机/模拟器上跑通，需在有模拟器的宿主补跑
+  （`npm run ios` / `npm run android` + `npm run typecheck`）。SSE 逐帧解析逻辑已在 typed client 中实现
+  并通过类型检查，但未做真机字节级验证。
+
+### commit 清单（Phase 5）
+
+- `3fb08c730` feat: scaffold the React Native client (apps/mobile) and deprecate the WebView shell
+
+### 后续项
+
+- 实机/模拟器冒烟闭环（iOS + Android）；接入 `expo-secure-store` 替换内存回退；
+  swipe/regenerate/impersonate/quiet 的 UI；access token 到期自动刷新已在客户端实现、待联调。
+
 ## Phase 4 里程碑报告：Web PWA 解耦（2026-10-10）
 
 **结论：Phase 4 完成。** Web UI 支持「公网 Token 登录 / 桌面 Cookie 登录」双轨；PWA 可安装；

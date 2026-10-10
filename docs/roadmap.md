@@ -383,10 +383,19 @@ All 9 case(s) are byte-identical to the baseline.
 
 ### 停靠声明
 
-按令状 §7：group-normal / solo-persona-depth 的 depth 注入语义、solo-impersonate 的
-memory 子块组合，均属**本文件与附 L/M/N/O/P 未覆盖且有具体证据的新分叉**。Phase 4（Web
-PWA）与 Phase 5（RN App）依赖 §3「服务端 `/generate` 权威轮次可用」；在 depth 注入语义
-未定论前开工，会把客户端叠在错误的组装语义上，故在此停靠报告，等待裁决后继续。
+按令状 §7：剩余 2 例各剩一处**有具体证据、且被 §5 既有裁决锁住**的差异，不能靠凑数改动
+消除：
+
+- `solo-swipe` 的关系数值（基线 `0/100` vs 服务端 `4/100`）：§5 规定基线为权威且
+  dump 弃用，而该数值与当前 memory 夹具不自洽（对 `currentMessageId` 0–5 恒为 `4/100`）。
+  在不改基线、不改夹具的前提下，服务端无法推导出 `0/100`。
+- `solo-regenerate` 的记忆块位置：注入 idx 与 `solo-normal` 相同，差别来自该类型数组
+  少一格。所有「索引平移 / 首端切片」组合都会同时打散 `solo-normal`（已实测），需要
+  共享模块新增一种按类型锚定的语义；该模块浏览器也在加载，改动必须同时保持浏览器侧
+  9/9。
+
+Phase 4（Web PWA）与 Phase 5（RN App）依赖 §3「服务端 `/generate` 权威轮次可用」；
+在这两处未定论前开工，会把客户端叠在错误的组装语义上，故在此停靠报告。
 
 ### 环境说明
 

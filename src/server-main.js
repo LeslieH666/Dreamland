@@ -270,6 +270,12 @@ app.get('/', cacheBuster.middleware, (request, response) => {
     return response.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
 });
 
+// Operations dashboard. The page itself is unauthenticated HTML; every data request it
+// makes to /api/v1/ops/* requires an admin bearer token (see the ops router).
+app.get('/ops', (_request, response) => {
+    return response.sendFile('ops.html', { root: path.join(serverDirectory, 'public') });
+});
+
 // Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)
 app.get('/callback/:source?', (request, response) => {
     const source = request.params.source;

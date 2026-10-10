@@ -10,7 +10,7 @@
 import storage from 'node-persist';
 
 import { getAccountVersion, toKey } from '../users.js';
-import { unauthorized } from './errors.js';
+import { forbidden, unauthorized } from './errors.js';
 import { resolveRequestUser, verifyAccessToken } from './auth.js';
 
 /**
@@ -76,6 +76,7 @@ export async function apiV1AuthenticationMiddleware(request, response, next) {
     request.user = user;
     request.apiAuth = {
         handle: profile.handle,
+        admin: payload.admin === true,
         tokenId: payload.jti,
         expiresAt: payload.exp,
     };
@@ -89,6 +90,24 @@ export async function apiV1AuthenticationMiddleware(request, response, next) {
  */
 export function requireApiV1Auth(router) {
     router.use(apiV1AuthenticationMiddleware);
+}
+
+/**
+ * Guard for the operations dashboard: the request must be authenticated as an
+ * administrator. The check reads the freshly loaded account profile (authoritative) rather
+ * than trusting the token claim alone, because the account version does not change when
+ * an account's admin flag is toggled.
+ *
+ * @param {import('express').Request} request Express request.
+ * @param {import('express').Response} response Express response.
+ * @param {import('express').NextFunction} next Next middleware.
+ * @returns {void}
+ */
+export function requireOpsAdmin(request, response, next) {
+    if (request.user?.profile?.admin !== true) {
+        return next(forbidden('This endpoint requires an administrator account.'));
+    }
+    return next();
 }
 
 /**
@@ -133,6 +152,7 @@ export async function bearerTokenFallbackMiddleware(request, response, next) {
     request.bearerAuthenticated = true;
     request.apiAuth = {
         handle: profile.handle,
+        admin: payload.admin === true,
         tokenId: payload.jti,
         expiresAt: payload.exp,
     };

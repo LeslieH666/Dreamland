@@ -76,12 +76,13 @@ function decodeSegment(segment) {
 
 /**
  * Sign an access token.
- * @param {{handle: string, accountVersion: number, ttlSeconds?: number, now?: number, secret?: Buffer}} options Token input.
+ * @param {{handle: string, accountVersion: number, admin?: boolean, ttlSeconds?: number, now?: number, secret?: Buffer}} options Token input.
  * @returns {{token: string, expiresIn: number, expiresAt: number}} Signed token.
  */
 export function signAccessToken({
     handle,
     accountVersion,
+    admin = false,
     ttlSeconds = ACCESS_TOKEN_TTL_SECONDS,
     now = Math.floor(Date.now() / 1000),
     secret = getApiV1Secret(),
@@ -91,6 +92,7 @@ export function signAccessToken({
     const payload = encodeSegment({
         sub: handle,
         ver: accountVersion,
+        admin: Boolean(admin),
         typ: 'access',
         iat: now,
         exp: expiresAt,
@@ -105,7 +107,7 @@ export function signAccessToken({
  * Verify an access token.
  * @param {string} token Bearer token.
  * @param {{secret?: Buffer, now?: number}} [options] Verification input.
- * @returns {{sub: string, ver: number, typ: string, iat: number, exp: number, jti: string}} Decoded payload.
+ * @returns {{sub: string, ver: number, admin?: boolean, typ: string, iat: number, exp: number, jti: string}} Decoded payload.
  * @throws {ApiError} 401 when the token is malformed, tampered with or expired.
  */
 export function verifyAccessToken(token, { secret = getApiV1Secret(), now = Math.floor(Date.now() / 1000) } = {}) {
@@ -297,7 +299,7 @@ export async function registerAccount({ handle, password, name, admin = false })
  */
 export function issueTokenPair({ user, store = authStore, clientId = null }) {
     const accountVersion = getAccountVersion(user);
-    const access = signAccessToken({ handle: user.handle, accountVersion });
+    const access = signAccessToken({ handle: user.handle, accountVersion, admin: Boolean(user.admin) });
     const refreshToken = crypto.randomBytes(32).toString('base64url');
     store.putRefreshToken({ token: refreshToken, handle: user.handle, accountVersion, clientId });
     return {

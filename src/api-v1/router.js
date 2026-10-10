@@ -19,12 +19,13 @@ import express from 'express';
 
 import { API_V1_CAPABILITIES, getApiHealth } from './protocol.js';
 import { asyncRoute } from './errors.js';
-import { apiV1AuthenticationMiddleware } from './auth-middleware.js';
+import { apiV1AuthenticationMiddleware, requireOpsAdmin } from './auth-middleware.js';
 import { createApiV1RateLimiters } from './rate-limit.js';
 import { authErrorHandler, authProtectedRouter, authRouter } from './routes/auth.js';
 import { charactersRouter } from './routes/characters.js';
 import { chatsRouter } from './routes/chats.js';
 import { groupsRouter } from './routes/groups.js';
+import { createOpsRouter } from './routes/ops.js';
 import { worldInfoRouter } from './routes/worldinfo.js';
 import { voiceRouter } from './routes/voice.js';
 import { leslieRouter } from './routes/leslie.js';
@@ -66,6 +67,7 @@ export function createApiV1Router({ rateLimiters = createApiV1RateLimiters() } =
     router.use('/groups', groupsRouter);
     router.use('/worldinfo', worldInfoRouter);
     router.use('/secrets', secretsRouter);
+    router.use('/ops', requireOpsAdmin, createOpsRouter({ accountLimiter: rateLimiters.limiters.account }));
     router.use('/', voiceRouter);
     router.use('/', leslieRouter);
 

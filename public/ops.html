@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>DreamLand 运营面板</title>
+    <style>
+        :root { color-scheme: light dark; }
+        body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; background: #edf2f5; color: #1c2a38; }
+        header { background: #163c63; color: #fff; padding: 16px 20px; }
+        header h1 { margin: 0; font-size: 20px; }
+        main { max-width: 980px; margin: 20px auto; padding: 0 16px; }
+        .toolbar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        input[type="password"] { flex: 1; min-width: 240px; padding: 10px; border: 1px solid #c4cfd9; border-radius: 6px; font-size: 14px; }
+        button { padding: 10px 16px; border: 0; border-radius: 6px; background: #163c63; color: #fff; cursor: pointer; font-size: 14px; }
+        button.secondary { background: #6c8aa8; }
+        .card { background: #fff; border: 1px solid #e2e9f0; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        .card h2 { margin: 0 0 12px; font-size: 16px; color: #163c63; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eef2f6; }
+        th { color: #5a6b7c; font-weight: 600; }
+        .muted { color: #5a6b7c; }
+        .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+        .error { color: #b3372e; padding: 8px 0; }
+        .ok { color: #1a7f37; font-weight: 600; }
+        .warn { color: #b35900; font-weight: 600; }
+        .kv { display: grid; grid-template-columns: 200px 1fr; row-gap: 6px; }
+        .kv dt { color: #5a6b7c; }
+        .kv dd { margin: 0; }
+    </style>
+</head>
+<body>
+    <header><h1>DreamLand 运营面板</h1></header>
+    <main>
+        <div class="toolbar">
+            <input id="token" type="password" placeholder="粘贴管理员 access token" autocomplete="off">
+            <button id="load">加载</button>
+            <button id="clear" class="secondary">清除</button>
+        </div>
+        <div id="error" class="error"></div>
+
+        <section class="card">
+            <h2>服务器状态</h2>
+            <dl id="status" class="kv"></dl>
+        </section>
+
+        <section class="card">
+            <h2>账户与存储</h2>
+            <table id="users">
+                <thead><tr><th>handle</th><th>admin</th><th>启用</th><th>存储占用</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>网关供应商</h2>
+            <div id="gateway-summary" class="muted"></div>
+            <table id="gateway">
+                <thead><tr><th>供应商</th><th>状态</th><th>密钥</th><th>来源</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>限流配额</h2>
+            <div id="rl-summary" class="muted"></div>
+            <table id="ratelimits">
+                <thead><tr><th>handle</th><th>已用</th><th>剩余</th><th>窗口</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        const TOKEN_KEY = 'dreamland.ops.token';
+        const tokenInput = document.getElementById('token');
+        const errorBox = document.getElementById('error');
+
+        tokenInput.value = localStorage.getItem(TOKEN_KEY) || '';
+
+        async function api(path) {
+            const token = tokenInput.value.trim();
+            if (!token) throw new Error('请先粘贴管理员 access token。');
+            const response = await fetch('/api/v1' + path, {
+                headers: { 'Authorization': 'Bearer ' + token },
+            });
+            if (!response.ok) {
+                let message = 'HTTP ' + response.status;
+                try { message = (await response.json())?.error?.message || message; } catch { /* ignore */ }
+                throw new Error(message);
+            }
+            return response.json();
+        }
+
+        function bytes(n) {
+            if (n === undefined || n === null) return '—';
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            let i = 0, v = Number(n);
+            while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+            return v.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+        }
+
+        async function load() {
+            errorBox.textContent = '';
+            localStorage.setItem(TOKEN_KEY, tokenInput.value.trim());
+            try {
+                const [status, users, gateway, rateLimits] = await Promise.all([
+                    api('/ops/status'), api('/ops/users'), api('/ops/gateway'), api('/ops/rate-limits'),
+                ]);
+                renderStatus(status);
+                renderUsers(users.users);
+                renderGateway(gateway);
+                renderRateLimits(rateLimits);
+            } catch (error) {
+                errorBox.textContent = error.message || String(error);
+            }
+        }
+
+        function renderStatus(status) {
+            const kv = document.getElementById('status');
+            const mem = status.memory, cpu = status.cpu, disk = status.disk;
+            const rows = [
+                ['运行时间', (status.uptime_seconds / 3600).toFixed(1) + ' 小时'],
+                ['Node 版本', status.node_version],
+                ['模式', status.mode],
+                ['CPU 核数 / 负载', cpu.cores + ' 核 · ' + cpu.loadavg.map(x => x.toFixed(2)).join(' / ')],
+                ['内存总量', bytes(mem.total)],
+                ['内存空闲', bytes(mem.free)],
+                ['进程 RSS', bytes(mem.process.rss)],
+                ['磁盘总量', bytes(disk.total)],
+                ['磁盘可用', bytes(disk.available)],
+            ];
+            kv.innerHTML = rows.map(([k, v]) => '<dt>' + k + '</dt><dd class="mono">' + v + '</dd>').join('');
+        }
+
+        function renderUsers(users) {
+            const tbody = document.querySelector('#users tbody');
+            tbody.innerHTML = (users || []).map(u =>
+                '<tr><td class="mono">' + u.handle + '</td><td>' + (u.admin ? '<span class="ok">是</span>' : '否') + '</td><td>' + (u.enabled ? '是' : '<span class="warn">否</span>') + '</td><td class="mono">' + bytes(u.storage_bytes) + '</td></tr>'
+            ).join('');
+        }
+
+        function renderGateway(gateway) {
+            const summary = document.getElementById('gateway-summary');
+            summary.textContent = '当前网关：' + (gateway.source || '（未配置）') + ' · 模型：' + (gateway.model || '（未配置）');
+            const tbody = document.querySelector('#gateway tbody');
+            tbody.innerHTML = (gateway.providers || []).map(p => {
+                const status = p.configured ? '<span class="ok">已配置</span>' : '<span class="muted">未配置</span>';
+                const active = p.active ? '（当前）' : '';
+                return '<tr><td class="mono">' + p.source + active + '</td><td>' + status + '</td><td class="mono">' + (p.preview || '—') + '</td><td>' + (p.secret_source || '—') + '</td></tr>';
+            }).join('');
+        }
+
+        function renderRateLimits(rateLimits) {
+            const summary = document.getElementById('rl-summary');
+            summary.textContent = '每账户限额：' + rateLimits.limit + ' 次 / ' + rateLimits.window_seconds + ' 秒';
+            const tbody = document.querySelector('#ratelimits tbody');
+            tbody.innerHTML = (rateLimits.accounts || []).map(a =>
+                '<tr><td class="mono">' + a.handle + '</td><td>' + a.used + '</td><td>' + a.remaining + '</td><td class="muted">' + Math.max(1, Math.ceil(a.reset_in_ms / 1000)) + 's</td></tr>'
+            ).join('');
+        }
+
+        document.getElementById('load').addEventListener('click', load);
+        document.getElementById('clear').addEventListener('click', () => {
+            tokenInput.value = '';
+            localStorage.removeItem(TOKEN_KEY);
+            errorBox.textContent = '';
+        });
+    </script>
+</body>
+</html>

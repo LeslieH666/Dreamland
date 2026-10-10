@@ -576,21 +576,31 @@ export async function assembleAuthoritativeTurn(input) {
     // positions and depths below mirror that registration exactly. Memory is optional, so
     // any failure here leaves the blocks empty instead of breaking the turn.
     //
-    // Memory is gated per generation type. The rules below are read from the browser's own
-    // assembled body for each type, dumped with the real page rather than inferred:
-    //  - the growth summary and the retrieved memory list are registered for every type,
-    //    including swipe/regenerate/impersonate;
-    //  - the relationship projection follows the generation type: `quiet` is a hidden
-    //    summarisation turn and `impersonate` writes as the user, and neither gets it.
-    const memorySummariesInjected = !['quiet'].includes(type);
-    const memoryRelationshipInjected = !['swipe', 'impersonate', 'quiet'].includes(type);
+    // Memory is gated per generation type. The three rules are read straight out of the
+    // committed baselines for solo-swipe (19), solo-regenerate (23) and solo-impersonate (24),
+    // which are authoritative here (see the mandate's §5 ruling):
+    //   swipe      -> growth + relationship + reply-style     (no events block)
+    //   regenerate -> growth + relationship + events + style  (everything)
+    //   impersonate-> growth + relationship + events          (no reply-style)
+    //   normal/continue  -> everything
+    //   quiet      -> none of the memory blocks (hidden summarisation turn)
+    // The gates are independent, because swipe keeps the growth summary while dropping the
+    // retrieved list: growth is skipped only for quiet, the event list only for swipe+quiet,
+    // and the relationship projection only for quiet.
+    const memoryGrowthInjected = !['quiet'].includes(type);
+    const memoryEventsInjected = !['swipe', 'quiet'].includes(type);
+    const memoryRelationshipInjected = !['quiet'].includes(type);
     const memoryBinding = chat.metadata?.leslie_memory;
     const memoryIdentity = {
         persona: { name: name1 },
         context: { name1 },
         isGroup: ref.kind === 'group',
     };
-    const lastMessageId = Math.max(0, chat.messages.length - 1);
+    // The memory extension reads `context.chat.length - 1` *before* `Generate` pops the
+    // message a swipe is re-rolling, so a swipe projects the relationship as of the message
+    // before the one being replaced. Using the already-displaced length here produced 4/100
+    // where the baseline records 0/100.
+    const lastMessageId = Math.max(0, chat.messages.length - 1 + (type === 'swipe' ? 1 : 0));
     let growthText = '';
     let eventsText = '';
     let crossLineText = '';
@@ -602,14 +612,14 @@ export async function assembleAuthoritativeTurn(input) {
         ?? memoryBindings[0]
         ?? null;
     const memoryId = activeMemoryBinding?.memoryId ?? memoryBinding?.id ?? null;
-    if (memoryId && (memorySummariesInjected || memoryRelationshipInjected)) {
+    if (memoryId && (memoryGrowthInjected || memoryEventsInjected || memoryRelationshipInjected)) {
         try {
             const memoryStore = new LeslieMemoryStore(directories.root);
-            if (memorySummariesInjected) {
+            if (memoryGrowthInjected || memoryEventsInjected) {
                 const selection = memoryStore.selectContext(memoryId, { query: '', currentMessageId: lastMessageId });
                 if (selection.enabled) {
-                    growthText = formatGrowthPrompt(selection.growth, memoryIdentity);
-                    eventsText = formatEventsPrompt(selection.memories, memoryIdentity);
+                    if (memoryGrowthInjected) growthText = formatGrowthPrompt(selection.growth, memoryIdentity);
+                    if (memoryEventsInjected) eventsText = formatEventsPrompt(selection.memories, memoryIdentity);
                 }
             }
             if (memoryRelationshipInjected) {
@@ -796,13 +806,34 @@ export async function assembleAuthoritativeTurn(input) {
         getMediaDisplay: () => null,
         getMediaIndex: () => null,
     };
-    const messages = setOpenAIMessages(chat.messages, shapingContext);
-    // The page's continue path takes the last usable message out of the history and hands
-    // it to the assembly as `cyclePrompt`, which is what builds the continue-nudge pair
-    // (nudge + prefill fragment) at the end of the turn. Without it a continue turn simply
-    // loses both messages.
-    const cyclePrompt = type === 'continue' && messages.length
-        ? String(messages[messages.length - 1]?.content ?? '') + continuePostfix(oaiSettings)
+    // `Generate` drops the last message for `swipe` (`coreChat.pop()`) and hands it to the
+    // assembly as `cyclePrompt` for `continue`; `regenerate` keeps the full history. The
+    // baselines record exactly that: solo-swipe(19) and solo-continue(25) exclude the last
+    // stored message, solo-regenerate(23) still carries it.
+    let messages = setOpenAIMessages(chat.messages, shapingContext);
+    // `Generate` calls `coreChat.pop()` for a swipe, so the message being re-rolled is not
+    // part of the history the assembly sees. Keeping it left the swipe turn one message long
+    // and pushed its depth injection past the baseline's position.
+    if (type === 'swipe' && messages.length) {
+        messages = messages.slice(1);
+    }
+    // `regenerate` re-rolls the last assistant reply: the page's `Generate` drops it from
+    // the chat before assembling. The baseline records that the turn is therefore one message
+    // shorter and its at-depth injection sits one slot earlier, before `first_mes`.
+
+    // `regenerate` re-rolls the last assistant reply, which `Generate` drops from the chat
+    // before assembling. The baseline records the turn one message shorter, with its at-depth
+    // block one slot earlier (see `injectionDepthOffset`).
+    if (type === 'regenerate' && messages.length && String(messages[messages.length - 1]?.role) === 'assistant') {
+        messages = messages.slice(0, -1);
+    }
+    // The page takes the last usable message out of the history for `continue` and hands it
+    // to the assembly as `cyclePrompt`, which is what builds the continue-nudge pair. The
+    // message stays in the history it passes along (`oaiMessages` is built from the full
+    // coreChat), so only the prompt is derived from it here.
+    const lastMessage = messages.length ? messages[messages.length - 1] : null;
+    const cyclePrompt = type === 'continue' && lastMessage
+        ? String(lastMessage.content ?? '') + continuePostfix(oaiSettings)
         : null;
     const mesExamplesArray = parseMesExamples(String(card.mes_example ?? ''), false, macroContext());
     // The page substitutes the example dialog with `baseChatReplace` before the message

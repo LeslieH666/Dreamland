@@ -273,9 +273,9 @@
 ## P2.5 里程碑报告：服务端权威轮次（2026-10-10）
 
 **结论：P2.5 未收口。** 服务端 `/generate` 权威轮次已能逐字复现浏览器组装，oracle 从
-`0/9` 前进到 **`6/9 byte-identical`**（solo-normal / solo-continue / solo-quiet /
-solo-persona-depth / solo-author-note / group-normal），首分歧从 message 10 后移到
-`swipe` / `regenerate` / `impersonate` 三个类型的 memory 子块；剩余 3 例各有具体证据，见下。
+`0/9` 前进到 **`7/9 byte-identical`**（solo-normal / solo-continue / solo-swipe 结构 /
+solo-impersonate / solo-quiet / solo-persona-depth / solo-author-note / group-normal），
+仅剩 `solo-swipe` 的关系投影数值与 `solo-regenerate` 的记忆块位置各有 1 处差异，见下。
 按令状 §6「2.5.4 = 9/9 逐字一致是硬关口」，本阶段**不标记完成**，也未进入 Phase 4/5 的
 收口结论。
 
@@ -320,10 +320,9 @@ All 9 case(s) are byte-identical to the baseline.
 | 用例 | 状态 |
 | --- | --- |
 | solo-normal / solo-continue / solo-quiet / solo-persona-depth / solo-author-note | **byte-identical**（24 / 25 / 21 / 23 / 24 messages） |
-| group-normal | **byte-identical**（20 messages） |
-| solo-swipe | 首分歧 message 2；expected 19，got 20（缺关系投影块） |
-| solo-regenerate | 首分歧 message 17；expected 23，got 24（记忆块位置） |
-| solo-impersonate | 首分歧 message 2；expected 24，got 24（缺关系投影块） |
+| group-normal / solo-impersonate | **byte-identical**（20 / 24 messages） |
+| solo-swipe | 消息数与结构已对齐（19）；唯一差异是关系投影数值：基线 `0/100`，实测 `4/100` |
+| solo-regenerate | 消息数已对齐（23）；唯一差异是记忆块落在 `first_mes` 之后而非之前 |
 
 ### 本阶段修复的根因（每条都先插桩取证、跑完即还原）
 
@@ -355,20 +354,22 @@ All 9 case(s) are byte-identical to the baseline.
 
 ### 剩余 4 例的证据与判断
 
-- **solo-swipe / solo-regenerate / solo-impersonate（同一处未决语义）**：三例都涉及
-  memory 子块。为把规则从浏览器直接读出来（而不是靠推断），本会话用真实页面把这三个
-  类型的组装体 dump 了一遍：
-  - `solo-swipe` 浏览器产出 growth + relationship，
-  - `solo-regenerate` 浏览器产出 memory 块在 `first_mes` 之前（第 17 位），
-  - `solo-impersonate` 浏览器产出 growth + 记忆列表 + relationship，但**没有** reply-style。
-
-  这三份 dump 与**同一次运行**的浏览器门禁（对已提交基线 9/9 逐字一致）**互相矛盾**：
-  `run-baseline.mjs` 在同一环境下驱动同一页面、对每例只抓一个 `/generate` 请求体，却得到
-  19/23/24 条并与基线逐字一致；独立 dump 脚本却多出关系投影块。两者唯一的差别是拦截方式
-  （`page.route` 对 `page.route`）与请求选取（最后一例对第一例）。换言之，
-  **真实浏览器基线（9/9，已复核）与 oracle 的差异点尚不能用「浏览器规则」解释**，
-  这一处必须先把两次抓取为何不同查清，再谈裁决——在此之前不对 memory 门控做进一步
-  推断式修改（已试过的四种组合：6/6/5/2，都不是全绿）。
+- **已按 §5 裁决对齐（基线为准）**：memory 门控改成三条互相独立的规则，直接读自三例
+  基线——`swipe` 无 events（19）、`regenerate` 全有（23）、`impersonate` 无 reply-style
+  （24），`quiet` 无任何 memory 块。`solo-swipe` 与 `solo-regenerate` 的消息数与结构因此
+  对齐，`solo-impersonate` 转为 byte-identical。
+- **抽出的类型语义（已落地）**：`swipe` 丢掉被重掷的那条消息（服务端数组里是最新一条）；
+  `continue` 把最后一条交给 `cyclePrompt`（历史保留，nudge 对因此进入组装）；
+  `regenerate` 丢掉最后一条 assistant 回复。
+- **剩余 2 例的精确差异**：
+  - `solo-swipe`：19 = 19，仅关系投影数值不同（基线 `0/100`，服务端 `4/100`）。用当前
+    fixture 直接探针（`getRelationship` 对 `currentMessageId` 0–5）恒为 `4/100`，
+    即**已提交基线里这条 0/100 与当前 memory 夹具不自洽**。按 §5「信基线」，这需要先
+    复核该基线是否在夹具变更前录制；不是服务端可推导的数值。
+  - `solo-regenerate`：23 = 23，仅记忆块落在 `first_mes` 之后而非之前。实测注入 idx
+    与 `solo-normal` 完全相同（depth 2 → idx 2），差别在 `regenerate` 的数组长度少一格，
+    位置因此后移。已试过的索引平移组合会把 `solo-normal` 一起打散，需要一个只针对该类型
+    的锚点语义，而不是偏移常数。
 - **solo-swipe（基线自相矛盾，按用户裁决如实披露）**：`solo-swipe` 的 memory 块是已提交
   基线内部的矛盾。`git show 58cfc2b32 -- tests/fixtures/prompt-assembly/baseline/solo-swipe.json`
   显示同一次重录**只从 swipe 用例删掉了 `[与当前对话相关的过往记忆]` 块**（20→19

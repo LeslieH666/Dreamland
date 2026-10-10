@@ -6,6 +6,7 @@ import {
 
 import { ChatMessage, CharacterSummary } from '../../api';
 import { Session } from '../../store/session';
+import { theme } from '../../theme';
 import { speak, stopSpeaking } from '../voice/tts';
 
 interface RenderedMessage {
@@ -126,24 +127,24 @@ export function ChatScreen({ session, character, onBack }: {
                     ? <TouchableOpacity style={styles.sendButton} onPress={interrupt}><Text style={styles.sendLabel}>停止</Text></TouchableOpacity>
                     : <TouchableOpacity style={styles.sendButton} onPress={send}><Text style={styles.sendLabel}>发送</Text></TouchableOpacity>}
             </View>
-            {busy ? <ActivityIndicator color="#163c63" style={{ margin: 4 }} /> : null}
+            {busy ? <ActivityIndicator color={theme.primary} style={{ margin: 4 }} /> : null}
         </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
     root: { flex: 1 },
-    header: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#dfe6ed', backgroundColor: '#ffffff' },
-    back: { color: '#163c63', fontSize: 16, marginRight: 8 },
-    title: { fontSize: 17, fontWeight: '700', color: '#163c63' },
+    header: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: theme.border, backgroundColor: theme.surface },
+    back: { color: theme.primary, fontSize: 16, marginRight: 8 },
+    title: { fontSize: 17, fontWeight: '700', color: theme.primary },
     bubble: { maxWidth: '82%', padding: 12, borderRadius: 14, marginHorizontal: 12, marginVertical: 4 },
-    userBubble: { alignSelf: 'flex-end', backgroundColor: '#163c63' },
-    assistantBubble: { alignSelf: 'flex-start', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e9f0' },
+    userBubble: { alignSelf: 'flex-end', backgroundColor: theme.primary },
+    assistantBubble: { alignSelf: 'flex-start', backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
     messageText: { fontSize: 15 },
-    userText: { color: '#ffffff' },
-    assistantText: { color: '#1c2a38' },
-    composer: { flexDirection: 'row', alignItems: 'flex-end', padding: 10, borderTopWidth: 1, borderTopColor: '#dfe6ed', backgroundColor: '#ffffff' },
-    input: { flex: 1, borderWidth: 1, borderColor: '#c4cfd9', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, maxHeight: 120, backgroundColor: '#ffffff', fontSize: 15 },
-    sendButton: { marginLeft: 8, backgroundColor: '#163c63', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
-    sendLabel: { color: '#ffffff', fontWeight: '600' },
+    userText: { color: theme.onPrimary },
+    assistantText: { color: theme.text },
+    composer: { flexDirection: 'row', alignItems: 'flex-end', padding: 10, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.surface },
+    input: { flex: 1, borderWidth: 1, borderColor: theme.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, maxHeight: 120, backgroundColor: theme.surface, fontSize: 15 },
+    sendButton: { marginLeft: 8, backgroundColor: theme.primary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
+    sendLabel: { color: theme.onPrimary, fontWeight: '600' },
 });

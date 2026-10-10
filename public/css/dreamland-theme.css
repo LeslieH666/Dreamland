@@ -1,0 +1,140 @@
+/*
+ * DreamLand "remake" theme — red-tinted surface tokens.
+ *
+ * This stylesheet overrides the DreamLand design tokens (--dl-*) and the underlying
+ * material root (--tg-*) with the remake palette. It is loaded after the other
+ * dreamland-*.css files, so the accent, canvas, surfaces, borders, text and radius all
+ * cascade to the existing token-driven components (cards, panels, sidebar, top bar,
+ * inputs, bubbles, primary buttons) without touching their rules.
+ *
+ *   accent  #c9505b      hover/selected  #f5f6f9
+ *   border  #e4e8ef      muted           #778292
+ *   canvas  #f3f5f8      text            #273446
+ *   card    #ffffff + 1px #e4e8ef + 10px radius
+ */
+
+/* --------------------------------------------------------------------------
+ * Light surfaces
+ * ----------------------------------------------------------------------- */
+body.leslie-modern[data-leslie-design-language="dreamland"][data-leslie-color-scheme] {
+    --dl-accent: #c9505b;
+    --dl-accent-strong: #b5434e;
+    --dl-canvas: #f3f5f8;
+    --dl-surface: #ffffff;
+    --dl-soft: #f5f6f9;
+    --dl-text: #273446;
+    --dl-muted: #778292;
+    --dl-border: #e4e8ef;
+    --dl-outgoing: #f9e6e8;
+    --dl-radius: 10px;
+    --dl-reading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    /* Material root (foundation.css) so shell/chat/bubble/text stay consistent. */
+    --tg-accent: #c9505b;
+    --tg-accent-strong: #b5434e;
+    --tg-accent-soft: rgba(201, 80, 91, 0.12);
+    --tg-layer-0: #f3f5f8;
+    --tg-layer-1: #ffffff;
+    --tg-layer-2: #f5f6f9;
+    --tg-layer-strong: #eef1f5;
+    --tg-layer-hover: #f5f6f9;
+    --tg-layer-raised: #ffffff;
+    --tg-layer-active: #fbecee;
+    --tg-bubble-incoming: #ffffff;
+    --tg-bubble-outgoing: #f9e6e8;
+    --tg-text-primary: #273446;
+    --tg-text-secondary: #778292;
+    --tg-text-tertiary: #778292;
+    --tg-border: #e4e8ef;
+    --tg-border-soft: #eff2f6;
+    --tg-danger: #b94651;
+
+    /* Named aliases from the remake spec. */
+    --line: #e4e8ef;
+    --muted: #778292;
+    --dl-quiet-bg: #eef1f5;
+    --dl-quiet-text: #526172;
+    --dl-danger-bg: #fff0f1;
+    --dl-danger-text: #b94651;
+    --dl-table-head-bg: #fafbfc;
+    --dl-table-head-text: #8b96a5;
+    --dl-table-row-line: #eff2f6;
+}
+
+/* --------------------------------------------------------------------------
+ * Dark surfaces (red-tinted)
+ * ----------------------------------------------------------------------- */
+body.leslie-modern[data-leslie-design-language="dreamland"][data-leslie-color-scheme="dark"] {
+    --dl-accent: #d96a75;
+    --dl-accent-strong: #e68b94;
+    --dl-canvas: #14181e;
+    --dl-surface: #1d2229;
+    --dl-soft: #252b33;
+    --dl-text: #e6e9ee;
+    --dl-muted: #8b96a5;
+    --dl-border: #2e3642;
+    --dl-outgoing: #3a2730;
+
+    --tg-accent: #d96a75;
+    --tg-accent-strong: #e68b94;
+    --tg-accent-soft: rgba(217, 106, 117, 0.16);
+    --tg-layer-0: #14181e;
+    --tg-layer-1: #1d2229;
+    --tg-layer-2: #252b33;
+    --tg-layer-strong: #252b33;
+    --tg-layer-hover: #2a313b;
+    --tg-layer-raised: #1d2229;
+    --tg-layer-active: #3a2730;
+    --tg-bubble-incoming: #1d2229;
+    --tg-bubble-outgoing: #3a2730;
+    --tg-text-primary: #e6e9ee;
+    --tg-text-secondary: #8b96a5;
+    --tg-text-tertiary: #8b96a5;
+    --tg-border: #2e3642;
+    --tg-border-soft: #262d37;
+    --tg-danger: #e26d78;
+
+    --line: #2e3642;
+    --muted: #8b96a5;
+    --dl-quiet-bg: #252b33;
+    --dl-quiet-text: #aeb9c4;
+    --dl-danger-bg: #3a2024;
+    --dl-danger-text: #e68b94;
+    --dl-table-head-bg: #1f252d;
+    --dl-table-head-text: #8b96a5;
+    --dl-table-row-line: #262d37;
+}
+
+/* --------------------------------------------------------------------------
+ * Explicit surfaces: tables, quiet/danger buttons
+ * ----------------------------------------------------------------------- */
+body.leslie-modern[data-leslie-design-language="dreamland"] :is(table, .leslie-table, #dialogue_popup table) th {
+    background: var(--dl-table-head-bg);
+    color: var(--dl-table-head-text);
+}
+
+body.leslie-modern[data-leslie-design-language="dreamland"] :is(table, .leslie-table, #dialogue_popup table) :is(td, th) {
+    border-bottom-color: var(--dl-table-row-line);
+}
+
+/* Quiet button: the default .menu_button surface. */
+body.leslie-modern[data-leslie-design-language="dreamland"] .menu_button {
+    background: var(--dl-quiet-bg);
+    color: var(--dl-quiet-text);
+}
+
+body.leslie-modern[data-leslie-design-language="dreamland"] .menu_button:hover:not(:disabled) {
+    background: var(--dl-soft);
+}
+
+/* Danger buttons (destructive actions) use the light-red surface. */
+body.leslie-modern[data-leslie-design-language="dreamland"] :is(
+    #dialogue_popup .popup-button-close,
+    #dialogue_popup .popup-button-no,
+    #dialogue_popup .popup-button-cancel,
+    .menu_button[title*="Delete"],
+    .menu_button[title*="删除"]
+) {
+    background: var(--dl-danger-bg);
+    color: var(--dl-danger-text);
+}

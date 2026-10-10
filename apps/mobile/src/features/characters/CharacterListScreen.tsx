@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity } from 
 
 import { CharacterSummary } from '../../api';
 import { Session } from '../../store/session';
+import { theme } from '../../theme';
 
 /** Character-card list; tapping a card opens its chat. */
 export function CharacterListScreen({ session, onOpenCharacter }: {
@@ -23,7 +24,7 @@ export function CharacterListScreen({ session, onOpenCharacter }: {
     }, [session]);
 
     if (loading) {
-        return <ActivityIndicator color="#163c63" style={{ marginTop: 24 }} />;
+        return <ActivityIndicator color={theme.primary} style={{ marginTop: 24 }} />;
     }
     if (error) {
         return <Text style={styles.error}>{error}</Text>;
@@ -45,10 +46,10 @@ export function CharacterListScreen({ session, onOpenCharacter }: {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#ffffff', borderRadius: 10, padding: 14, marginBottom: 10,
-        borderWidth: 1, borderColor: '#e2e9f0',
+        backgroundColor: theme.surface, borderRadius: theme.radius, padding: 14, marginBottom: 10,
+        borderWidth: 1, borderColor: theme.border,
     },
-    name: { fontSize: 17, fontWeight: '600', color: '#163c63' },
-    desc: { fontSize: 13, color: '#5a6b7c', marginTop: 4 },
-    error: { color: '#b3372e', marginTop: 24, textAlign: 'center' },
+    name: { fontSize: 17, fontWeight: '600', color: theme.primary },
+    desc: { fontSize: 13, color: theme.muted, marginTop: 4 },
+    error: { color: theme.danger, marginTop: 24, textAlign: 'center' },
 });

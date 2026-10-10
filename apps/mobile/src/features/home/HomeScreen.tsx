@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Session } from '../../store/session';
+import { theme } from '../../theme';
 import { CharacterListScreen } from '../characters/CharacterListScreen';
 import { ChatScreen } from '../chat/ChatScreen';
 import { FeedScreen } from '../feed/FeedScreen';
@@ -70,8 +71,8 @@ function Tab({ label, onPress }: { label: string; onPress: () => void }) {
 const styles = StyleSheet.create({
     root: { flex: 1 },
     content: { padding: 16, paddingBottom: 24 },
-    title: { fontSize: 22, fontWeight: '700', color: '#163c63', marginBottom: 12 },
-    tabBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#dfe6ed', backgroundColor: '#ffffff' },
+    title: { fontSize: 22, fontWeight: '700', color: theme.primary, marginBottom: 12 },
+    tabBar: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.surface },
     tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
-    tabLabel: { color: '#163c63', fontWeight: '600' },
+    tabLabel: { color: theme.primary, fontWeight: '600' },
 });

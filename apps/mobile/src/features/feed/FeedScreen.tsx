@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 
 import { MemoryEvent, MomentPost } from '../../api';
 import { Session } from '../../store/session';
+import { theme } from '../../theme';
 
 interface FeedItem {
     id: string;
@@ -53,7 +54,7 @@ export function FeedScreen({ session, tab, onBack }: {
                 <Text style={styles.title}>{tab === 'memory' ? '记忆' : '朋友圈'}</Text>
             </View>
 
-            {loading ? <ActivityIndicator color="#163c63" style={{ marginTop: 24 }} /> : null}
+            {loading ? <ActivityIndicator color={theme.primary} style={{ marginTop: 24 }} /> : null}
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <FlatList
@@ -71,10 +72,10 @@ export function FeedScreen({ session, tab, onBack }: {
 
 const styles = StyleSheet.create({
     root: { flex: 1 },
-    header: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#dfe6ed', backgroundColor: '#ffffff' },
-    back: { color: '#163c63', fontSize: 16, marginRight: 8 },
-    title: { fontSize: 17, fontWeight: '700', color: '#163c63' },
-    card: { backgroundColor: '#ffffff', borderRadius: 10, padding: 14, margin: 12, borderWidth: 1, borderColor: '#e2e9f0' },
-    content: { fontSize: 14, color: '#1c2a38' },
-    error: { color: '#b3372e', marginTop: 24, textAlign: 'center' },
+    header: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: theme.border, backgroundColor: theme.surface },
+    back: { color: theme.primary, fontSize: 16, marginRight: 8 },
+    title: { fontSize: 17, fontWeight: '700', color: theme.primary },
+    card: { backgroundColor: theme.surface, borderRadius: theme.radius, padding: 14, margin: 12, borderWidth: 1, borderColor: theme.border },
+    content: { fontSize: 14, color: theme.text },
+    error: { color: theme.danger, marginTop: 24, textAlign: 'center' },
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { Session } from '../../store/session';
+import { theme } from '../../theme';
 
 /** Server origin + account settings. */
 export function SettingsScreen({ session, onBack }: { session: Session; onBack: () => void }) {
@@ -36,12 +37,12 @@ export function SettingsScreen({ session, onBack }: { session: Session; onBack: 
 
 const styles = StyleSheet.create({
     root: { flex: 1 },
-    header: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#dfe6ed', backgroundColor: '#ffffff' },
-    back: { color: '#163c63', fontSize: 16, marginRight: 8 },
-    title: { fontSize: 17, fontWeight: '700', color: '#163c63' },
+    header: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: theme.border, backgroundColor: theme.surface },
+    back: { color: theme.primary, fontSize: 16, marginRight: 8 },
+    title: { fontSize: 17, fontWeight: '700', color: theme.primary },
     body: { padding: 16 },
-    label: { fontSize: 13, color: '#5a6b7c', marginBottom: 6 },
-    input: { borderWidth: 1, borderColor: '#c4cfd9', borderRadius: 8, padding: 12, backgroundColor: '#f4f7fa', fontSize: 15, marginBottom: 16 },
-    signOut: { backgroundColor: '#b3372e', borderRadius: 8, padding: 14, alignItems: 'center' },
-    signOutLabel: { color: '#ffffff', fontWeight: '600' },
+    label: { fontSize: 13, color: theme.muted, marginBottom: 6 },
+    input: { borderWidth: 1, borderColor: theme.border, borderRadius: theme.radius, padding: 12, backgroundColor: theme.soft, fontSize: 15, marginBottom: 16 },
+    signOut: { backgroundColor: theme.dangerBg, borderRadius: theme.radius, padding: 14, alignItems: 'center' },
+    signOutLabel: { color: theme.danger, fontWeight: '600' },
 });

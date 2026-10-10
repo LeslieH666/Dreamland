@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Session } from '../../store/session';
+import { theme } from '../../theme';
 
 /** Login / registration screen for the versioned token auth. */
 export function AuthScreen({ session }: { session: Session }) {
@@ -53,13 +54,13 @@ export function AuthScreen({ session }: { session: Session }) {
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            {busy ? <ActivityIndicator color="#163c63" /> : (
+            {busy ? <ActivityIndicator color={theme.primary} /> : (
                 <>
                     <View style={styles.buttonRow}>
-                        <Button title="登录" onPress={() => submit(false)} color="#163c63" />
+                        <Button title="登录" onPress={() => submit(false)} color={theme.primary} />
                     </View>
                     <View style={styles.buttonRow}>
-                        <Button title="注册新账号" onPress={() => submit(true)} color="#6c8aa8" />
+                        <Button title="注册新账号" onPress={() => submit(true)} color={theme.quietText} />
                     </View>
                 </>
             )}
@@ -69,12 +70,12 @@ export function AuthScreen({ session }: { session: Session }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', padding: 24 },
-    title: { fontSize: 28, fontWeight: '700', color: '#163c63', textAlign: 'center' },
-    subtitle: { fontSize: 14, color: '#5a6b7c', textAlign: 'center', marginBottom: 24 },
+    title: { fontSize: 28, fontWeight: '700', color: theme.primary, textAlign: 'center' },
+    subtitle: { fontSize: 14, color: theme.muted, textAlign: 'center', marginBottom: 24 },
     input: {
-        borderWidth: 1, borderColor: '#c4cfd9', borderRadius: 8,
-        padding: 12, marginBottom: 12, backgroundColor: '#ffffff', fontSize: 16,
+        borderWidth: 1, borderColor: theme.border, borderRadius: theme.radius,
+        padding: 12, marginBottom: 12, backgroundColor: theme.surface, fontSize: 16,
     },
-    error: { color: '#b3372e', marginBottom: 12, textAlign: 'center' },
+    error: { color: theme.danger, marginBottom: 12, textAlign: 'center' },
     buttonRow: { marginTop: 8 },
 });

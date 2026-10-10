@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, StyleSheet, View } from 'react-native';
 
 import { Session } from './src/store/session';
+import { theme } from './src/theme';
 import { AuthScreen } from './src/features/auth/AuthScreen';
 import { HomeScreen } from './src/features/home/HomeScreen';
 
@@ -24,7 +25,7 @@ export default function App() {
     if (!session) {
         return (
             <View style={styles.center}>
-                <ActivityIndicator size="large" color="#163c63" />
+                <ActivityIndicator size="large" color={theme.primary} />
                 <StatusBar style="auto" />
             </View>
         );
@@ -41,6 +42,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: '#edf2f5' },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#edf2f5' },
+    root: { flex: 1, backgroundColor: theme.background },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background },
 });

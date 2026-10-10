@@ -237,6 +237,8 @@ export async function assembleAuthoritativeTurn(input) {
         activeCharacter: { ...card, id: 100000, avatar: `${ref.cardName}.png` },
         tokenHandler,
         createPromptCollection: () => new PromptCollection(),
+        // preparePrompt macro-substitutes every prompt, exactly as the page's manager does.
+        substituteParams: (text, overrides) => substitute(text, overrides),
     });
 
     // The macro engine reads the chat and settings through its own configured context,
@@ -299,7 +301,9 @@ export async function assembleAuthoritativeTurn(input) {
         },
         warn: () => {},
     });
-    const substitute = (text, overrides) => substituteParams(text, { ...macroContext(), ...(overrides ?? {}) });
+    function substitute(text, overrides) {
+        return substituteParams(text, { ...macroContext(), ...(overrides ?? {}) });
+    }
 
     // The orchestrator catches assembly errors and reports them through notify. A no-op
     // would turn a real failure into silently empty output, so the server surfaces them.
@@ -473,8 +477,14 @@ export async function assembleAuthoritativeTurn(input) {
         quietPrompt: input.quietPrompt ?? '',
         quietImage: null,
         cyclePrompt: null,
-        systemPromptOverride: card.system_prompt ?? null,
-        jailbreakPromptOverride: card.post_history_instructions ?? null,
+        // The page only overrides the main prompt with the card's own prompt when the user
+        // asked for it; otherwise the default main prompt stands. Same for the jailbreak.
+        systemPromptOverride: powerUser.prefer_character_prompt
+            ? substitute(String(chat.metadata?.system_prompt || card.system_prompt || '').trim())
+            : '',
+        jailbreakPromptOverride: powerUser.prefer_character_jailbreak
+            ? substitute(String(card.post_history_instructions ?? '').trim())
+            : '',
         messages,
         messageExamples,
     }, false, assemblyEnv);

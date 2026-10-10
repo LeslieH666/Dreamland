@@ -106,7 +106,7 @@ export function buildServerTokenHandler(oaiSettings = {}) {
  * @param {object} [options.configuration] Prompt-order configuration.
  * @returns {object} Prompt-manager facade.
  */
-export function buildServerPromptManager({ serviceSettings, activeCharacter, tokenHandler, createPromptCollection, configuration }) {
+export function buildServerPromptManager({ serviceSettings, activeCharacter, tokenHandler, createPromptCollection, configuration, substituteParams }) {
     const state = {
         serviceSettings,
         activeCharacter,
@@ -154,10 +154,14 @@ export function buildServerPromptManager({ serviceSettings, activeCharacter, tok
         setPrompts(prompts) {
             this.serviceSettings.prompts = structuredClone(prompts);
         },
-        preparePrompt(prompt) {
-            // PromptCollection only accepts Prompt instances, which is what the page's
-            // manager produces as well.
-            return prompt instanceof Prompt ? prompt : new Prompt(prompt);
+        preparePrompt(prompt, original = null) {
+            // PromptCollection only accepts Prompt instances, and the page's manager also
+            // macro-substitutes the content here. Both halves matter: without the
+            // substitution the main prompt keeps its literal {{char}}/{{user}} placeholders.
+            const prepared = prompt instanceof Prompt ? new Prompt(prompt) : new Prompt(prompt);
+            const substitute = substituteParams ?? (value => String(value ?? ''));
+            prepared.content = substitute(prompt?.content ?? '', typeof original === 'string' ? { original } : {});
+            return prepared;
         },
         // The registry functions were lifted to call these on the PromptManager instance,
         // so the server facade has to provide them too.

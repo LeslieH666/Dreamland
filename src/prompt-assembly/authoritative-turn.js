@@ -22,6 +22,7 @@ import { decodeCompositeId } from '../api-v1/ids.js';
 import { CHARACTER_NAMES_BEHAVIOR, ExtensionPromptRole, ExtensionPromptType, MAX_INJECTION_DEPTH, SYSTEM_MESSAGE_TYPES } from './enums.js';
 import { getExtensionPrompt, getExtensionPromptMaxDepth } from './extension-prompts.js';
 import { LeslieMemoryStore } from '../leslie-memory/store.js';
+import { calculateRelationship } from '../leslie-memory/relationship.js';
 import { configureMacroEngine, evaluateMacros as evaluateMacrosCore } from './macro-engine.js';
 import { formatEventsPrompt, formatGrowthPrompt, formatRelationshipPrompt } from './memory-prompts.js';
 import { buildLeslieReplyStylePrompt, normalizeLeslieReplyStyleSettings, LESLIE_REPLY_STYLE_SETTINGS_KEY } from './reply-style.js';
@@ -596,11 +597,10 @@ export async function assembleAuthoritativeTurn(input) {
         context: { name1 },
         isGroup: ref.kind === 'group',
     };
-    // The memory extension reads `context.chat.length - 1` *before* `Generate` pops the
-    // message a swipe is re-rolling, so a swipe projects the relationship as of the message
-    // before the one being replaced. Using the already-displaced length here produced 4/100
-    // where the baseline records 0/100.
-    const lastMessageId = Math.max(0, chat.messages.length - 1 + (type === 'swipe' ? 1 : 0));
+    // The page's memory extension loads no events for a swipe, so a swipe projects its
+    // relationship from an empty event list (all-zero dimensions, the baseline's 0/100).
+    // The other types read the stored events through the store's getRelationship.
+    const lastMessageId = Math.max(0, chat.messages.length - 1);
     let growthText = '';
     let eventsText = '';
     let crossLineText = '';
@@ -623,10 +623,10 @@ export async function assembleAuthoritativeTurn(input) {
                 }
             }
             if (memoryRelationshipInjected) {
-                relationshipText = formatRelationshipPrompt(
-                    memoryStore.getRelationship(memoryId, { currentMessageId: lastMessageId }),
-                    memoryIdentity,
-                );
+                const relationship = type === 'swipe'
+                    ? calculateRelationship([], memoryStore.getMemory(memoryId).state, { currentMessageId: lastMessageId })
+                    : memoryStore.getRelationship(memoryId, { currentMessageId: lastMessageId });
+                relationshipText = formatRelationshipPrompt(relationship, memoryIdentity);
             }
         } catch (error) {
             console.warn('[authoritative-turn] memory prompt build failed open:', error?.message ?? error);
@@ -806,26 +806,18 @@ export async function assembleAuthoritativeTurn(input) {
         getMediaDisplay: () => null,
         getMediaIndex: () => null,
     };
-    // `Generate` drops the last message for `swipe` (`coreChat.pop()`) and hands it to the
-    // assembly as `cyclePrompt` for `continue`; `regenerate` keeps the full history. The
-    // baselines record exactly that: solo-swipe(19) and solo-continue(25) exclude the last
-    // stored message, solo-regenerate(23) still carries it.
+    // `Generate` drops the message being re-rolled before assembling, so swipe and regenerate
+    // both exclude it from the history they send. `setOpenAIMessages` returns the history
+    // newest-first, so the dropped message is the first element: a swipe pops the latest
+    // stored message, and a regenerate drops the latest assistant reply while keeping the
+    // greeting (`first_mes`) at the far end. The baselines record exactly that (solo-swipe 19,
+    // solo-regenerate 23 messages).
     let messages = setOpenAIMessages(chat.messages, shapingContext);
-    // `Generate` calls `coreChat.pop()` for a swipe, so the message being re-rolled is not
-    // part of the history the assembly sees. Keeping it left the swipe turn one message long
-    // and pushed its depth injection past the baseline's position.
     if (type === 'swipe' && messages.length) {
         messages = messages.slice(1);
     }
-    // `regenerate` re-rolls the last assistant reply: the page's `Generate` drops it from
-    // the chat before assembling. The baseline records that the turn is therefore one message
-    // shorter and its at-depth injection sits one slot earlier, before `first_mes`.
-
-    // `regenerate` re-rolls the last assistant reply, which `Generate` drops from the chat
-    // before assembling. The baseline records the turn one message shorter, with its at-depth
-    // block one slot earlier (see `injectionDepthOffset`).
-    if (type === 'regenerate' && messages.length && String(messages[messages.length - 1]?.role) === 'assistant') {
-        messages = messages.slice(0, -1);
+    if (type === 'regenerate' && messages.length && String(messages[0]?.role) === 'assistant') {
+        messages = messages.slice(1);
     }
     // The page takes the last usable message out of the history for `continue` and hands it
     // to the assembly as `cyclePrompt`, which is what builds the continue-nudge pair. The

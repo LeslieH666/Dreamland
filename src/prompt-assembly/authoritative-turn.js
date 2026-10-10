@@ -494,11 +494,15 @@ export async function assembleAuthoritativeTurn(input) {
     // positions and depths below mirror that registration exactly. Memory is optional, so
     // any failure here leaves the blocks empty instead of breaking the turn.
     //
-    // `swipe` and `impersonate` re-roll an existing message instead of composing a new
-    // turn, and the browser extension registers nothing for them: the recorded baseline
-    // for `solo-swipe` carries the depth prompt straight after the new-chat marker, while
-    // every composing type carries the memory block between them.
-    const memoryInjected = !['swipe', 'impersonate', 'quiet'].includes(type);
+    // Memory is gated per generation type, because the page's memory interceptor does not
+    // register the same blocks for every type. Two independent gates, both read off the
+    // recorded baselines:
+    //  - the growth summary and the retrieved memory list are skipped for `quiet`, which is
+    //    a hidden summarisation turn and keeps only its own quiet prompt;
+    //  - the relationship projection is additionally skipped for `swipe` and `impersonate`,
+    //    which re-write an existing message instead of composing a new turn.
+    const memorySummariesInjected = !['quiet'].includes(type);
+    const memoryRelationshipInjected = !['swipe', 'impersonate', 'quiet'].includes(type);
     const memoryBinding = chat.metadata?.leslie_memory;
     const memoryIdentity = {
         persona: { name: name1 },
@@ -517,18 +521,22 @@ export async function assembleAuthoritativeTurn(input) {
         ?? memoryBindings[0]
         ?? null;
     const memoryId = activeMemoryBinding?.memoryId ?? memoryBinding?.id ?? null;
-    if (memoryId && memoryInjected) {
+    if (memoryId && (memorySummariesInjected || memoryRelationshipInjected)) {
         try {
             const memoryStore = new LeslieMemoryStore(directories.root);
-            const selection = memoryStore.selectContext(memoryId, { query: '', currentMessageId: lastMessageId });
-            if (selection.enabled) {
-                growthText = formatGrowthPrompt(selection.growth, memoryIdentity);
-                eventsText = formatEventsPrompt(selection.memories, memoryIdentity);
+            if (memorySummariesInjected) {
+                const selection = memoryStore.selectContext(memoryId, { query: '', currentMessageId: lastMessageId });
+                if (selection.enabled) {
+                    growthText = formatGrowthPrompt(selection.growth, memoryIdentity);
+                    eventsText = formatEventsPrompt(selection.memories, memoryIdentity);
+                }
             }
-            relationshipText = formatRelationshipPrompt(
-                memoryStore.getRelationship(memoryId, { currentMessageId: lastMessageId }),
-                memoryIdentity,
-            );
+            if (memoryRelationshipInjected) {
+                relationshipText = formatRelationshipPrompt(
+                    memoryStore.getRelationship(memoryId, { currentMessageId: lastMessageId }),
+                    memoryIdentity,
+                );
+            }
         } catch (error) {
             console.warn('[authoritative-turn] memory prompt build failed open:', error?.message ?? error);
         }

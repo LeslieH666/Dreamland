@@ -305,6 +305,13 @@ mountPromptAssembly(app, serverDirectory);
 // Public API
 app.use('/api/users', usersPublicRouter);
 
+// The login page must learn the runtime mode before authentication, so /version
+// stays public (it reports only version + mode, never credentials).
+app.get('/version', async function (_, response) {
+    const data = await getVersion();
+    response.send({ ...data, mode: getRuntimeMode() });
+});
+
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);
 app.post('/api/ping', (request, response) => {
@@ -329,11 +336,6 @@ if (cliArgs.enableCorsProxy) {
 const uploadsPath = path.join(cliArgs.dataRoot, UPLOADS_DIRECTORY);
 app.use(multer({ dest: uploadsPath, limits: { fieldSize: 500 * 1024 * 1024 } }).single('avatar'));
 app.use(multerMonkeyPatch);
-
-app.get('/version', async function (_, response) {
-    const data = await getVersion();
-    response.send({ ...data, mode: getRuntimeMode() });
-});
 
 redirectDeprecatedEndpoints(app);
 setupPrivateEndpoints(app);

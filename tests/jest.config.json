@@ -1,5 +1,8 @@
 {
     "verbose": true,
     "transform": {},
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+        "^/prompt-assembly/(.*)$": "<rootDir>/../src/prompt-assembly/$1"
+    }
 }

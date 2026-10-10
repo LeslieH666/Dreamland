@@ -24,6 +24,7 @@ import { getExtensionPrompt, getExtensionPromptMaxDepth } from './extension-prom
 import { LeslieMemoryStore } from '../leslie-memory/store.js';
 import { configureMacroEngine, evaluateMacros as evaluateMacrosCore } from './macro-engine.js';
 import { formatEventsPrompt, formatGrowthPrompt, formatRelationshipPrompt } from './memory-prompts.js';
+import { buildLeslieReplyStylePrompt, normalizeLeslieReplyStyleSettings, LESLIE_REPLY_STYLE_SETTINGS_KEY } from './reply-style.js';
 import { NAMES_BEHAVIOR_TYPES, formatInstructModeExamples, parseExampleIntoIndividual, parseMesExamples } from './macro-helpers.js';
 import { substituteParams } from './macros.js';
 import { setOpenAIMessageExamples, setOpenAIMessages } from './message-shaping.js';
@@ -333,6 +334,14 @@ export async function assembleAuthoritativeTurn(input) {
             substituteParamsExtended: substitute,
             getExtensionPrompt: (position, depth, separator, role, wrap) => getExtensionPrompt(registry, position, depth, { separator, role, wrap, substitute }),
             getExtensionPromptMaxDepth,
+            // Mirror openai.js: these decide where a non-marker extension prompt lands in
+            // the prompt order, so a stub here misplaces every memory block.
+            getPromptPosition: position => (position === ExtensionPromptType.BEFORE_PROMPT
+                ? 'start'
+                : (position === ExtensionPromptType.IN_PROMPT ? 'end' : false)),
+            getPromptRole: role => (role === ExtensionPromptRole.USER
+                ? 'user'
+                : (role === ExtensionPromptRole.ASSISTANT ? 'assistant' : 'system')),
             notify,
             emit: deps.emit,
             eventTypes: deps.eventTypes,
@@ -410,6 +419,19 @@ export async function assembleAuthoritativeTurn(input) {
     registry.leslie_memory_cross_line = { value: crossLineText, position: ExtensionPromptType.IN_CHAT, depth: 5, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
     registry.leslie_memory_relationship = { value: relationshipText, position: ExtensionPromptType.IN_PROMPT, depth: 0, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
 
+    // Reply style: injected for every type except the quiet ones, and only when the style
+    // is not switched off. Mirrors the extension's preparePrompt interceptor.
+    let replyStyleText = '';
+    try {
+        const replyStyle = normalizeLeslieReplyStyleSettings(extensionSettings[LESLIE_REPLY_STYLE_SETTINGS_KEY]);
+        if (replyStyle.style !== 'off' && type !== 'quiet') {
+            replyStyleText = buildLeslieReplyStylePrompt(replyStyle.style);
+        }
+    } catch (error) {
+        console.warn('[authoritative-turn] reply style build failed open:', error?.message ?? error);
+    }
+    registry.leslie_reply_style = { value: replyStyleText, position: ExtensionPromptType.IN_PROMPT, depth: 0, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
+
     // World Info runs first: its output is an input to the assembly, and the portability
     // guard is enforced here on the server (the browser is the reference implementation).
     const maxContext = Number(powerUser.context?.context_size ?? oaiSettings.openai_max_context ?? 4096);
@@ -432,7 +454,21 @@ export async function assembleAuthoritativeTurn(input) {
     const wi = await getWorldInfoPrompt(chatForWI, maxContext, false, globalScanData, {
         enforcePortability: true,
         random: createSeededRandom(input.randomSeed),
-        settings: worldInfoSettings,
+        // Persisted world_info_settings is snake_cased; the shared scan reads the same
+        // camelCase shape the page builds in worldInfoContext().
+        settings: {
+            worldInfoBudget: worldInfoSettings.world_info_budget ?? 25,
+            worldInfoBudgetCap: worldInfoSettings.world_info_budget_cap ?? 0,
+            worldInfoMaxRecursionSteps: worldInfoSettings.world_info_max_recursion_steps ?? 0,
+            worldInfoMinActivations: worldInfoSettings.world_info_min_activations ?? 0,
+            worldInfoMinActivationsDepthMax: worldInfoSettings.world_info_min_activations_depth_max ?? 0,
+            worldInfoOverflowAlert: worldInfoSettings.world_info_overflow_alert ?? false,
+            worldInfoRecursive: worldInfoSettings.world_info_recursive ?? false,
+            worldInfoUseGroupScoring: worldInfoSettings.world_info_use_group_scoring ?? false,
+            worldInfoDepth: worldInfoSettings.world_info_depth ?? 2,
+            worldInfoCaseSensitive: worldInfoSettings.world_info_case_sensitive ?? false,
+            worldInfoMatchWholeWords: worldInfoSettings.world_info_match_whole_words ?? false,
+        },
         sortFn: (left, right) => (right.order ?? 0) - (left.order ?? 0),
         countTokens: async text => Number(await tokenHandler.countAsync({ role: 'system', content: String(text ?? '') })),
         substituteParams: substitute,

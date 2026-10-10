@@ -21,7 +21,9 @@ import { ApiError } from '../api-v1/errors.js';
 import { decodeCompositeId } from '../api-v1/ids.js';
 import { ExtensionPromptRole, ExtensionPromptType, MAX_INJECTION_DEPTH } from './enums.js';
 import { getExtensionPrompt, getExtensionPromptMaxDepth } from './extension-prompts.js';
+import { LeslieMemoryStore } from '../leslie-memory/store.js';
 import { configureMacroEngine, evaluateMacros as evaluateMacrosCore } from './macro-engine.js';
+import { formatEventsPrompt, formatGrowthPrompt, formatRelationshipPrompt } from './memory-prompts.js';
 import { NAMES_BEHAVIOR_TYPES, formatInstructModeExamples, parseExampleIntoIndividual, parseMesExamples } from './macro-helpers.js';
 import { substituteParams } from './macros.js';
 import { setOpenAIMessageExamples, setOpenAIMessages } from './message-shaping.js';
@@ -156,7 +158,12 @@ export function loadServerChat(filePath, deps) {
         throw new ApiError(404, 'chat_not_found', 'That chat does not exist.', { type: 'invalid_request_error' });
     }
     const [header, ...messages] = rows;
-    const metadata = header && typeof header === 'object' && !Array.isArray(header) ? { ...header } : {};
+    // The header carries chat_metadata alongside the user/character names; the assembly
+    // reads the note, persona, world info and memory binding out of that nested object.
+    const nested = header && typeof header === 'object' && !Array.isArray(header) ? header.chat_metadata : null;
+    const metadata = nested && typeof nested === 'object' && !Array.isArray(nested)
+        ? { ...nested }
+        : (header && typeof header === 'object' && !Array.isArray(header) ? { ...header } : {});
     delete metadata.mes;
     return { metadata, messages };
 }
@@ -359,6 +366,49 @@ export async function assembleAuthoritativeTurn(input) {
             extension: true,
         };
     }
+
+    // Leslie memory, from the store in-process rather than the memory HTTP API. The page
+    // builds these blocks in its extension and pushes them through setExtensionPrompt; the
+    // positions and depths below mirror that registration exactly. Memory is optional, so
+    // any failure here leaves the blocks empty instead of breaking the turn.
+    const memoryBinding = chat.metadata?.leslie_memory;
+    const memoryIdentity = {
+        persona: { name: name1 },
+        context: { name1 },
+        isGroup: ref.kind === 'group',
+    };
+    const lastMessageId = Math.max(0, chat.messages.length - 1);
+    let growthText = '';
+    let eventsText = '';
+    let crossLineText = '';
+    let relationshipText = '';
+    // The metadata keeps one binding per persona; pick the one for this turn's persona,
+    // falling back to the first, which is what the memory extension resolves as well.
+    const memoryBindings = Array.isArray(memoryBinding?.bindings) ? memoryBinding.bindings.filter(Boolean) : [];
+    const activeMemoryBinding = memoryBindings.find(entry => entry.personaName === name1)
+        ?? memoryBindings[0]
+        ?? null;
+    const memoryId = activeMemoryBinding?.memoryId ?? memoryBinding?.id ?? null;
+    if (memoryId) {
+        try {
+            const memoryStore = new LeslieMemoryStore(directories.root);
+            const selection = memoryStore.selectContext(memoryId, { query: '', currentMessageId: lastMessageId });
+            if (selection.enabled) {
+                growthText = formatGrowthPrompt(selection.growth, memoryIdentity);
+                eventsText = formatEventsPrompt(selection.memories, memoryIdentity);
+            }
+            relationshipText = formatRelationshipPrompt(
+                memoryStore.getRelationship(memoryId, { currentMessageId: lastMessageId }),
+                memoryIdentity,
+            );
+        } catch (error) {
+            console.warn('[authoritative-turn] memory prompt build failed open:', error?.message ?? error);
+        }
+    }
+    registry.leslie_memory_growth = { value: growthText, position: ExtensionPromptType.IN_PROMPT, depth: 0, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
+    registry.leslie_memory_events = { value: eventsText, position: ExtensionPromptType.IN_CHAT, depth: 4, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
+    registry.leslie_memory_cross_line = { value: crossLineText, position: ExtensionPromptType.IN_CHAT, depth: 5, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
+    registry.leslie_memory_relationship = { value: relationshipText, position: ExtensionPromptType.IN_PROMPT, depth: 0, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
 
     // World Info runs first: its output is an input to the assembly, and the portability
     // guard is enforced here on the server (the browser is the reference implementation).

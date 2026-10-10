@@ -233,6 +233,25 @@ describe('ops account management', () => {
     }, 40_000);
 });
 
+describe('GET /api/v1/models', () => {
+    test('returns the catalog without secrets and rejects anonymous access', async () => {
+        const { upsertProvider, upsertModel } = await import('../src/model-gateway/store.js');
+        upsertProvider({ id: 'model-p', name: 'P', source: 'custom', endpoint: 'http://127.0.0.1:1', apiKey: 'sk-secret-do-not-leak', enabled: true });
+        upsertModel({ id: 'model-a', name: 'Model A', provider: 'model-p', apiModel: 'model-a', enabled: true });
+
+        const anonymous = await getJson('/models');
+        expect(anonymous.status).toBe(401);
+
+        const userToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: USER_HANDLE, password: PASSWORD })).body?.access_token;
+        const authed = await getJson('/models', userToken);
+        expect(authed.status).toBe(200);
+        expect(Array.isArray(authed.body.models)).toBe(true);
+        expect(JSON.stringify(authed.body)).not.toContain('sk-secret-do-not-leak');
+        const entry = authed.body.models.find(model => model.id === 'model-a');
+        expect(entry).toEqual({ id: 'model-a', name: 'Model A', enabled: true });
+    });
+});
+
 describe('duDirectory', () => {
     test('sums a directory tree and tolerates a missing root', async () => {
         const { duDirectory } = await import('../src/api-v1/routes/ops.js');

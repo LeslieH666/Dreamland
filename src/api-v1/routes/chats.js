@@ -18,8 +18,8 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 
 import { getChatData, getChatInfo, trySaveChat } from '../../endpoints/chats.js';
-import { getLeslieBridgeChatConfiguration } from '../../leslie-bridge/model-chat.js';
 import { handleChatCompletionGenerate } from '../../endpoints/backends/chat-completions.js';
+import { getModelById } from '../../model-gateway/store.js';
 import { parse as parseCard } from '../../character-card-parser.js';
 import { assembleAuthoritativeTurn } from '../../prompt-assembly/authoritative-turn.js';
 import { ChatCompletion } from '../../prompt-assembly/chat-completion.js';
@@ -348,14 +348,12 @@ chatsRouter.post('/:id/generate', asyncRoute(async (request, response) => {
         },
     });
 
-    // Validate the model configuration *before* any byte is written, so a
-    // misconfigured account gets the normal JSON error envelope instead of an
-    // empty 200 stream. Mirrors what the Leslie Bridge does.
-    let configuration;
-    try {
-        configuration = getLeslieBridgeChatConfiguration(request.user.directories);
-    } catch (error) {
-        throw new ApiError(409, 'chat_model_not_configured', String(error?.message ?? 'No chat model is configured for this account.'), { type: 'conflict_error' });
+    // Server-managed model gateway: the turn only accepts a catalog model_id. Any
+    // client-provided source/key/endpoint fields are ignored; sampling parameters
+    // remain overridable.
+    const modelId = String(request.body?.model_id ?? '').trim();
+    if (!modelId || !getModelById(modelId)) {
+        throw new ApiError(409, 'chat_model_not_configured', `Model "${modelId}" is not in the server model catalog.`, { type: 'conflict_error' });
     }
 
     // Streaming stays unbuffered through a reverse proxy.
@@ -369,15 +367,8 @@ chatsRouter.post('/:id/generate', asyncRoute(async (request, response) => {
         method: 'POST',
         path: request.path,
         body: {
-            // The model proxy reads the provider configuration (endpoint,
-            // proxy, model parameters) from the request body, exactly as the
-            // browser posts its OpenAI settings. `configuration.settings` is
-            // the already-loaded oai_settings for this account, so the stored
-            // connection is reused rather than re-read or duplicated here.
-            ...configuration.settings,
-            chat_completion_source: request.body?.chat_completion_source ?? configuration.source,
+            model_id: modelId,
             messages: assembled.messages,
-            model: request.body?.model ?? configuration.model,
             stream: request.body?.stream !== false,
             temperature: request.body?.temperature,
             max_tokens: request.body?.max_tokens,

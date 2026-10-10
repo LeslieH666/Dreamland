@@ -19,6 +19,7 @@ import express from 'express';
 
 import { API_V1_CAPABILITIES, getApiHealth } from './protocol.js';
 import { asyncRoute } from './errors.js';
+import { listAvailableModels } from '../model-gateway/store.js';
 import { apiV1AuthenticationMiddleware, requireOpsAdmin } from './auth-middleware.js';
 import { createApiV1RateLimiters } from './rate-limit.js';
 import { authErrorHandler, authProtectedRouter, authRouter } from './routes/auth.js';
@@ -59,6 +60,11 @@ export function createApiV1Router({ rateLimiters = createApiV1RateLimiters() } =
     // 5. authenticated resources
     router.get('/capabilities', (_request, response) => {
         response.send(API_V1_CAPABILITIES);
+    });
+
+    // The server-managed model catalog: only id/name/enabled, no provider details or keys.
+    router.get('/models', (_request, response) => {
+        response.send({ models: listAvailableModels() });
     });
 
     router.use('/auth', authProtectedRouter);

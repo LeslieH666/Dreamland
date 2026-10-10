@@ -186,29 +186,20 @@ describe('POST /api/v1/chats/{id}/generate over a real listener', () => {
         const chatId = chat.body?.id;
         expect(typeof chatId).toBe('string');
 
-        // 4. point THIS account at the mock provider (directories.root is the
-        // handle's own root, not a hardcoded default-user) and store its key.
+        // 4. keep a minimal per-account settings.json for prompt assembly (the model
+        // config itself is no longer read from here), then configure the server model
+        // gateway with a custom provider + catalog model pointing at the mock provider.
         fs.mkdirSync(directories.root, { recursive: true });
-        fs.writeFileSync(path.join(directories.root, 'settings.json'), JSON.stringify({
-            main_api: 'openai',
-            oai_settings: {
-                chat_completion_source: 'custom',
-                custom_model: 'fixture-model',
-                custom_url: mockProviderUrl,
-                reverse_proxy: '',
-                stream_openai: true,
-            },
-        }));
-        // T1 made the public /api/v1/secrets surface server-global, but the adapter still
-        // reads the per-account key here, so seed the per-account store directly.
-        const { SECRET_KEYS, writeSecret } = await import('../src/endpoints/secrets.js');
-        writeSecret(directories, SECRET_KEYS.CUSTOM, 'fixture-key');
+        fs.writeFileSync(path.join(directories.root, 'settings.json'), JSON.stringify({ main_api: 'openai', oai_settings: { chat_completion_source: 'custom' } }));
+        const { upsertProvider, upsertModel } = await import('../src/model-gateway/store.js');
+        upsertProvider({ id: 'smoke', name: 'Smoke', source: 'custom', endpoint: mockProviderUrl, apiKey: 'fixture-key', enabled: true });
+        upsertModel({ id: 'smoke-model', name: 'Smoke Model', provider: 'smoke', apiModel: 'fixture-model', enabled: true });
 
-        // 5. stream a generation
+        // 5. stream a generation using a catalog model_id
         const response = await fetch(`${baseUrl}${API_V1_ROOT}/chats/${encodeURIComponent(chatId)}/generate`, {
             method: 'POST',
             headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-            body: JSON.stringify({ message: 'Say hello.', stream: true }),
+            body: JSON.stringify({ message: 'Say hello.', stream: true, model_id: 'smoke-model' }),
             signal: AbortSignal.timeout(20_000),
         });
 

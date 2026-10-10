@@ -361,6 +361,15 @@ All 9 case(s) are byte-identical to the baseline.
 - **抽出的类型语义（已落地）**：`swipe` 丢掉被重掷的那条消息（服务端数组里是最新一条）；
   `continue` 把最后一条交给 `cyclePrompt`（历史保留，nudge 对因此进入组装）；
   `regenerate` 丢掉最后一条 assistant 回复。
+- **solo-regenerate 的锚定（§2.1.2 已解，但切片点仍差一格）**：确定性探针（同一 evaluate 内触发
+  Generate 并同步读捕获）取到浏览器侧两个事实：
+  1) 该函数收到的数组是 **newest-first**——`PRE-INJECTION ORDER: ["那就把这次的观测","云量三成，西侧有","今晚的天气怎么样","记录本翻到新的一"]`；
+  2) 浏览器输出 23 条、**记忆块 index 17 / `first_mes` index 18**。
+  按此把服务端 regenerate 的数组反成 newest-first 喂入后，**记忆块正确落到 index 17**，但尾部整体
+  旋转一格。逐项比对后确认根因是**服务端切片点与浏览器不同**：浏览器该数组是 `[U2, A1, U1, FM]`
+  （丢掉被重掷的 `A2`、保留问候 `FM`），服务端切片得到的是 `[A2, U2, A1, U1]`（保留 `A2`、丢掉
+  `FM`）——两者长度相同、首元素不同，这正是旋转的来源。下一步只需让服务端保留 `FM` 并按浏览器
+  的切片点丢 `A2`，共享模块与浏览器侧均无需再动。
 - **剩余 2 例的精确差异**：
   - `solo-swipe`：19 = 19，仅关系投影数值不同（基线 `0/100`，服务端 `4/100`）。用当前
     fixture 直接探针（`getRelationship` 对 `currentMessageId` 0–5）恒为 `4/100`，

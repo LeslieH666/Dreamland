@@ -385,8 +385,95 @@ function configureDiscreetLogin() {
     });
 }
 
+/**
+ * Show the registration form and hide the login/recovery surfaces.
+ */
+function showRegisterBlock() {
+    $('#passwordEntryBlock').hide();
+    $('#passwordRecoveryBlock').hide();
+    $('#userList').hide();
+    $('#handleEntryBlock').hide();
+    $('#registerBlock').show();
+    $('#registerLink').hide();
+    displayError('');
+    $('#registerHandle').val('').trigger('focus');
+}
+
+/**
+ * Hide the registration form and return to the password entry surface.
+ */
+function hideRegisterBlock() {
+    $('#registerBlock').hide();
+    $('#registerLink').show();
+    $('#handleEntryBlock').show();
+    $('#passwordEntryBlock').show();
+    displayError('');
+}
+
+/**
+ * Register a new account through `/api/v1/auth/register` (defaults to non-admin), then
+ * hand back to the login surface so the new credentials can be used immediately.
+ * @param {string} handle Desired handle.
+ * @param {string} password Desired password.
+ * @returns {Promise<void>}
+ */
+async function performRegister(handle, password) {
+    if (!handle || !password) {
+        displayError('请输入账号和密码。');
+        return;
+    }
+    if (password.length < 8) {
+        displayError('密码至少需要 8 位。');
+        return;
+    }
+    $('#registerButton').prop('disabled', true).text('正在注册…');
+    try {
+        const response = await fetch('/api/v1/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ handle, password }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            displayError(errorData?.error?.message || errorData?.error || errorData?.message || '注册失败，请稍后重试。');
+            return;
+        }
+        displayError('注册成功，请登录。');
+        $('#registerBlock').hide();
+        $('#registerLink').show();
+        $('#handleEntryBlock').show();
+        $('#userHandle').val(handle);
+        $('#userPassword').val('').trigger('focus');
+        $('#passwordEntryBlock').show();
+    } catch (error) {
+        console.error('Error registering:', error);
+        displayError(String(error));
+    } finally {
+        $('#registerButton').prop('disabled', false).text('注册');
+    }
+}
+
+/**
+ * Wire the registration link/buttons. Runs once at startup for both login tracks.
+ */
+function configureRegister() {
+    $('#registerLink').off('click').on('click', () => {
+        showRegisterBlock();
+    });
+    $('#cancelRegister').off('click').on('click', () => {
+        hideRegisterBlock();
+    });
+    $('#registerButton').off('click').on('click', () => {
+        const handle = String($('#registerHandle').val());
+        const password = String($('#registerPassword').val());
+        void performRegister(handle, password);
+    });
+}
+
 (async function () {
     initAccessibility();
+
+    configureRegister();
 
     // The public web client authenticates with a bearer token through /api/v1; the
     // desktop host keeps its cookie-session login. The mode is reported by /version.

@@ -7,6 +7,7 @@ body.login[data-leslie-design-language="dreamland"] #logoBlock { color: var(--dl
 body.login[data-leslie-design-language="dreamland"] #logoBlock img { width: 44px; height: 44px; }
 body.login[data-leslie-design-language="dreamland"] .leslie-login-backdrop { background: radial-gradient(ellipse at 10% 15%, var(--cu-blue-soft), transparent 70%), var(--dl-canvas); }
 body.login[data-leslie-design-language="dreamland"] a { color: var(--dl-accent); }
+body.login[data-leslie-design-language="dreamland"] #registerLink { display: block; text-align: center; margin-top: 10px; }
 body.login[data-leslie-design-language="dreamland"][data-dreamland-style="blue"] .leslie-login-backdrop {
     background: linear-gradient(#16344933, #16344944), var(--ba-city, none) center / cover no-repeat, var(--dl-canvas);
     filter: none;

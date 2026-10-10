@@ -8,13 +8,9 @@
     <style>
         :root { color-scheme: light dark; }
         body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; background: #edf2f5; color: #1c2a38; }
-        header { background: #163c63; color: #fff; padding: 16px 20px; }
+        header { background: #163c63; color: #fff; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
         header h1 { margin: 0; font-size: 20px; }
         main { max-width: 980px; margin: 20px auto; padding: 0 16px; }
-        .toolbar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        input[type="password"] { flex: 1; min-width: 240px; padding: 10px; border: 1px solid #c4cfd9; border-radius: 6px; font-size: 14px; }
-        button { padding: 10px 16px; border: 0; border-radius: 6px; background: #163c63; color: #fff; cursor: pointer; font-size: 14px; }
-        button.secondary { background: #6c8aa8; }
         .card { background: #fff; border: 1px solid #e2e9f0; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
         .card h2 { margin: 0 0 12px; font-size: 16px; color: #163c63; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -22,69 +18,133 @@
         th { color: #5a6b7c; font-weight: 600; }
         .muted { color: #5a6b7c; }
         .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
-        .error { color: #b3372e; padding: 8px 0; }
+        .error { color: #b3372e; padding: 8px 0; min-height: 1.2em; }
         .ok { color: #1a7f37; font-weight: 600; }
         .warn { color: #b35900; font-weight: 600; }
         .kv { display: grid; grid-template-columns: 200px 1fr; row-gap: 6px; }
         .kv dt { color: #5a6b7c; }
         .kv dd { margin: 0; }
+
+        .login-card { max-width: 380px; margin: 48px auto; }
+        .login-card h2 { margin: 0 0 16px; font-size: 16px; color: #163c63; }
+        .login-card label { display: block; font-size: 13px; color: #5a6b7c; margin: 12px 0 6px; }
+        .login-card input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #c4cfd9; border-radius: 6px; font-size: 14px; }
+        .login-card button { width: 100%; margin-top: 16px; padding: 11px; border: 0; border-radius: 6px; background: #163c63; color: #fff; cursor: pointer; font-size: 14px; }
+        .login-card button:disabled { opacity: 0.6; cursor: default; }
+
+        .logout { border: 1px solid rgba(255,255,255,0.5); background: transparent; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .logout:hover { background: rgba(255,255,255,0.15); }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <header><h1>DreamLand 运营面板</h1></header>
+    <header>
+        <h1>DreamLand 运营面板</h1>
+        <button id="logout" class="logout hidden">退出</button>
+    </header>
+
     <main>
-        <div class="toolbar">
-            <input id="token" type="password" placeholder="粘贴管理员 access token" autocomplete="off">
-            <button id="load">加载</button>
-            <button id="clear" class="secondary">清除</button>
+        <section id="login-view" class="card login-card">
+            <h2>管理员登录</h2>
+            <label for="handle">账号</label>
+            <input id="handle" type="text" placeholder="管理员账号" autocomplete="username">
+            <label for="password">密码</label>
+            <input id="password" type="password" placeholder="密码" autocomplete="current-password">
+            <div id="login-error" class="error"></div>
+            <button id="login-button" type="button">登录</button>
+        </section>
+
+        <div id="dashboard-view" class="hidden">
+            <div id="dashboard-error" class="error"></div>
+
+            <section class="card">
+                <h2>服务器状态</h2>
+                <dl id="status" class="kv"></dl>
+            </section>
+
+            <section class="card">
+                <h2>账户与存储</h2>
+                <table id="users">
+                    <thead><tr><th>handle</th><th>admin</th><th>启用</th><th>存储占用</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <h2>网关供应商</h2>
+                <div id="gateway-summary" class="muted"></div>
+                <table id="gateway">
+                    <thead><tr><th>供应商</th><th>状态</th><th>密钥</th><th>来源</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <h2>限流配额</h2>
+                <div id="rl-summary" class="muted"></div>
+                <table id="ratelimits">
+                    <thead><tr><th>handle</th><th>已用</th><th>剩余</th><th>窗口</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </section>
         </div>
-        <div id="error" class="error"></div>
-
-        <section class="card">
-            <h2>服务器状态</h2>
-            <dl id="status" class="kv"></dl>
-        </section>
-
-        <section class="card">
-            <h2>账户与存储</h2>
-            <table id="users">
-                <thead><tr><th>handle</th><th>admin</th><th>启用</th><th>存储占用</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </section>
-
-        <section class="card">
-            <h2>网关供应商</h2>
-            <div id="gateway-summary" class="muted"></div>
-            <table id="gateway">
-                <thead><tr><th>供应商</th><th>状态</th><th>密钥</th><th>来源</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </section>
-
-        <section class="card">
-            <h2>限流配额</h2>
-            <div id="rl-summary" class="muted"></div>
-            <table id="ratelimits">
-                <thead><tr><th>handle</th><th>已用</th><th>剩余</th><th>窗口</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </section>
     </main>
 
     <script>
         const TOKEN_KEY = 'dreamland.ops.token';
-        const tokenInput = document.getElementById('token');
-        const errorBox = document.getElementById('error');
+        let currentToken = localStorage.getItem(TOKEN_KEY) || '';
 
-        tokenInput.value = localStorage.getItem(TOKEN_KEY) || '';
+        const loginView = document.getElementById('login-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const logoutButton = document.getElementById('logout');
+        const handleInput = document.getElementById('handle');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('login-button');
+        const loginError = document.getElementById('login-error');
+        const dashboardError = document.getElementById('dashboard-error');
+
+        function setLoginError(message) {
+            loginError.textContent = message || '';
+        }
+
+        function setDashboardError(message) {
+            dashboardError.textContent = message || '';
+        }
+
+        function showLogin(message) {
+            loginView.classList.remove('hidden');
+            dashboardView.classList.add('hidden');
+            logoutButton.classList.add('hidden');
+            setLoginError(message || '');
+        }
+
+        function showDashboard() {
+            loginView.classList.add('hidden');
+            dashboardView.classList.remove('hidden');
+            logoutButton.classList.remove('hidden');
+            setLoginError('');
+        }
+
+        function clearToken() {
+            currentToken = '';
+            localStorage.removeItem(TOKEN_KEY);
+        }
+
+        function storeToken(accessToken) {
+            currentToken = accessToken;
+            localStorage.setItem(TOKEN_KEY, accessToken);
+        }
 
         async function api(path) {
-            const token = tokenInput.value.trim();
-            if (!token) throw new Error('请先粘贴管理员 access token。');
             const response = await fetch('/api/v1' + path, {
-                headers: { 'Authorization': 'Bearer ' + token },
+                headers: { 'Authorization': 'Bearer ' + currentToken },
             });
+            if (response.status === 401) {
+                throw new Error('AUTH_EXPIRED');
+            }
+            if (response.status === 403) {
+                throw new Error('AUTH_FORBIDDEN');
+            }
             if (!response.ok) {
                 let message = 'HTTP ' + response.status;
                 try { message = (await response.json())?.error?.message || message; } catch { /* ignore */ }
@@ -101,9 +161,8 @@
             return v.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
         }
 
-        async function load() {
-            errorBox.textContent = '';
-            localStorage.setItem(TOKEN_KEY, tokenInput.value.trim());
+        async function loadDashboard() {
+            setDashboardError('');
             try {
                 const [status, users, gateway, rateLimits] = await Promise.all([
                     api('/ops/status'), api('/ops/users'), api('/ops/gateway'), api('/ops/rate-limits'),
@@ -113,7 +172,56 @@
                 renderGateway(gateway);
                 renderRateLimits(rateLimits);
             } catch (error) {
-                errorBox.textContent = error.message || String(error);
+                if (error.message === 'AUTH_EXPIRED') {
+                    clearToken();
+                    showLogin('会话已过期，请重新登录。');
+                } else if (error.message === 'AUTH_FORBIDDEN') {
+                    clearToken();
+                    showLogin('需要管理员账号。');
+                } else {
+                    setDashboardError(error.message || String(error));
+                }
+            }
+        }
+
+        async function login() {
+            const handle = handleInput.value.trim();
+            const password = passwordInput.value;
+            setLoginError('');
+            if (!handle || !password) {
+                setLoginError('请输入账号和密码。');
+                return;
+            }
+            loginButton.disabled = true;
+            try {
+                const response = await fetch('/api/v1/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ grant_type: 'password', handle, password }),
+                });
+                if (response.status === 401) {
+                    setLoginError('用户名或密码错误。');
+                    return;
+                }
+                if (response.status === 403) {
+                    setLoginError('需要管理员账号。');
+                    return;
+                }
+                if (!response.ok) {
+                    let message = '登录失败（HTTP ' + response.status + '）';
+                    try { message = (await response.json())?.error?.message || message; } catch { /* ignore */ }
+                    setLoginError(message);
+                    return;
+                }
+                const data = await response.json();
+                storeToken(data.access_token);
+                passwordInput.value = '';
+                showDashboard();
+                await loadDashboard();
+            } catch (error) {
+                setLoginError(error.message || String(error));
+            } finally {
+                loginButton.disabled = false;
             }
         }
 
@@ -161,12 +269,26 @@
             ).join('');
         }
 
-        document.getElementById('load').addEventListener('click', load);
-        document.getElementById('clear').addEventListener('click', () => {
-            tokenInput.value = '';
-            localStorage.removeItem(TOKEN_KEY);
-            errorBox.textContent = '';
+        loginButton.addEventListener('click', login);
+        passwordInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') login();
         });
+        handleInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') passwordInput.focus();
+        });
+        logoutButton.addEventListener('click', () => {
+            clearToken();
+            showLogin();
+        });
+
+        // Enter the dashboard immediately when a token is already stored; an invalid or
+        // expired token falls back to the login form automatically.
+        if (currentToken) {
+            showDashboard();
+            loadDashboard();
+        } else {
+            showLogin();
+        }
     </script>
 </body>
 </html>

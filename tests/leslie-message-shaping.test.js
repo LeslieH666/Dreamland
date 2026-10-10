@@ -37,17 +37,16 @@ describe('setOpenAIMessages', () => {
         expect(result.map(item => item.name)).toEqual(['User', 'Aurora']);
     });
 
-    test('skips an ignored message, leaving the slot unset', () => {
-        // The source advances its cursor and `continue`s, so the skipped index is never
-        // written. The array keeps its length with a hole - again upstream behaviour,
-        // pinned here so a future "cleanup" cannot silently change what is sent.
+    test('skips an ignored message without leaving a hole', () => {
+        // The skipped message is left out entirely. It used to leave a hole (the source
+        // advanced a second cursor and `continue`d), which made downstream walks treat the
+        // array as shorter than it claimed and shifted depth-based injections by one.
         const result = setOpenAIMessages([
             { name: 'Aurora', is_user: false, mes: 'keep' },
             { name: 'User', is_user: true, mes: 'drop', extra: { __ignore: true } },
         ], context());
-        expect(result.length).toBe(2);
-        expect(result.filter(Boolean).length).toBe(1);
-        expect(result.filter(Boolean)[0].content).toBe('keep');
+        expect(result).toHaveLength(1);
+        expect(result[0].content).toBe('keep');
         expect(JSON.stringify(result)).not.toContain('drop');
     });
 

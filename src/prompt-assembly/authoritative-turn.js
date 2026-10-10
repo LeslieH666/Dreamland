@@ -217,6 +217,44 @@ export function loadServerChat(filePath, deps) {
 }
 
 /**
+ * Read a group definition from the user's `groups/` directory.
+ *
+ * A group chat id names only the group; the member list, the disabled set and the
+ * group's own name all live in this file. The page keeps them in memory after the user
+ * opens the group, so the server has to read them back.
+ * @param {string} groupFileName Group chat file name (without extension).
+ * @param {{groups: string}} directories User directories.
+ * @param {object} deps Injected modules: { fs }.
+ * @returns {object} Group definition.
+ */
+export function loadServerGroup(groupFileName, directories, deps) {
+    const groupsDirectory = directories.groups ?? '';
+    const group = readJsonFile(path.join(groupsDirectory, `${groupFileName}.json`), deps.fs);
+    if (group && typeof group === 'object' && !Array.isArray(group)) {
+        return group;
+    }
+    // A v1 chat id for a group chat carries the *chat file name* (`合成 · 群聊`), not the
+    // group id the page keys its list by (`fixture-group`). The persisted group records the
+    // chat it owns, so match on that before giving up.
+    let files = [];
+    try {
+        files = deps.fs.readdirSync(groupsDirectory).filter(name => name.endsWith('.json'));
+    } catch {
+        files = [];
+    }
+    for (const file of files) {
+        const candidate = readJsonFile(path.join(groupsDirectory, file), deps.fs);
+        if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+            continue;
+        }
+        if (candidate.chat_id === groupFileName || candidate.name === groupFileName) {
+            return candidate;
+        }
+    }
+    throw new ApiError(404, 'group_not_found', `Group "${groupFileName}" was not found.`, { type: 'invalid_request_error' });
+}
+
+/**
  * Resolve the author's note body for this turn.
  *
  * The browser reads the live textarea, which can differ from what was last saved, so
@@ -262,6 +300,35 @@ export async function assembleAuthoritativeTurn(input) {
 
     const directories = user.directories;
     const ref = resolveServerChatRef(chatId, directories);
+    // A group chat id names only the group, so the active member has to be resolved before
+    // anything reads a card. The page does the same when the group is opened: the first
+    // non-disabled member becomes the active character.
+    const group = ref.kind === 'group' ? loadServerGroup(ref.fileName, directories, deps) : null;
+    let groupMemberNames = [];
+    /** @type {object[]|null} */
+    let groupMemberCards = null;
+    if (group) {
+        const enabledAvatars = (group.members ?? [])
+            .filter(avatar => typeof avatar === 'string' && !(group.disabled_members ?? []).includes(avatar));
+        const activeAvatar = enabledAvatars[0];
+        if (!activeAvatar) {
+            throw new ApiError(409, 'group_has_no_active_member', `Group "${group.name}" has no enabled member.`, { type: 'conflict_error' });
+        }
+        ref.cardName = path.basename(activeAvatar, '.png');
+        // `{{group}}` / `{{groupNotMuted}}` resolve member avatars through `characters`, and
+        // the group-nudge prompt lists display names, so every member card is read here
+        // before the macro context is built.
+        groupMemberCards = await Promise.all((group.members ?? []).map(async avatar => {
+            const name = path.basename(String(avatar), '.png');
+            try {
+                const memberCard = await loadServerCard(name, directories, deps);
+                return { ...memberCard, avatar: String(avatar) };
+            } catch {
+                return { name, avatar: String(avatar) };
+            }
+        }));
+        groupMemberNames = groupMemberCards.map(member => String(member.name ?? ''));
+    }
     const settings = loadServerSettings(directories, deps.fs);
     const chat = loadServerChat(ref.filePath, deps);
     // The page fills its settings defaults at load and only overlays what was persisted,
@@ -334,9 +401,11 @@ export async function assembleAuthoritativeTurn(input) {
         name1,
         name2,
         powerUser,
-        characters: [card],
-        groups: [],
-        selectedGroup: null,
+        characters: groupMemberCards ?? [card],
+        groups: group ? [group] : [],
+        // The page passes `selected_group`, which is the group *id*, and the macro engine
+        // resolves members through `groups.find(x => x.id === selectedGroup)`.
+        selectedGroup: group ? group.id : null,
         mainApi: settings.main_api ?? 'openai',
         getCardFields: () => card,
         // The instruct formatter reads these straight off its context.
@@ -345,8 +414,8 @@ export async function assembleAuthoritativeTurn(input) {
         parseExampleIntoIndividual: (text, append) => parseExampleIntoIndividual(text, append, {
             name1,
             name2,
-            selectedGroup: null,
-            getGroupNames: () => [],
+            selectedGroup: group,
+            getGroupNames: () => groupMemberNames,
         }),
         helpers: {
             parseMesExamples: (text, isInstruct) => parseMesExamples(text, isInstruct, macroContext()),
@@ -385,6 +454,10 @@ export async function assembleAuthoritativeTurn(input) {
             // The shared assembly compares persona_description_position against this enum;
             // an empty object made every comparison undefined and dropped the persona block.
             personaDescriptionPositions: PERSONA_DESCRIPTION_POSITIONS,
+            // The shared assembly branches on `getSelectedGroup()` for the new-chat marker,
+            // the group nudge and the member-aware prompt order. The page returns its
+            // `selected_group` id; without it every group turn degraded to a solo one.
+            getSelectedGroup: () => (group ? group.id : null),
             createPromptCollection: () => new PromptCollection(),
             substituteParams: substitute,
             substituteParamsExtended: substitute,
@@ -640,7 +713,7 @@ export async function assembleAuthoritativeTurn(input) {
         getCharaFilename: () => ref.cardName,
         getTagKeyForEntity: () => '',
         getThisChid: () => 0,
-        getCharacters: () => [{ ...card, avatar: `${ref.cardName}.png` }],
+        getCharacters: () => (groupMemberCards ?? [{ ...card, avatar: `${ref.cardName}.png` }]),
         getWorldInfo: () => worldInfoSettings.world_info ?? {},
         getSelectedWorldInfo: () => worldInfoSettings.world_info?.globalSelect ?? [],
         getPersonaLorebook: () => String(powerUser.persona_description_lorebook ?? ''),
@@ -708,7 +781,7 @@ export async function assembleAuthoritativeTurn(input) {
         // narrator system message.
         systemMessageTypes: deps.systemMessageTypes ?? SYSTEM_MESSAGE_TYPES,
         characterNamesBehavior: deps.characterNamesBehavior ?? CHARACTER_NAMES_BEHAVIOR,
-        selectedGroup: null,
+        selectedGroup: group,
         name1,
         name2,
         getMediaDisplay: () => null,
@@ -731,8 +804,8 @@ export async function assembleAuthoritativeTurn(input) {
     const messageExamples = setOpenAIMessageExamples(mesExamplesArray.map(example => substitute(example, { replaceCharacterCard: false })), {
         name1,
         name2,
-        selectedGroup: null,
-        getGroupNames: () => [],
+        selectedGroup: group,
+        getGroupNames: () => groupMemberNames,
     });
 
     const [assembled, counts] = await prepareOpenAIMessagesCore({

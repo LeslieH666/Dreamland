@@ -117,6 +117,7 @@ async function main() {
             root: seeded.userRoot,
             characters: path.join(seeded.userRoot, 'characters'),
             chats: path.join(seeded.userRoot, 'chats'),
+            groups: path.join(seeded.userRoot, 'groups'),
             groupChats: path.join(seeded.userRoot, 'group chats'),
             worlds: path.join(seeded.userRoot, 'worlds'),
         };

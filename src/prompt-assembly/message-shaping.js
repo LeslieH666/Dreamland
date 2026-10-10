@@ -21,11 +21,11 @@ export function setOpenAIMessages(chat, context = {}) {
     const currentApi = context.oaiSettings.chat_completion_source;
     const currentModel = context.getChatCompletionModel();
 
-    // Fill the output array from the end backwards so it ends up in the chat's own order.
-    // (Iterating forward left the history upside down after in-chat injection, and iterating
-    // forwards while assigning by index left holes at the start of the array, which threw
-    // the depth-based injection off by one.)
-    for (let i = chat.length - 1; i >= 0; i--) {
+    // Collect in chat order, then hand the array out reversed - this module is also loaded
+    // by the browser, so its order is the reference the server has to match. It must stay
+    // dense: the original filled `messages[i]` while iterating backwards from
+    // `chat.length - 1`, which left holes at the front of the array.
+    for (let i = 0; i < chat.length; i++) {
         let role = chat[i].is_user ? 'user' : 'assistant';
         let content = chat[i].mes;
 
@@ -93,7 +93,7 @@ export function setOpenAIMessages(chat, context = {}) {
         messages.push({ 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning });
     }
 
-    return messages;
+    return messages.reverse();
 }
 
 export function setOpenAIMessageExamples(mesExamplesArray, context = {}) {

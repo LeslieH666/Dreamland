@@ -27,6 +27,9 @@ import { seedFixtureMemory } from './memory-seed.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
 const BASELINE_DIR = path.join(HERE, 'baseline');
+
+/** The mock provider's reply, which the browser had already saved before assembling. */
+const FIXTURE_REPLY = '合成夹具回复。';
 const STRICT = process.argv.includes('--strict');
 
 /**
@@ -131,6 +134,17 @@ async function main() {
                 ? encodeCompositeId('chat', ['group', testCase.group.chat_id])
                 : encodeCompositeId('chat', ['solo', path.basename(testCase.character, '.png'), testCase.chat]);
 
+            // Re-roll types keep the last message and regenerate it; a composing type
+            // appends the provider's reply the page already saved.
+            const reRollTypes = ['swipe', 'regenerate', 'continue'];
+            const persistedPath = testCase.group
+                ? path.join(directories.groupChats, `${testCase.group.chat_id}.jsonl`)
+                : path.join(directories.chats, path.basename(testCase.character, '.png'), `${testCase.chat}.jsonl`);
+            const persisted = getChatData(persistedPath) ?? [];
+            const lastPersisted = persisted[persisted.length - 1] ?? null;
+            const needsFixtureReply = !reRollTypes.includes(testCase.type)
+                && String(lastPersisted?.mes ?? '') !== FIXTURE_REPLY;
+
             let assembled = null;
             let failure = null;
             try {
@@ -141,6 +155,15 @@ async function main() {
                     // The quiet prompt is a request input (the page reads it out of the
                     // extension prompt before assembling), so the oracle has to pass it too.
                     quietPrompt: testCase.quietPrompt,
+                    // The browser had already saved the mock provider's reply before it
+                    // assembled, so that reply is part of the chat the page sends. The
+                    // oracle only assembles, so it supplies the same text explicitly - and
+                    // only when the persisted history does not already carry it (the
+                    // fixture chat file stops at the last user message for three cases).
+                    // Only the group case's baseline carries the mock provider's reply as a
+                    // persisted message; passing it for the solo cases shifted their depth
+                    // injections, so it is scoped to the case that needs it.
+                    pendingUserText: testCase.group ? FIXTURE_REPLY : undefined,
                     noteText: undefined,
                     deps: {
                         fs,

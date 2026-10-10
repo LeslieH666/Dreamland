@@ -273,8 +273,9 @@
 ## P2.5 里程碑报告：服务端权威轮次（2026-10-10）
 
 **结论：P2.5 未收口。** 服务端 `/generate` 权威轮次已能逐字复现浏览器组装，oracle 从
-`0/9` 前进到 **`5/9 byte-identical`**，首分歧从 message 10 后移到
-`group-normal` / `solo-persona-depth` 的 depth 注入处；剩余 4 例各有具体证据，见下。
+`0/9` 前进到 **`6/9 byte-identical`**（solo-normal / solo-continue / solo-quiet /
+solo-persona-depth / solo-author-note / group-normal），首分歧从 message 10 后移到
+`swipe` / `regenerate` / `impersonate` 三个类型的 memory 子块；剩余 3 例各有具体证据，见下。
 按令状 §6「2.5.4 = 9/9 逐字一致是硬关口」，本阶段**不标记完成**，也未进入 Phase 4/5 的
 收口结论。
 
@@ -319,10 +320,10 @@ All 9 case(s) are byte-identical to the baseline.
 | 用例 | 状态 |
 | --- | --- |
 | solo-normal / solo-continue / solo-quiet / solo-persona-depth / solo-author-note | **byte-identical**（24 / 25 / 21 / 23 / 24 messages） |
-| group-normal | 首分歧 message 15；expected 20，got 19 |
-| solo-regenerate | 首分歧 message 17；expected 23，got 24 |
-| solo-swipe | 首分歧 message 2；expected 19，got 20 |
-| solo-impersonate | 首分歧 message 2；expected 24，got 24 |
+| group-normal | **byte-identical**（20 messages） |
+| solo-swipe | 首分歧 message 2；expected 19，got 20（缺关系投影块） |
+| solo-regenerate | 首分歧 message 17；expected 23，got 24（记忆块位置） |
+| solo-impersonate | 首分歧 message 2；expected 24，got 24（缺关系投影块） |
 
 ### 本阶段修复的根因（每条都先插桩取证、跑完即还原）
 
@@ -354,16 +355,16 @@ All 9 case(s) are byte-identical to the baseline.
 
 ### 剩余 4 例的证据与判断
 
-- **group-normal**：两条独立差异。(a) 服务端写出的 depth 提示词落在「用户消息」之前
-  （expected[16] vs got[15]）；追踪显示服务端注入前的数组是
-  `[北纬, 用户, 极光]`（最新在前、长度 3），`injectIdx = i + totalInsertedMessages = 2`
-  产出 `[极光, 注入, 用户, 北纬]`，而基线要求注入在用户消息之后——即浏览器的深度计数
-  与「是否已含本轮待发用户消息」相关。(b) 服务端少一条 `user: 合成夹具回复。`：那是
-  mock provider 的**回复**被浏览器保存进聊天后再组装的结果，replay oracle 只组装、不生成，
-  因此天然少这一条。**未做「把索引 +1」的凑数修改**：实测直接应用该偏移会让 9 例全部失配，
-  说明数组方向与深度语义必须一起改，不能单点平移。
-- **solo-persona-depth**：depth prompt 同样早 1 位置，与 group-normal 的 (a) 同源，
-  属于同一处 depth 语义未定论。
+- **solo-swipe / solo-impersonate（缺关系投影块）**：两例都期望在 growth 之后出现
+  `[互动关系状态｜实验性]`，实测该块缺席、reply-style 顶上其位置。原因是当前实现把关系
+  投影对 `swipe`/`impersonate` 关闭（当时按「重写既有消息的类型不注入状态」推断），
+  但重录后的基线两者都要它。已实测的四种开关组合：只在 quiet 关闭 → 6/9（swipe 与
+  impersonate 反过来失配）；只在 swipe/quiet 关闭 → 6/9；全开 → 5/9；全关 → 2/9。
+  也就是说关系投影本身不是唯一变量，`solo-regenerate` 的记忆块位置会随之门控变化，
+  需要单独裁决每个类型的 memory 子块组合。
+- **solo-regenerate（记忆块位置）**：期望 `[与当前对话相关的过往记忆]` 出现在
+  `first_mes` 之前（expected[17]），实测该位置是 `first_mes`、记忆块退到其后；
+  与上一条的关系门控联动。
 - **solo-swipe（基线自相矛盾，按用户裁决如实披露）**：`solo-swipe` 的 memory 块是已提交
   基线内部的矛盾。`git show 58cfc2b32 -- tests/fixtures/prompt-assembly/baseline/solo-swipe.json`
   显示同一次重录**只从 swipe 用例删掉了 `[与当前对话相关的过往记忆]` 块**（20→19

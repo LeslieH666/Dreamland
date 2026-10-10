@@ -343,6 +343,15 @@ export async function assembleAuthoritativeTurn(input) {
     const extensionSettings = settings.extension_settings ?? {};
     const type = String(input.type ?? 'normal');
 
+    // A new turn's user message is part of the chat the page assembles: `Generate` has
+    // already appended it (or the provider's last reply) before it builds the request, and
+    // the depth injections and the memory selection both count it. Omitting it shifted those
+    // by one and dropped the reply the browser kept in the history.
+    const pendingUserText = typeof input.pendingUserText === 'string' ? input.pendingUserText : '';
+    if (pendingUserText.length > 0) {
+        chat.messages = [...chat.messages, { name: String(powerUser.name1 ?? settings.username ?? 'User'), is_user: true, is_system: false, mes: pendingUserText }];
+    }
+
     const card = await loadServerCard(ref.cardName, directories, deps);
     const name1 = String(powerUser.name1 ?? settings.username ?? 'User');
     const name2 = String(card.name ?? ref.cardName);

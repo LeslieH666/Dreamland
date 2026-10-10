@@ -16,14 +16,14 @@
 
 ## 2. 第一部分：P2.5 收尾（2.5.3 → 2.5.4 → 2.5.5）
 
-### 2.1 已决：剩余 2 例修服务端语义，基线一律不改（Lead 裁决）
+### 2.1 已决：剩余 2 例的精确锚定（Lead 裁决，基线已读透）
 
-oracle 已达 **7/9**（normal/continue/quiet/persona-depth/author-note/impersonate/group-normal 逐字一致）。剩两例各差单点：
+oracle 已达 **7/9**。两例各差单点，均已从基线 JSON 确证：
 
-- **solo-swipe（19=19，唯一差在关系投影）**：基线关系块是**全零 `0/100`（7 个维度）**，服务端产出 `4/100`。根因：swipe 弹掉被重掷的 assistant 消息后，关系应在**弹掉之后的更早状态**上投影（→全零）；服务端目前对**历史**做了 pop、对**关系投影**没同步。**裁决：否决“重录基线”（基线非陈旧，重录=掩盖服务端 bug）；改为让服务端 swipe 路径在 post-pop 的 chat 上计算关系投影**。若关系投影不随 chat 长度变化，则进一步追 `getRelationship` 的真实输入（不要用 `currentMessageId 0–5` 这种不还原浏览器状态的探针）。
-- **solo-regenerate（23=23，唯一差在 memory 块位置）**：memory 块应锚在 `first_mes` 之后，服务端落在之前。**裁决：批准改共享模块新增“按类型锚定”语义**；硬约束是**浏览器侧 9/9 与已提交基线必须保持不变**，且 oracle 最终 9/9。
+- **solo-swipe（关系全零 vs 4/100）**：基线 index 2 关系块为**七维全 `0/100`**，且 swipe 例**没有 events 块**（仅 growth+relationship+reply-style）。证据链已闭环：`calculateRelationship([], state)`=全零（=基线）、`calculateRelationship(mem.events, state)`=4/100（=服务端）、`currentMessageId` 全区间无解。**裁决：这是服务端 memory 事件选择错误——服务端加载了浏览器对 swipe 不会加载的 events**。**批准旁证实验（option a，在 scratch 分支、不写基线）**：临时对 swipe chat 不生成事件、重跑 oracle 确认 19/19 对齐，据此把服务端 memory 事件选择改成与浏览器一致（swipe → 空事件）。**绝不动基线、绝不重录。**
+- **solo-regenerate（记忆块位置）**：基线 index 17=记忆块、index 18=`first_mes`（问候）。**确认：记忆块在前、first_mes 在后**。剩余“差一格”是服务端注入索引未计入 regenerate 弹掉的那条 assistant 消息——按此修正索引即可；共享模块的“按类型锚定”通道已就绪，**硬约束：浏览器 9/9 与已提交基线不变**。
 
-**下一步**：先修 swipe 关系投影（纯服务端），再修 regenerate 锚定（共享模块 + 浏览器双验）。目标 oracle **9/9**。绝不动基线、绝不重录。
+**下一步**：先修 regenerate 注入索引（纯服务端），再做 swipe 的旁证实验并修服务端 memory 选择。目标 oracle **9/9**；随后按 §2.2 走完 2.5.4/2.5.5 → Phase 4 → Phase 5 到结束。
 
 ### 2.2 P2.5 剩余清单（严格顺序）
 

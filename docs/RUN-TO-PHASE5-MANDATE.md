@@ -44,6 +44,11 @@ reverse → [记忆块, first_mes, U1, 深度提示, A1, U2]   == 基线 index 1
 ```
 **修法：服务端把数组反成 newest-first 再喂给该函数即可，循环公式不变，不再调 `depthDelta`。**
 
+### 2.1.3 最后两处切片/事件选择（Lead 已决）
+
+- **regenerate 切片**：服务端 slice 反了——浏览器保留问候（FM）、丢掉被重掷的最新 assistant（A2），产出 `[U2,A1,U1,FM]`（newest-first）；服务端当前是 `[A2,U2,A1,U1]`（保留 A2、丢 FM）。**修法：服务端 regenerate 切片 = 保留问候、丢最新 assistant**，使产出与浏览器同序同内容。注入下标已对，不再动。
+- **swipe 空事件**：基线关系块 = 七维全零 `0/100` = `calculateRelationship([], …)`，且 swipe 例无 events 块。**修法：服务端对 swipe 选空事件（与浏览器一致）**——先做旁证实验（scratch、不写基线）确认，再把服务端 memory 事件选择改成「swipe → 空」。绝不动基线、绝不重录。
+
 ### 2.2 P2.5 剩余清单（严格顺序）
 
 1. **解示例/历史放置语义**（§2.1）→ 跑 oracle，目标消息数回到 19–24 且首分歧后移。

@@ -114,8 +114,29 @@ http.globalAgent = new http.Agent({ keepAlive: cliArgs.enableKeepAlive });
 https.globalAgent = new https.Agent({ keepAlive: cliArgs.enableKeepAlive });
 
 const app = express();
+// Explicit Content-Security-Policy. The shell loads only same-origin scripts and styles,
+// but the legacy UI still needs `unsafe-inline` for its inline <style> block and the inline
+// resize handler in index.html, and `unsafe-eval` for the template engine in lib.js (it
+// compiles templates with `new Function`). Model providers, extras servers and streaming
+// endpoints are reached over http(s)/ws(s), and character/avatar media is inlined as data
+// or blob URLs. `object-src 'none'` and `base-uri 'self'` are the tightening over `false`.
 app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ['\'self\''],
+            scriptSrc: ['\'self\'', '\'unsafe-inline\'', '\'unsafe-eval\''],
+            styleSrc: ['\'self\'', '\'unsafe-inline\''],
+            imgSrc: ['\'self\'', 'data:', 'blob:'],
+            connectSrc: ['\'self\'', 'https:', 'http:', 'wss:', 'ws:'],
+            fontSrc: ['\'self\'', 'data:'],
+            mediaSrc: ['\'self\'', 'blob:', 'data:'],
+            workerSrc: ['\'self\'', 'blob:'],
+            frameSrc: ['\'self\''],
+            objectSrc: ['\'none\''],
+            baseUri: ['\'self\''],
+            frameAncestors: ['\'self\''],
+        },
+    },
 }));
 app.use(compression());
 app.use(responseTime());

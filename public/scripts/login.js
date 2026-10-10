@@ -213,7 +213,8 @@ async function onUserSelected(user) {
         await performLogin(user.handle, password);
     });
 
-    $('#recoverPassword').toggle(!encryptedSpaces).off('click').on('click', async () => {
+    $('#recoverPassword').toggle(!encryptedSpaces).off('click').on('click', async (event) => {
+        event.preventDefault();
         await sendRecoveryPart1(user.handle);
     });
 
@@ -372,7 +373,8 @@ function configureDiscreetLogin() {
         await performLogin(handle, password);
     });
 
-    $('#recoverPassword').off('click').on('click', async () => {
+    $('#recoverPassword').off('click').on('click', async (event) => {
+        event.preventDefault();
         const handle = String($('#userHandle').val());
         await sendRecoveryPart1(handle);
     });
@@ -457,7 +459,8 @@ async function performRegister(handle, password) {
  * Wire the registration link/buttons. Runs once at startup for both login tracks.
  */
 function configureRegister() {
-    $('#registerLink').off('click').on('click', () => {
+    $('#registerLink').off('click').on('click', (event) => {
+        event.preventDefault();
         showRegisterBlock();
     });
     $('#cancelRegister').off('click').on('click', () => {

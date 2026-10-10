@@ -8,23 +8,25 @@
 
 ## 1. 当前状态（续跑起点）
 
-- HEAD：`3b96b67ad` 之后已有多个 2.5.3 收敛 commit（最新见 `git log`）。
-- **oracle**：`0/9 byte-identical`；**messages 0–9 已逐字一致**；消息数 **16**（基线 19–24）；**首分歧 @ message 10**。
+- HEAD：最新 2.5.3 收敛 commit 见 `git log`（`5cca6c1f3` 及之前 8 个）。
+- **oracle 已达 6/9 byte-identical**（solo-normal / continue / quiet / persona-depth / author-note / group-normal）；剩余 `solo-swipe(19)`、`solo-regenerate(23)`、`solo-impersonate(24)` 三例。
 - `npm run validate` exit 0（80 suites / 944 tests）；`test:prompt-baseline` 9/9；红线 3 文件累计 diff 空；`openai.js` 43→43、`PromptManager.js` 7→7。
 
 ---
 
 ## 2. 第一部分：P2.5 收尾（2.5.3 → 2.5.4 → 2.5.5）
 
-### 2.1 当前瓶颈（先解决这一处）
+### 2.1 已决：剩余 3 例以基线为准（Lead 裁决，dump 弃用）
 
-message 10 处：基线是 `[Example Chat]`，服务端却是**历史首条**。已排除：`prompts.has('dialogueExamples')=true`、`messageExamples=2`、`canAffordAll=true`、`populateChatHistoryCore` 正常返回（历史已 6 条）。
+oracle 已达 **6/9**。剩余三例（swipe/regenerate/impersonate）的唯一未决点是 **memory 子块的顺序**。
 
-**结论**：示例**被插入但未出现在结果**，且历史排在示例之前。下一步**只查**：
-1. `ChatCompletion.insert(msg, 'dialogueExamples')` 与 `add(new MessageCollection('chatHistory'), prompts.index('chatHistory'))` 的**索引/插入语义**；
-2. `pin_examples:false` 下“先历史后示例”的调用顺序，是否应像浏览器一样由**标记索引**（dialogueExamples=8 < chatHistory=9）决定最终顺序。
-
-诊断方法沿用惯例：在 `populate.js` 分支点临时插桩拿事实（跑完即还原、不入库），不靠猜。
+- **浏览器基线可信**：修好 harness（`channel:'chrome'` + 网络层捕获）后 `--record` 重录 9 例，与已提交基线 `diff -rq` 完全一致。
+- **独立 dump 弃用**：它与基线在“是否存在 memory 块”上其实一致，只在 order 上有出入，最可能是 dump 在竞态/错误管线点取样（与 harness 之前的 fetch 竞态同类），**不是第二真相**。
+- **基线里读出的 memory 门控（已 grep 确认）**：
+  - `swipe`(19)：growth + relationship + reply-style，**无 events**；
+  - `regenerate`(23)：growth + relationship + events + reply-style 全有；
+  - `impersonate`(24)：growth + relationship + events，**无 reply-style**。
+- **下一步**：直接读 `tests/fixtures/prompt-assembly/baseline/solo-{swipe,regenerate,impersonate}.json`，取这三例 memory 块的**精确顺序**让服务端对齐；**不要再追 dump**。对齐后 oracle 应达 9/9。
 
 ### 2.2 P2.5 剩余清单（严格顺序）
 
@@ -73,6 +75,7 @@ message 10 处：基线是 `[Example Chat]`，服务端却是**历史首条**。
 - **`evaluateMacros`**：数据驱动（见 §2.2.3）。
 - **拦截器**：共享编排只留可选 `env.runInterceptors?.()`；**浏览器不传**（防双重执行）；服务端接 memory/reply-style；reality/filter 永不接入。
 - **命名/副作用纪律**：注入参数叫 `env`（不叫 `context`）；空选集早退副作用保留；jest 加载是缺失具名导出唯一关口；**openai.js 的下限关卡是浏览器 baseline**。
+- **浏览器基线为权威**：剩余三例（swipe/regenerate/impersonate）的 memory 顺序以已提交基线 JSON 为准；独立 dump 弃用（竞态/错误取样）；出现“dump 与基线矛盾”一律信基线。
 
 ## 6. 严格执行纪律
 

@@ -355,16 +355,20 @@ All 9 case(s) are byte-identical to the baseline.
 
 ### 剩余 4 例的证据与判断
 
-- **solo-swipe / solo-impersonate（缺关系投影块）**：两例都期望在 growth 之后出现
-  `[互动关系状态｜实验性]`，实测该块缺席、reply-style 顶上其位置。原因是当前实现把关系
-  投影对 `swipe`/`impersonate` 关闭（当时按「重写既有消息的类型不注入状态」推断），
-  但重录后的基线两者都要它。已实测的四种开关组合：只在 quiet 关闭 → 6/9（swipe 与
-  impersonate 反过来失配）；只在 swipe/quiet 关闭 → 6/9；全开 → 5/9；全关 → 2/9。
-  也就是说关系投影本身不是唯一变量，`solo-regenerate` 的记忆块位置会随之门控变化，
-  需要单独裁决每个类型的 memory 子块组合。
-- **solo-regenerate（记忆块位置）**：期望 `[与当前对话相关的过往记忆]` 出现在
-  `first_mes` 之前（expected[17]），实测该位置是 `first_mes`、记忆块退到其后；
-  与上一条的关系门控联动。
+- **solo-swipe / solo-regenerate / solo-impersonate（同一处未决语义）**：三例都涉及
+  memory 子块。为把规则从浏览器直接读出来（而不是靠推断），本会话用真实页面把这三个
+  类型的组装体 dump 了一遍：
+  - `solo-swipe` 浏览器产出 growth + relationship，
+  - `solo-regenerate` 浏览器产出 memory 块在 `first_mes` 之前（第 17 位），
+  - `solo-impersonate` 浏览器产出 growth + 记忆列表 + relationship，但**没有** reply-style。
+
+  这三份 dump 与**同一次运行**的浏览器门禁（对已提交基线 9/9 逐字一致）**互相矛盾**：
+  `run-baseline.mjs` 在同一环境下驱动同一页面、对每例只抓一个 `/generate` 请求体，却得到
+  19/23/24 条并与基线逐字一致；独立 dump 脚本却多出关系投影块。两者唯一的差别是拦截方式
+  （`page.route` 对 `page.route`）与请求选取（最后一例对第一例）。换言之，
+  **真实浏览器基线（9/9，已复核）与 oracle 的差异点尚不能用「浏览器规则」解释**，
+  这一处必须先把两次抓取为何不同查清，再谈裁决——在此之前不对 memory 门控做进一步
+  推断式修改（已试过的四种组合：6/6/5/2，都不是全绿）。
 - **solo-swipe（基线自相矛盾，按用户裁决如实披露）**：`solo-swipe` 的 memory 块是已提交
   基线内部的矛盾。`git show 58cfc2b32 -- tests/fixtures/prompt-assembly/baseline/solo-swipe.json`
   显示同一次重录**只从 swipe 用例删掉了 `[与当前对话相关的过往记忆]` 块**（20→19

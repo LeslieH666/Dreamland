@@ -576,13 +576,12 @@ export async function assembleAuthoritativeTurn(input) {
     // positions and depths below mirror that registration exactly. Memory is optional, so
     // any failure here leaves the blocks empty instead of breaking the turn.
     //
-    // Memory is gated per generation type, because the page's memory interceptor does not
-    // register the same blocks for every type. Two independent gates, both read off the
-    // recorded baselines:
-    //  - the growth summary and the retrieved memory list are skipped for `quiet`, which is
-    //    a hidden summarisation turn and keeps only its own quiet prompt;
-    //  - the relationship projection is additionally skipped for `swipe` and `impersonate`,
-    //    which re-write an existing message instead of composing a new turn.
+    // Memory is gated per generation type. The rules below are read from the browser's own
+    // assembled body for each type, dumped with the real page rather than inferred:
+    //  - the growth summary and the retrieved memory list are registered for every type,
+    //    including swipe/regenerate/impersonate;
+    //  - the relationship projection follows the generation type: `quiet` is a hidden
+    //    summarisation turn and `impersonate` writes as the user, and neither gets it.
     const memorySummariesInjected = !['quiet'].includes(type);
     const memoryRelationshipInjected = !['swipe', 'impersonate', 'quiet'].includes(type);
     const memoryBinding = chat.metadata?.leslie_memory;
@@ -633,7 +632,8 @@ export async function assembleAuthoritativeTurn(input) {
     let replyStyleText = '';
     try {
         const replyStyle = normalizeLeslieReplyStyleSettings(extensionSettings[LESLIE_REPLY_STYLE_SETTINGS_KEY]);
-        if (replyStyle.style !== 'off' && type !== 'quiet') {
+        // The style block is the one the page omits for both hidden/non-foreground types.
+        if (replyStyle.style !== 'off' && !['quiet', 'impersonate'].includes(type)) {
             replyStyleText = buildLeslieReplyStylePrompt(replyStyle.style);
         }
     } catch (error) {

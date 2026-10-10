@@ -16,17 +16,14 @@
 
 ## 2. 第一部分：P2.5 收尾（2.5.3 → 2.5.4 → 2.5.5）
 
-### 2.1 已决：剩余 3 例以基线为准（Lead 裁决，dump 弃用）
+### 2.1 已决：剩余 2 例修服务端语义，基线一律不改（Lead 裁决）
 
-oracle 已达 **6/9**。剩余三例（swipe/regenerate/impersonate）的唯一未决点是 **memory 子块的顺序**。
+oracle 已达 **7/9**（normal/continue/quiet/persona-depth/author-note/impersonate/group-normal 逐字一致）。剩两例各差单点：
 
-- **浏览器基线可信**：修好 harness（`channel:'chrome'` + 网络层捕获）后 `--record` 重录 9 例，与已提交基线 `diff -rq` 完全一致。
-- **独立 dump 弃用**：它与基线在“是否存在 memory 块”上其实一致，只在 order 上有出入，最可能是 dump 在竞态/错误管线点取样（与 harness 之前的 fetch 竞态同类），**不是第二真相**。
-- **基线里读出的 memory 门控（已 grep 确认）**：
-  - `swipe`(19)：growth + relationship + reply-style，**无 events**；
-  - `regenerate`(23)：growth + relationship + events + reply-style 全有；
-  - `impersonate`(24)：growth + relationship + events，**无 reply-style**。
-- **下一步**：直接读 `tests/fixtures/prompt-assembly/baseline/solo-{swipe,regenerate,impersonate}.json`，取这三例 memory 块的**精确顺序**让服务端对齐；**不要再追 dump**。对齐后 oracle 应达 9/9。
+- **solo-swipe（19=19，唯一差在关系投影）**：基线关系块是**全零 `0/100`（7 个维度）**，服务端产出 `4/100`。根因：swipe 弹掉被重掷的 assistant 消息后，关系应在**弹掉之后的更早状态**上投影（→全零）；服务端目前对**历史**做了 pop、对**关系投影**没同步。**裁决：否决“重录基线”（基线非陈旧，重录=掩盖服务端 bug）；改为让服务端 swipe 路径在 post-pop 的 chat 上计算关系投影**。若关系投影不随 chat 长度变化，则进一步追 `getRelationship` 的真实输入（不要用 `currentMessageId 0–5` 这种不还原浏览器状态的探针）。
+- **solo-regenerate（23=23，唯一差在 memory 块位置）**：memory 块应锚在 `first_mes` 之后，服务端落在之前。**裁决：批准改共享模块新增“按类型锚定”语义**；硬约束是**浏览器侧 9/9 与已提交基线必须保持不变**，且 oracle 最终 9/9。
+
+**下一步**：先修 swipe 关系投影（纯服务端），再修 regenerate 锚定（共享模块 + 浏览器双验）。目标 oracle **9/9**。绝不动基线、绝不重录。
 
 ### 2.2 P2.5 剩余清单（严格顺序）
 

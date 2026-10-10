@@ -51,6 +51,23 @@ const DEPTH_PROMPT_DEPTH_DEFAULT = 4;
 /** Default role name for a card depth prompt (public/script.js). */
 const DEPTH_PROMPT_ROLE_DEFAULT = 'system';
 
+/** Default persona-description injection depth (public/scripts/power-user.js). */
+const PERSONA_DESCRIPTION_DEPTH_DEFAULT = 2;
+
+/**
+ * Resolve the page's `continue_postfix` value.
+ *
+ * The setting is stored as a string ('', ' ', '\n', '\n\n') but the page's select writes
+ * it as a number, so anything that is not one of the four strings falls back to a single
+ * space, exactly as `setContinuePostfixControls` repairs it.
+ * @param {object} oaiSettings Chat-completion settings.
+ * @returns {string} Postfix appended to the continue prompt.
+ */
+export function continuePostfix(oaiSettings) {
+    const value = oaiSettings?.continue_postfix;
+    return typeof value === 'string' && ['', ' ', '\n', '\n\n'].includes(value) ? value : ' ';
+}
+
 /**
  * Map a stored extension-prompt role (a name or an already-numeric value) to the enum.
  * Mirrors `getExtensionPromptRoleByName` in public/script.js.
@@ -415,6 +432,48 @@ export async function assembleAuthoritativeTurn(input) {
         };
     }
 
+    // The quiet prompt is an extension prompt on the page (`setExtensionPrompt(QUIET_PROMPT,
+    // …, IN_PROMPT, 0, true)`), not a prompt-collection entry, so the registry has to carry
+    // it or every quiet turn comes back without its instruction block.
+    if (String(input.quietPrompt ?? '').length > 0) {
+        registry.QUIET_PROMPT = {
+            value: String(input.quietPrompt),
+            position: ExtensionPromptType.IN_PROMPT,
+            depth: 0,
+            scan: true,
+            role: ExtensionPromptRole.SYSTEM,
+            extension: true,
+        };
+    }
+
+    // Persona description. The page registers it under `PERSONA_DESCRIPTION`: in-prompt it
+    // rides the story string's `persona` field, at at-depth it is an in-chat injection, and
+    // at top/bottom A/N it is merged into the author's note. Only the last two need the
+    // registry, and skipping them silently dropped the persona from every depth/A-N turn.
+    const personaDescription = String(powerUser.persona_description ?? '');
+    const personaPosition = Number(powerUser.persona_description_position ?? PERSONA_DESCRIPTION_POSITIONS.IN_PROMPT);
+    registry.PERSONA_DESCRIPTION = { value: '', position: ExtensionPromptType.IN_PROMPT, depth: 0, scan: false, role: ExtensionPromptRole.SYSTEM, extension: true };
+    if (personaDescription && personaPosition !== PERSONA_DESCRIPTION_POSITIONS.NONE) {
+        const anPositions = [PERSONA_DESCRIPTION_POSITIONS.BOTTOM_AN, PERSONA_DESCRIPTION_POSITIONS.TOP_AN];
+        if (anPositions.includes(personaPosition) && shouldWIAddPrompt && registry['2_floating_prompt']) {
+            const originalNote = registry['2_floating_prompt'].value;
+            const merged = personaPosition === PERSONA_DESCRIPTION_POSITIONS.TOP_AN
+                ? `${personaDescription}\n${originalNote}`
+                : `${originalNote}\n${personaDescription}`;
+            registry['2_floating_prompt'] = { ...registry['2_floating_prompt'], value: merged };
+        }
+        if (personaPosition === PERSONA_DESCRIPTION_POSITIONS.AT_DEPTH) {
+            registry.PERSONA_DESCRIPTION = {
+                value: personaDescription,
+                position: ExtensionPromptType.IN_CHAT,
+                depth: Number(powerUser.persona_description_depth ?? PERSONA_DESCRIPTION_DEPTH_DEFAULT),
+                scan: true,
+                role: extensionRoleByName(powerUser.persona_description_role),
+                extension: true,
+            };
+        }
+    }
+
     // Character depth prompt (the card's "character-specific author's note"). The page
     // registers it as an in-chat injection at the depth stored on the card, so the server
     // has to do the same or every card with a depth prompt loses that block.
@@ -434,6 +493,12 @@ export async function assembleAuthoritativeTurn(input) {
     // builds these blocks in its extension and pushes them through setExtensionPrompt; the
     // positions and depths below mirror that registration exactly. Memory is optional, so
     // any failure here leaves the blocks empty instead of breaking the turn.
+    //
+    // `swipe` and `impersonate` re-roll an existing message instead of composing a new
+    // turn, and the browser extension registers nothing for them: the recorded baseline
+    // for `solo-swipe` carries the depth prompt straight after the new-chat marker, while
+    // every composing type carries the memory block between them.
+    const memoryInjected = !['swipe', 'impersonate', 'quiet'].includes(type);
     const memoryBinding = chat.metadata?.leslie_memory;
     const memoryIdentity = {
         persona: { name: name1 },
@@ -452,7 +517,7 @@ export async function assembleAuthoritativeTurn(input) {
         ?? memoryBindings[0]
         ?? null;
     const memoryId = activeMemoryBinding?.memoryId ?? memoryBinding?.id ?? null;
-    if (memoryId) {
+    if (memoryId && memoryInjected) {
         try {
             const memoryStore = new LeslieMemoryStore(directories.root);
             const selection = memoryStore.selectContext(memoryId, { query: '', currentMessageId: lastMessageId });
@@ -505,7 +570,7 @@ export async function assembleAuthoritativeTurn(input) {
         scenario: String(card.scenario ?? ''),
         creatorNotes: String(card.creator_notes ?? ''),
     };
-    const wi = await getWorldInfoPrompt(chatForWI, maxContext, false, globalScanData, {
+    const wiContext = {
         enforcePortability: true,
         random: createSeededRandom(input.randomSeed),
         // Persisted world_info_settings is snake_cased; the shared scan reads the same
@@ -547,7 +612,16 @@ export async function assembleAuthoritativeTurn(input) {
             registry[key] = { value, position, depth, scan, role, extension: true };
         },
         getChatMetadata: () => chat.metadata,
-        getContext: () => ({ chatMetadata: chat.metadata, extensionPrompts: registry }),
+        // The page's `getContext()` hands out the live extension context, which the author's
+        // note and the World Info hijack use to read *and* write the registry. A two-field
+        // stub here made the A/N write-back throw and lose the note entirely.
+        getContext: () => ({
+            chatMetadata: chat.metadata,
+            extensionPrompts: registry,
+            setExtensionPrompt: (key, value, position, depth, scan, role) => {
+                registry[key] = { value, position, depth, scan, role, extension: true };
+            },
+        }),
         getExtensionPromptByName: async () => '',
         getExtensionSettings: () => extensionSettings,
         getRegexScripts: () => extensionSettings.regex ?? [],
@@ -581,7 +655,8 @@ export async function assembleAuthoritativeTurn(input) {
         extensionPromptRoles: ExtensionPromptRole,
         regexPlacement: { worldInfo: WORLD_INFO_REGEX_PLACEMENT },
         getShouldWIAddPrompt: () => shouldWIAddPrompt,
-    });
+    };
+    const wi = await getWorldInfoPrompt(chatForWI, maxContext, false, globalScanData, wiContext);
 
     // The page drains World Info's at-depth and outlet entries into the extension registry
     // right after the scan (`flushWIInjections` in public/script.js). Without this the
@@ -632,6 +707,13 @@ export async function assembleAuthoritativeTurn(input) {
         getMediaIndex: () => null,
     };
     const messages = setOpenAIMessages(chat.messages, shapingContext);
+    // The page's continue path takes the last usable message out of the history and hands
+    // it to the assembly as `cyclePrompt`, which is what builds the continue-nudge pair
+    // (nudge + prefill fragment) at the end of the turn. Without it a continue turn simply
+    // loses both messages.
+    const cyclePrompt = type === 'continue' && messages.length
+        ? String(messages[messages.length - 1]?.content ?? '') + continuePostfix(oaiSettings)
+        : null;
     const mesExamplesArray = parseMesExamples(String(card.mes_example ?? ''), false, macroContext());
     // The page substitutes the example dialog with `baseChatReplace` before the message
     // shaper splits it into `{{user}}:` / `{{char}}:` blocks (and keeps the raw array for
@@ -657,7 +739,7 @@ export async function assembleAuthoritativeTurn(input) {
         type,
         quietPrompt: input.quietPrompt ?? '',
         quietImage: null,
-        cyclePrompt: null,
+        cyclePrompt,
         // The page only overrides the main prompt with the card's own prompt when the user
         // asked for it; otherwise the default main prompt stands. Same for the jailbreak.
         systemPromptOverride: powerUser.prefer_character_prompt

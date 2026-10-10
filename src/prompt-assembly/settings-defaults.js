@@ -133,6 +133,9 @@ export const OAI_SETTINGS_ASSEMBLY_DEFAULTS = Object.freeze({
     new_example_chat_prompt: '[Example Chat]',
     new_group_chat_prompt: '[Start a new group chat. Group members: {{group}}]',
     continue_nudge_prompt: '[Continue your last message without repeating its original content.]',
+    // The page stores this as a string ('', ' ', '\n', '\n\n'); its select writes a number
+    // but the loader repairs any non-string back to the string default.
+    continue_postfix: ' ',
     group_nudge_prompt: '[Write the next reply only as {{char}}.]',
     impersonation_prompt: '[Write your next reply from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don\'t write as {{char}} or system. Don\'t describe actions of {{char}}.]',
     scenario_format: '{{scenario}}',

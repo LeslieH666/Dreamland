@@ -98,6 +98,9 @@ async function main() {
         roots.push(dataRoot);
         const seeded = seedPromptAssemblyFixtures(dataRoot, {
             personaPosition: profile.personaPosition,
+            // The browser harness seeds the note profile with the note body; without it the
+            // chat carries no note metadata and the profile silently degenerates to default.
+            noteText: profile.noteText,
             seedMemory: seedFixtureMemory,
         });
 
@@ -134,6 +137,9 @@ async function main() {
                     user: { directories, storageHandle: path.basename(seeded.userRoot), profile: { name: 'fixture' } },
                     chatId,
                     type: testCase.type,
+                    // The quiet prompt is a request input (the page reads it out of the
+                    // extension prompt before assembling), so the oracle has to pass it too.
+                    quietPrompt: testCase.quietPrompt,
                     noteText: undefined,
                     deps: {
                         fs,

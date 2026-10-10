@@ -161,6 +161,16 @@ export function getModelById(id) {
 }
 
 /**
+ * The server's default model id: the first enabled catalog model, used when a client
+ * does not send an explicit model_id.
+ * @returns {string | null} Default model id, or null when the catalog has no enabled model.
+ */
+export function getDefaultModelId() {
+    const entry = readModelGateway().models.find(model => model.enabled !== false);
+    return entry ? String(entry.id) : null;
+}
+
+/**
  * Resolve a catalog model id to a concrete provider + api key + real model name.
  * @param {string} modelId Model id.
  * @returns {{source: string, model: string, endpoint: string, apiKey: string, params: object, providerId: string}}

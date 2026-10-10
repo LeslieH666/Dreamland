@@ -2256,6 +2256,12 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     const model = getChatCompletionModel(oai_settings);
     const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
+    // Server-managed model gateway: send the catalog model id; the adapter resolves the
+    // provider/key/apiModel from the server config (no key/endpoint leaves this client).
+    const selectedModelId = $('#server_model_select').val();
+    if (selectedModelId) {
+        generate_data.model_id = String(selectedModelId);
+    }
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';
@@ -5690,3 +5696,31 @@ function openAiAssemblyEnv() {
         getPromptRole,
     };
 }
+
+/**
+ * Populate the server-managed model dropdown from GET /api/v1/models. The model id is the
+ * only model-related value this client sends; provider/key/endpoint stay on the server.
+ */
+async function loadServerModels() {
+    try {
+        const response = await fetch('/api/v1/models', { headers: getRequestHeaders() });
+        if (!response.ok) return;
+        const data = await response.json();
+        const select = document.getElementById('server_model_select');
+        if (!select) return;
+        const current = select.value;
+        const models = Array.isArray(data?.models) ? data.models : [];
+        select.innerHTML = models.length
+            ? models.map(model =>
+                `<option value="${DOMPurify.sanitize(model.id)}">${DOMPurify.sanitize(model.name ?? model.id)}</option>`).join('')
+            : '<option value="">（无可用模型）</option>';
+        if (current && models.some(model => model.id === current)) {
+            select.value = current;
+        }
+    } catch {
+        // Fail open: an empty dropdown sends no model_id and the adapter falls back to the
+        // server default model gateway.
+    }
+}
+
+eventSource.on(event_types.APP_READY, loadServerModels);

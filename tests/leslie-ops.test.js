@@ -263,6 +263,18 @@ describe('GET /api/v1/models', () => {
 });
 
 describe('ops model gateway', () => {
+    test('lists provider presets with DeepSeek endpoint and models', async () => {
+        const adminToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: ADMIN_HANDLE, password: PASSWORD })).body?.access_token;
+        const presets = await getJson('/ops/model-gateway/presets', adminToken);
+        expect(presets.status).toBe(200);
+        expect(Array.isArray(presets.body.presets)).toBe(true);
+        const deepseek = presets.body.presets.find(p => p.id === 'deepseek');
+        expect(deepseek).toBeTruthy();
+        expect(deepseek.endpoint).toBe('https://api.deepseek.com/v1');
+        expect(deepseek.models).toEqual(['deepseek-chat', 'deepseek-reasoner']);
+        expect(presets.body.presets.map(p => p.id)).toEqual(expect.arrayContaining(['openai', 'deepseek', 'volcengine', 'custom']));
+    });
+
     test('creates providers/models, masks keys and resolves the config', async () => {
         const adminToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: ADMIN_HANDLE, password: PASSWORD })).body?.access_token;
         expect(typeof adminToken).toBe('string');

@@ -19,6 +19,43 @@ import { SecretManager } from '../endpoints/secrets.js';
 export const MODEL_GATEWAY_FILE = 'model-gateway.json';
 export const MODEL_GATEWAY_SCHEMA_VERSION = 1;
 
+/**
+ * Provider presets: picking one auto-fills the endpoint and auto-brings its models into
+ * the catalog. `models` is empty for 火山引擎 (its model ids are per-account inference
+ * endpoints) and 自定义 (both endpoint and models are entered by hand).
+ */
+export const PROVIDER_PRESETS = Object.freeze({
+    openai: Object.freeze({ id: 'openai', name: 'OpenAI', source: 'openai', endpoint: 'https://api.openai.com/v1', models: Object.freeze(['gpt-4o', 'gpt-4o-mini', 'gpt-4.1']) }),
+    deepseek: Object.freeze({ id: 'deepseek', name: 'DeepSeek', source: 'deepseek', endpoint: 'https://api.deepseek.com/v1', models: Object.freeze(['deepseek-chat', 'deepseek-reasoner']) }),
+    volcengine: Object.freeze({ id: 'volcengine', name: '火山引擎', source: 'custom', endpoint: 'https://ark.cn-beijing.volces.com/api/v3', models: Object.freeze([]) }),
+    custom: Object.freeze({ id: 'custom', name: '自定义', source: 'custom', endpoint: '', models: Object.freeze([]) }),
+});
+
+/**
+ * The provider presets, with mutable arrays for the caller.
+ * @returns {{id: string, name: string, source: string, endpoint: string, models: string[]}[]} Presets.
+ */
+export function listProviderPresets() {
+    return Object.values(PROVIDER_PRESETS).map(preset => ({
+        id: preset.id,
+        name: preset.name,
+        source: preset.source,
+        endpoint: preset.endpoint,
+        models: [...preset.models],
+    }));
+}
+
+/**
+ * Look up one provider preset by id.
+ * @param {string} id Preset id.
+ * @returns {{id: string, name: string, source: string, endpoint: string, models: string[]} | null} Preset or null.
+ */
+export function getProviderPreset(id) {
+    const preset = PROVIDER_PRESETS[id];
+    if (!preset) return null;
+    return { id: preset.id, name: preset.name, source: preset.source, endpoint: preset.endpoint, models: [...preset.models] };
+}
+
 /** Global secrets manager (server-scoped, not per account). */
 function globalSecretManager() {
     const root = String(globalThis.DATA_ROOT ?? '');

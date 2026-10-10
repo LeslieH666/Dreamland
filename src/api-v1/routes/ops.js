@@ -18,7 +18,7 @@ import { CHAT_COMPLETION_SOURCES } from '../../constants.js';
 import { SECRET_KEYS } from '../../endpoints/secrets.js';
 import { LeslieMomentsStore } from '../../leslie-moments/store.js';
 import { getRuntimeMode } from '../../runtime-mode.js';
-import { deleteModel, deleteProvider, listAllModels, listProvidersMasked, upsertModel, upsertProvider } from '../../model-gateway/store.js';
+import { deleteModel, deleteProvider, listAllModels, listProviderPresets, listProvidersMasked, upsertModel, upsertProvider } from '../../model-gateway/store.js';
 import { getPasswordHash, getPasswordSalt, getAllUserHandles, getUserDirectories, toKey } from '../../users.js';
 import { registerAccount } from '../auth.js';
 import { listSecretIds } from '../secrets.js';
@@ -502,6 +502,10 @@ export function createOpsRouter({ accountLimiter } = {}) {
     }, 'Resetting a password failed.'));
 
     // ---- Server-managed model gateway ------------------------------------------
+    opsRouter.get('/model-gateway/presets', asyncRoute(async (_request, response) => {
+        response.send({ presets: listProviderPresets() });
+    }, 'Listing model gateway presets failed.'));
+
     opsRouter.get('/model-gateway', asyncRoute(async (_request, response) => {
         response.send({ providers: listProvidersMasked(), models: listAllModels() });
     }, 'Listing the model gateway failed.'));

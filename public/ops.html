@@ -105,32 +105,28 @@
 
                 <div class="subhead">供应商管理</div>
                 <div class="form-row">
-                    <input id="pv-id" type="text" placeholder="id（如 deepseek）" autocomplete="off">
-                    <input id="pv-name" type="text" placeholder="名称" autocomplete="off">
-                    <input id="pv-source" type="text" placeholder="source（如 openai/custom/deepseek）" autocomplete="off">
-                    <input id="pv-endpoint" type="text" placeholder="endpoint（留空用默认）" autocomplete="off">
+                    <select id="pv-preset"></select>
+                    <input id="pv-id" type="text" placeholder="供应商 id（预设自动填，自定义手填）" autocomplete="off">
+                    <input id="pv-endpoint" type="text" placeholder="endpoint" autocomplete="off">
                     <input id="pv-key" type="password" placeholder="API key（留空保留）" autocomplete="new-password">
                     <label><input id="pv-enabled" type="checkbox" checked> 启用</label>
-                    <button id="pv-save" type="button">保存</button>
+                    <button id="pv-save" type="button">保存供应商</button>
                 </div>
                 <table id="providers">
-                    <thead><tr><th>id</th><th>名称</th><th>source</th><th>endpoint</th><th>密钥</th><th>启用</th><th>操作</th></tr></thead>
+                    <thead><tr><th>id</th><th>名称</th><th>endpoint</th><th>密钥</th><th>启用</th><th>操作</th></tr></thead>
                     <tbody></tbody>
                 </table>
 
-                <div class="subhead">模型清单管理</div>
+                <div class="subhead">模型清单（API 列表）</div>
+                <div class="muted" style="margin-bottom:6px;">选预设后自动带出模型；改名后保存，勾选即对用户下拉可见。</div>
+                <div id="model-list"></div>
                 <div class="form-row">
-                    <input id="md-id" type="text" placeholder="id（如 deepseek-chat）" autocomplete="off">
-                    <input id="md-name" type="text" placeholder="名称" autocomplete="off">
-                    <select id="md-provider"></select>
-                    <input id="md-apimodel" type="text" placeholder="apiModel（真实模型名）" autocomplete="off">
-                    <input id="md-temp" type="text" placeholder="temperature（默认）" autocomplete="off">
-                    <input id="md-maxtokens" type="text" placeholder="max_tokens（默认）" autocomplete="off">
-                    <label><input id="md-enabled" type="checkbox" checked> 启用</label>
-                    <button id="md-save" type="button">保存</button>
+                    <input id="model-new-id" type="text" placeholder="手动添加：API 模型名 / 推理接入点 id" autocomplete="off">
+                    <button id="model-add" type="button">+ 添加模型</button>
+                    <button id="model-save" type="button">保存模型清单</button>
                 </div>
                 <table id="catalog">
-                    <thead><tr><th>id</th><th>名称</th><th>供应商</th><th>apiModel</th><th>默认参数</th><th>启用</th><th>操作</th></tr></thead>
+                    <thead><tr><th>名称</th><th>供应商</th><th>API 模型</th><th>显示</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
@@ -228,6 +224,7 @@
         async function loadDashboard() {
             setDashboardError('');
             try {
+                await loadPresets();
                 const [status, users, gateway, rateLimits] = await Promise.all([
                     api('/ops/status'), api('/ops/users'), api('/ops/model-gateway'), api('/ops/rate-limits'),
                 ]);
@@ -329,6 +326,9 @@
         }
 
         let lastGateway = null;
+        let providerPresets = [];
+        let pendingModels = [];
+        let currentProviderId = '';
 
         function renderModelGateway(gateway) {
             lastGateway = gateway;
@@ -338,34 +338,91 @@
             document.getElementById('mg-status').textContent = '当前生效：' + enabledModels.length + ' 个模型 · ' + providers.filter(p => p.enabled).length + ' 个供应商（共 ' + models.length + ' / ' + providers.length + '）';
 
             document.querySelector('#providers tbody').innerHTML = providers.map(p =>
-                '<tr><td class="mono">' + esc(p.id) + '</td><td>' + esc(p.name) + '</td><td class="mono">' + esc(p.source) + '</td><td class="mono">' + esc(p.endpoint || '—') + '</td><td class="mono">' + (p.apiKeyConfigured ? esc(p.apiKeyPreview) : '<span class="muted">未配置</span>') + '</td><td>' + (p.enabled ? '<span class="ok">是</span>' : '<span class="warn">否</span>') + '</td>' +
-                '<td class="actions"><button data-act="pv-toggle" data-id="' + esc(p.id) + '">' + (p.enabled ? '停用' : '启用') + '</button><button data-act="pv-delete" data-id="' + esc(p.id) + '" class="danger">删除</button></td></tr>'
+                '<tr><td class="mono">' + esc(p.id) + '</td><td>' + esc(p.name) + '</td><td class="mono">' + esc(p.endpoint || '—') + '</td><td class="mono">' + (p.apiKeyConfigured ? esc(p.apiKeyPreview) : '<span class="muted">未配置</span>') + '</td><td>' + (p.enabled ? '<span class="ok">是</span>' : '<span class="warn">否</span>') + '</td>' +
+                '<td class="actions"><button data-act="pv-edit" data-id="' + esc(p.id) + '">编辑</button><button data-act="pv-toggle" data-id="' + esc(p.id) + '">' + (p.enabled ? '停用' : '启用') + '</button><button data-act="pv-delete" data-id="' + esc(p.id) + '" class="danger">删除</button></td></tr>'
             ).join('');
 
-            const modelProviderSelect = document.getElementById('md-provider');
-            modelProviderSelect.innerHTML = providers.map(p => '<option value="' + esc(p.id) + '">' + esc(p.name || p.id) + '</option>').join('');
-
-            document.querySelector('#catalog tbody').innerHTML = models.map(m => {
-                const params = (m.params && typeof m.params === 'object')
-                    ? [m.params.temperature !== undefined ? 'temp=' + m.params.temperature : '', m.params.max_tokens !== undefined ? 'max_tokens=' + m.params.max_tokens : ''].filter(Boolean).join(' ')
-                    : '';
-                return '<tr><td class="mono">' + esc(m.id) + '</td><td>' + esc(m.name) + '</td><td class="mono">' + esc(m.provider) + '</td><td class="mono">' + esc(m.apiModel ?? m.id) + '</td><td class="mono">' + esc(params || '—') + '</td><td>' + (m.enabled !== false ? '<span class="ok">是</span>' : '<span class="warn">否</span>') + '</td>' +
-                '<td class="actions"><button data-act="md-toggle" data-id="' + esc(m.id) + '">' + (m.enabled !== false ? '停用' : '启用') + '</button><button data-act="md-delete" data-id="' + esc(m.id) + '" class="danger">删除</button></td></tr>';
-            }).join('');
+            document.querySelector('#catalog tbody').innerHTML = models.map(m =>
+                '<tr><td>' + esc(m.name) + '</td><td class="mono">' + esc(m.provider) + '</td><td class="mono">' + esc(m.apiModel ?? m.id) + '</td><td>' + (m.enabled !== false ? '<span class="ok">是</span>' : '<span class="warn">否</span>') + '</td></tr>'
+            ).join('');
 
             document.querySelectorAll('#providers button[data-act]').forEach(button => {
                 button.addEventListener('click', () => onProviderAction(button.getAttribute('data-act'), button.getAttribute('data-id')));
             });
-            document.querySelectorAll('#catalog button[data-act]').forEach(button => {
-                button.addEventListener('click', () => onModelAction(button.getAttribute('data-act'), button.getAttribute('data-id')));
+        }
+
+        function renderModelList() {
+            const container = document.getElementById('model-list');
+            if (pendingModels.length === 0) {
+                container.innerHTML = '<div class="muted">（无模型，选预设自动带出或手动添加）</div>';
+                return;
+            }
+            container.innerHTML = pendingModels.map((model, index) =>
+                '<div class="form-row" data-index="' + index + '">' +
+                '<input class="model-name" type="text" value="' + esc(model.name) + '" placeholder="模型名称">' +
+                '<label><input class="model-enabled" type="checkbox"' + (model.enabled ? ' checked' : '') + '> 显示</label>' +
+                '<button class="model-delete danger" type="button">删除</button>' +
+                '</div>'
+            ).join('');
+            container.querySelectorAll('.form-row').forEach(row => {
+                const index = Number(row.getAttribute('data-index'));
+                row.querySelector('.model-name').addEventListener('input', event => { pendingModels[index].name = event.target.value; });
+                row.querySelector('.model-enabled').addEventListener('change', event => { pendingModels[index].enabled = event.target.checked; });
+                row.querySelector('.model-delete').addEventListener('click', () => { pendingModels.splice(index, 1); renderModelList(); });
             });
         }
 
+        async function loadPresets() {
+            try {
+                const data = await api('/ops/model-gateway/presets');
+                providerPresets = data.presets || [];
+                const select = document.getElementById('pv-preset');
+                const wasEmpty = select.options.length === 0;
+                select.innerHTML = providerPresets.map(p => '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>').join('');
+                if (wasEmpty && providerPresets.length > 0) {
+                    onPresetChange();
+                }
+            } catch {
+                // The presets dropdown stays empty; manual provider id/endpoint still work.
+            }
+        }
+
+        function onPresetChange() {
+            const presetId = document.getElementById('pv-preset').value;
+            const preset = providerPresets.find(p => p.id === presetId);
+            if (!preset) return;
+            document.getElementById('pv-id').value = preset.id === 'custom' ? '' : preset.id;
+            document.getElementById('pv-endpoint').value = preset.endpoint || '';
+            currentProviderId = preset.id === 'custom' ? '' : preset.id;
+            // Auto-bring the preset's models into the editable list (rename + check to publish).
+            pendingModels = (preset.models || []).map(model => ({ id: model, name: model, enabled: true }));
+            renderModelList();
+        }
+
+        function onProviderEdit(id) {
+            const provider = (lastGateway?.providers || []).find(p => p.id === id);
+            if (!provider) return;
+            document.getElementById('pv-id').value = provider.id;
+            document.getElementById('pv-endpoint').value = provider.endpoint || '';
+            document.getElementById('pv-enabled').checked = provider.enabled;
+            document.getElementById('pv-key').value = '';
+            currentProviderId = provider.id;
+            const preset = providerPresets.find(p => p.id === provider.id);
+            if (preset) document.getElementById('pv-preset').value = preset.id;
+            pendingModels = (lastGateway?.models || []).filter(m => m.provider === id)
+                .map(m => ({ id: m.id, name: m.name, enabled: m.enabled !== false }));
+            renderModelList();
+        }
+
         async function saveProvider() {
+            const presetId = document.getElementById('pv-preset').value;
+            const preset = providerPresets.find(p => p.id === presetId);
+            const id = document.getElementById('pv-id').value.trim();
+            if (!id) { setMgError('请填写供应商 id。'); return; }
             const body = {
-                id: document.getElementById('pv-id').value.trim(),
-                name: document.getElementById('pv-name').value.trim(),
-                source: document.getElementById('pv-source').value.trim() || 'custom',
+                id,
+                name: preset?.name || id,
+                source: preset?.source || 'custom',
                 endpoint: document.getElementById('pv-endpoint').value.trim(),
                 enabled: document.getElementById('pv-enabled').checked,
             };
@@ -374,7 +431,8 @@
             setMgError('');
             try {
                 await apiMutation('POST', '/ops/model-gateway/providers', body);
-                ['pv-id', 'pv-name', 'pv-source', 'pv-endpoint', 'pv-key'].forEach(id => { document.getElementById(id).value = ''; });
+                currentProviderId = id;
+                document.getElementById('pv-key').value = '';
                 await loadDashboard();
             } catch (error) {
                 if (handleAuthError(error)) return;
@@ -391,6 +449,9 @@
                     const provider = (lastGateway?.providers || []).find(p => p.id === id);
                     if (!provider) return;
                     await apiMutation('POST', '/ops/model-gateway/providers', { id: provider.id, name: provider.name, source: provider.source, endpoint: provider.endpoint, enabled: !provider.enabled });
+                } else if (action === 'pv-edit') {
+                    onProviderEdit(id);
+                    return;
                 }
                 await loadDashboard();
             } catch (error) {
@@ -399,23 +460,15 @@
             }
         }
 
-        async function saveModel() {
-            const body = {
-                id: document.getElementById('md-id').value.trim(),
-                name: document.getElementById('md-name').value.trim(),
-                provider: document.getElementById('md-provider').value,
-                apiModel: document.getElementById('md-apimodel').value.trim(),
-                enabled: document.getElementById('md-enabled').checked,
-                params: {},
-            };
-            const temp = document.getElementById('md-temp').value.trim();
-            const maxTokens = document.getElementById('md-maxtokens').value.trim();
-            if (temp) body.params.temperature = Number(temp);
-            if (maxTokens) body.params.max_tokens = Number(maxTokens);
+        async function saveModels() {
+            const providerId = currentProviderId || document.getElementById('pv-id').value.trim();
+            if (!providerId) { setMgError('请先保存供应商。'); return; }
             setMgError('');
             try {
-                await apiMutation('POST', '/ops/model-gateway/models', body);
-                ['md-id', 'md-name', 'md-apimodel', 'md-temp', 'md-maxtokens'].forEach(id => { document.getElementById(id).value = ''; });
+                for (const model of pendingModels) {
+                    if (!model.id) continue;
+                    await apiMutation('POST', '/ops/model-gateway/models', { id: model.id, name: model.name, provider: providerId, apiModel: model.id, enabled: model.enabled !== false });
+                }
                 await loadDashboard();
             } catch (error) {
                 if (handleAuthError(error)) return;
@@ -423,21 +476,12 @@
             }
         }
 
-        async function onModelAction(action, id) {
-            setMgError('');
-            try {
-                if (action === 'md-delete') {
-                    await apiMutation('DELETE', '/ops/model-gateway/models/' + encodeURIComponent(id), {});
-                } else if (action === 'md-toggle') {
-                    const model = (lastGateway?.models || []).find(m => m.id === id);
-                    if (!model) return;
-                    await apiMutation('POST', '/ops/model-gateway/models', { id: model.id, name: model.name, provider: model.provider, apiModel: model.apiModel, enabled: model.enabled === false, params: model.params || {} });
-                }
-                await loadDashboard();
-            } catch (error) {
-                if (handleAuthError(error)) return;
-                setMgError(error.message || String(error));
-            }
+        function addModel() {
+            const id = document.getElementById('model-new-id').value.trim();
+            if (!id) { setMgError('请先填写要添加的 API 模型名。'); return; }
+            pendingModels.push({ id, name: id, enabled: true });
+            document.getElementById('model-new-id').value = '';
+            renderModelList();
         }
 
         function setMgError(message) {
@@ -614,7 +658,9 @@
 
         document.getElementById('create-button').addEventListener('click', createUser);
         document.getElementById('pv-save').addEventListener('click', saveProvider);
-        document.getElementById('md-save').addEventListener('click', saveModel);
+        document.getElementById('pv-preset').addEventListener('change', onPresetChange);
+        document.getElementById('model-add').addEventListener('click', addModel);
+        document.getElementById('model-save').addEventListener('click', saveModels);
         document.getElementById('modal-close').addEventListener('click', closeModal);
         document.getElementById('modal-overlay').addEventListener('click', (event) => {
             if (event.target === document.getElementById('modal-overlay')) closeModal();

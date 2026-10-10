@@ -32,6 +32,18 @@ oracle 已达 **7/9**。两例各差单点，均已从基线 JSON 确证：
 - **允许确定性单次交互探针**：先 `selectCharacter`，再**一次** `evaluate` 触发 `Generate` 并**同步**读 `window.__capture`（在异步续体前取输入数组），消除竞态。这是 test-harness 改动，不碰产品代码。
 - **交叉推断（探针为准，若探针仍失败再信此条）**：代码里 `populationInjectionPrompts` 末尾有 `messages.reverse()`、且 depth 是「从末尾起算」，故浏览器侧该函数收到的 `messages` 应为**新在前（newest-first）**——服务端是旧在前，正是「反转后方向相反」的根源。修法应是把服务端喂给该函数的数组**反向**（或对齐浏览器的新在前语义），而非继续调 `depthDelta`。
 
+### 2.1.2 注入下标已解（Lead 已决，无需再探针）
+
+由已确证事实推演，**逐条对上基线**：`populationInjectionPromptsCore` 收到的 `messages` 是 **newest-first**，`depth 0 = 数组首元素（最新消息）`，`injectIdx = i + totalInsertedMessages`（i 是 depth 循环变量），末尾 `messages.reverse()` 回正序。
+
+regenerate 实推（4 条 chat newest-first `[U2,A1,U1,first_mes]`，深度提示 depth 2、记忆 depth 4）：
+```
+depth 2: injectIdx=2+0 → [U2,A1,深度提示,U1,first_mes]
+depth 4: injectIdx=4+1 → [U2,A1,深度提示,U1,first_mes,记忆块]
+reverse → [记忆块, first_mes, U1, 深度提示, A1, U2]   == 基线 index 17..22 ✓
+```
+**修法：服务端把数组反成 newest-first 再喂给该函数即可，循环公式不变，不再调 `depthDelta`。**
+
 ### 2.2 P2.5 剩余清单（严格顺序）
 
 1. **解示例/历史放置语义**（§2.1）→ 跑 oracle，目标消息数回到 19–24 且首分歧后移。

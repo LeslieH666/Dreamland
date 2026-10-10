@@ -112,28 +112,30 @@ function startServer(dataRoot) {
  * @returns {Promise<object>} Captured request body.
  */
 async function captureCase(page, testCase) {
+    // Capture the assembled body at the network layer. Overriding `window.fetch` from
+    // `page.evaluate` raced module initialisation: when the page had already captured a
+    // fetch reference, the stub was bypassed and the recorded body was the *unstubbed*
+    // server response instead of the browser's assembly (which silently truncated the
+    // history to the system prompts).
+    const records = [];
+    await page.route('**/api/backends/chat-completions/generate', async route => {
+        try {
+            records.push(route.request().postDataJSON());
+        } catch {
+            records.push(null);
+        }
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ choices: [{ message: { role: 'assistant', content: '合成夹具回复。' } }] }),
+        });
+    });
+
     await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
     await page.locator('#preloader').waitFor({ state: 'hidden', timeout: 60_000 });
 
-    const captured = await page.evaluate(async (definition) => {
+    await page.evaluate(async (definition) => {
         const app = await import('/script.js');
-
-        // Stub the model endpoint and record what the browser assembled.
-        const records = [];
-        window.__assemblyCaptures = records;
-        const originalFetch = window.fetch.bind(window);
-        window.fetch = async (input, init) => {
-            const url = typeof input === 'string' ? input : input?.url ?? '';
-            if (url.includes('/api/backends/chat-completions/generate')) {
-                const body = JSON.parse(init?.body ?? '{}');
-                records.push(body);
-                return new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: '合成夹具回复。' } }] }), {
-                    status: 200,
-                    headers: { 'content-type': 'application/json' },
-                });
-            }
-            return originalFetch(input, init);
-        };
 
         await app.getCharacters();
         const { getGroups, openGroupById } = await import('/scripts/group-chats.js');
@@ -176,9 +178,10 @@ async function captureCase(page, testCase) {
         }
 
         await new Promise(resolve => setTimeout(resolve, 500));
-        return records.length ? records[records.length - 1] : null;
     }, testCase);
 
+    await page.unroute('**/api/backends/chat-completions/generate');
+    const captured = records.length ? records[records.length - 1] : null;
     if (!captured) throw new Error(`no chat-completion request captured for case ${testCase.id}`);
     return captured;
 }
@@ -246,12 +249,17 @@ try {
     provider = await startMockProvider();
     console.log(`[${mode}] mock provider ready on http://127.0.0.1:${process.env.LESLIE_FIXTURE_PROVIDER_PORT || 9099}`);
     const { chromium } = await import('playwright');
+    // The bundled download may be unavailable (offline or a read-only cache). When a local
+    // Chromium-based browser is installed, LESLIE_BASELINE_BROWSER_CHANNEL=chrome uses it,
+    // which keeps this gate runnable instead of silently skipped.
+    const channel = process.env.LESLIE_BASELINE_BROWSER_CHANNEL || undefined;
     try {
-        browser = await chromium.launch({ headless: true });
+        browser = await chromium.launch({ headless: true, ...(channel ? { channel } : {}) });
     } catch (error) {
         console.error('Could not launch chromium. Install it with `npx playwright install chromium`,');
-        console.error('or point PLAYWRIGHT_BROWSERS_PATH at an existing download. Original error:');
-        console.error(`  ${error.message.split('\n')[0]}`);
+        console.error('or point PLAYWRIGHT_BROWSERS_PATH at an existing download, or set');
+        console.error('LESLIE_BASELINE_BROWSER_CHANNEL to a locally installed channel (e.g. chrome).');
+        console.error(`Original error: ${error.message.split('\n')[0]}`);
         throw error;
     }
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });

@@ -287,7 +287,30 @@
 | `npm run test:unit` | **80 suites / 944 tests passed**，无 failed |
 | `npm run check:repo` | exit 0（1474 tracked files） |
 | 红线 3 文件（`src/endpoints/chats.js`、`src/endpoints/characters.js`、`src/prompt-converters.js`） | 累计 diff 空 |
-| `test:prompt-baseline`（浏览器 9 例） | **本环境无法运行**：Playwright Chromium 缺失，缓存目录被沙箱拒绝写入 |
+| `test:prompt-baseline`（浏览器 9 例） | **9/9 byte-identical**（改用本机 Chrome，见下节） |
+
+### 浏览器基准门禁：已可运行，9/9 逐字一致
+
+本会话找到了缺失的浏览器门禁的替代路径：机器上装有 Google Chrome，Playwright 可用
+`channel: 'chrome'` 直接驱动它，无需下载 Chromium。`run-baseline.mjs` 新增
+`LESLIE_BASELINE_BROWSER_CHANNEL` 环境变量（未设置时行为不变）。
+
+**同时修掉 harness 自身一个会让该门禁说谎的缺陷**：原实现在 `page.evaluate` 里覆盖
+`window.fetch`，与页面模块初始化存在竞态；实测它被绕过，录到的其实是**未被 stub 的
+真实响应**，于是浏览器只"组装"出 10 条系统消息。改为用 `page.route` 在网络层拦截并
+记录请求体后：
+
+```
+identical solo-normal (24)      identical solo-continue (25)
+identical solo-swipe (19)       identical solo-regenerate (23)
+identical solo-impersonate (24) identical solo-quiet (21)
+identical group-normal (20)     identical solo-persona-depth (23)
+identical solo-author-note (24)
+All 9 case(s) are byte-identical to the baseline.
+```
+
+并额外验证：用修好的 harness `--record` 重录 9 例，与仓库中已提交基线
+`diff -rq` **完全一致**。结论：**浏览器侧 9/9 门禁成立，抬升未回归，已提交基线可信**。
 
 ### oracle 现状
 
@@ -331,13 +354,16 @@
 
 ### 剩余 4 例的证据与判断
 
-- **group-normal / solo-persona-depth（同一根因，继续追）**：depth 注入落点比基线早 1。
-  共享模块 `populationInjectionPromptsCore` 用 `injectIdx = i + totalInsertedMessages`
-  在「最新在前」的消息数组里按深度定位；实测 group 用例 `messages` 为
-  `[北纬, user, 极光]`、`idx` 计算为 2，实际落在「新聊标记」与「用户消息」之间，基线要求
-  落在「用户消息」之后；`solo-persona-depth` 的 depth prompt 同样早 1 位置，两者消息总数
-  也因此差 1。**未做「把索引 +1」的凑数修改**：实测直接应用该偏移会让 9 例全部失配，
+- **group-normal**：两条独立差异。(a) 服务端写出的 depth 提示词落在「用户消息」之前
+  （expected[16] vs got[15]）；追踪显示服务端注入前的数组是
+  `[北纬, 用户, 极光]`（最新在前、长度 3），`injectIdx = i + totalInsertedMessages = 2`
+  产出 `[极光, 注入, 用户, 北纬]`，而基线要求注入在用户消息之后——即浏览器的深度计数
+  与「是否已含本轮待发用户消息」相关。(b) 服务端少一条 `user: 合成夹具回复。`：那是
+  mock provider 的**回复**被浏览器保存进聊天后再组装的结果，replay oracle 只组装、不生成，
+  因此天然少这一条。**未做「把索引 +1」的凑数修改**：实测直接应用该偏移会让 9 例全部失配，
   说明数组方向与深度语义必须一起改，不能单点平移。
+- **solo-persona-depth**：depth prompt 同样早 1 位置，与 group-normal 的 (a) 同源，
+  属于同一处 depth 语义未定论。
 - **solo-swipe（基线自相矛盾，按用户裁决如实披露）**：`solo-swipe` 的 memory 块是已提交
   基线内部的矛盾。`git show 58cfc2b32 -- tests/fixtures/prompt-assembly/baseline/solo-swipe.json`
   显示同一次重录**只从 swipe 用例删掉了 `[与当前对话相关的过往记忆]` 块**（20→19
@@ -356,13 +382,12 @@ memory 子块组合，均属**本文件与附 L/M/N/O/P 未覆盖且有具体证
 PWA）与 Phase 5（RN App）依赖 §3「服务端 `/generate` 权威轮次可用」；在 depth 注入语义
 未定论前开工，会把客户端叠在错误的组装语义上，故在此停靠报告，等待裁决后继续。
 
-### 环境缺口（非产品问题）
+### 环境说明
 
-- Playwright Chromium 未安装且本会话无法下载：`~/Library/Caches/ms-playwright` 被沙箱
-  拒绝写入，`playwright install chromium` 返回 `EPERM`。因此
-  `npm run test:prompt-baseline` 无法在本会话内执行；oracle 的比对基准仍是仓库中已提交的
-  9 个 baseline JSON。若要重录基线，需要提供 Chromium 或允许写该缓存目录
-  （`PLAYWRIGHT_BROWSERS_PATH`）。
+- 打包的 Playwright Chromium 缺失且沙箱禁止写 `~/Library/Caches/ms-playwright`
+  （`playwright install chromium` 返回 `EPERM`）。改用本机 Google Chrome
+  （`LESLIE_BASELINE_BROWSER_CHANNEL=chrome`）后该门禁完全可用，且已用
+  `--record` 复核基线未被改动。
 
 ## Prompt-assembly lift and authoritative-turn groundwork (2026-10-09)
 

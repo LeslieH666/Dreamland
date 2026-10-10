@@ -31,6 +31,7 @@ import { substituteParams } from './macros.js';
 import { setOpenAIMessageExamples, setOpenAIMessages } from './message-shaping.js';
 import { prepareOpenAIMessagesCore } from './orchestrate.js';
 import { Prompt, PromptCollection } from './prompt.js';
+import { configureChatCompletion } from './chat-completion.js';
 import { buildServerAssemblyEnv, buildServerPromptManager, buildServerTokenHandler } from './server-env.js';
 import { sanitizeServiceSettings } from './registry.js';
 import { OAI_SETTINGS_ASSEMBLY_DEFAULTS, PERSONA_DESCRIPTION_POSITIONS, buildServerPowerUser, mergeSettings } from './settings-defaults.js';
@@ -116,6 +117,24 @@ function readJsonFile(filePath, fs) {
 }
 
 /**
+ * Rewrite only the header (first line) of a JSONL chat file.
+ *
+ * The message lines are copied through untouched so the storage format is preserved
+ * byte-for-byte; only the header JSON is replaced. Used for the World Info timed-effect
+ * write-back, which must not alter the conversation body.
+ * @param {string} filePath Chat file.
+ * @param {object} header New header object (the full first-line record).
+ * @param {object} fs Node fs module.
+ * @returns {void}
+ */
+function writeChatMetadataHeader(filePath, header, fs) {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const newlineIndex = raw.indexOf('\n');
+    const rest = newlineIndex === -1 ? '' : raw.slice(newlineIndex + 1);
+    fs.writeFileSync(filePath, `${JSON.stringify(header)}${rest ? `\n${rest}` : ''}`);
+}
+
+/**
  * Load the account settings the assembly needs.
  * @param {{root: string}} directories User directories.
  * @param {object} fs Node fs module.
@@ -198,7 +217,7 @@ export async function loadServerCard(cardName, directories, deps) {
  * Read the persisted chat: metadata header plus the message array.
  * @param {string} filePath Chat JSONL path.
  * @param {object} deps Injected modules: { getChatData }.
- * @returns {{metadata: object, messages: object[]}} Chat contents.
+ * @returns {{metadata: object, messages: object[], header: object}} Chat contents.
  */
 export function loadServerChat(filePath, deps) {
     const { getChatData } = deps;
@@ -209,12 +228,13 @@ export function loadServerChat(filePath, deps) {
     const [header, ...messages] = rows;
     // The header carries chat_metadata alongside the user/character names; the assembly
     // reads the note, persona, world info and memory binding out of that nested object.
-    const nested = header && typeof header === 'object' && !Array.isArray(header) ? header.chat_metadata : null;
+    const rawHeader = header && typeof header === 'object' && !Array.isArray(header) ? header : {};
+    const nested = rawHeader.chat_metadata;
     const metadata = nested && typeof nested === 'object' && !Array.isArray(nested)
         ? { ...nested }
-        : (header && typeof header === 'object' && !Array.isArray(header) ? { ...header } : {});
+        : { ...rawHeader };
     delete metadata.mes;
-    return { metadata, messages };
+    return { metadata, messages, header: rawHeader };
 }
 
 /**
@@ -332,6 +352,9 @@ export async function assembleAuthoritativeTurn(input) {
     }
     const settings = loadServerSettings(directories, deps.fs);
     const chat = loadServerChat(ref.filePath, deps);
+    // World Info time effects mutate the in-memory chat_metadata during the scan; snapshot
+    // the full header here so the JSONL first line can be written back only on real change.
+    const metadataBeforeAssembly = JSON.stringify(chat.header);
     // The page fills its settings defaults at load and only overlays what was persisted,
     // so the server has to merge the same defaults before anything reads them.
     // oai_settings comes from settings.json as-is for now; only the power_user subset the
@@ -362,6 +385,25 @@ export async function assembleAuthoritativeTurn(input) {
     const registry = {};
 
     const tokenHandler = buildServerTokenHandler(oaiSettings);
+    // The shared ChatCompletion class reads its environment from a module-level
+    // configuration (the browser calls configureChatCompletion once at startup). The
+    // server configures it here from the same persisted settings, so the class's token
+    // accounting and media handling run without a page. Media is never inlined on the
+    // server (Q8), so the media helpers and the compression source map are inert.
+    configureChatCompletion({
+        tokenHandler,
+        media: {
+            createThumbnail: async () => null,
+            getBase64Async: async () => '',
+            getImageSizeFromDataURL: () => ({ width: 0, height: 0 }),
+            getVideoDurationFromDataURL: () => 0,
+            getAudioDurationFromDataURL: () => 0,
+            isDataURL: () => false,
+        },
+        getOaiSettings: () => oaiSettings,
+        getDefaultSettings: () => settings.default_settings ?? {},
+        chatCompletionSources: {},
+    });
     const promptManager = buildServerPromptManager({
         serviceSettings: {
             ...oaiSettings,
@@ -757,6 +799,14 @@ export async function assembleAuthoritativeTurn(input) {
         getShouldWIAddPrompt: () => shouldWIAddPrompt,
     };
     const wi = await getWorldInfoPrompt(chatForWI, maxContext, false, globalScanData, wiContext);
+
+    // World Info time effects are the one persistent side effect of an authoritative turn
+    // (authoritative-turn-spec §7 / Q5): persist the mutated chat_metadata back to the
+    // JSONL header without touching the message lines, and only when the scan changed it.
+    const updatedHeader = { ...chat.header, chat_metadata: chat.metadata };
+    if (JSON.stringify(updatedHeader) !== metadataBeforeAssembly) {
+        writeChatMetadataHeader(ref.filePath, updatedHeader, deps.fs);
+    }
 
     // The page drains World Info's at-depth and outlet entries into the extension registry
     // right after the scan (`flushWIInjections` in public/script.js). Without this the

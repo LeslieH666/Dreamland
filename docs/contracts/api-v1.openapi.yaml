@@ -408,11 +408,10 @@ paths:
       operationId: generateChatCompletion
       tags: [chats]
       summary: >-
-        Authoritative turn. NOTE: prompt assembly (character card, World Info,
-        persona, memory) is browser-only today, so the server runs the existing
-        model proxy in gateway mode: pass `messages` to control the prompt, or
-        omit it to forward the stored conversation. The stream is the provider's
-        OpenAI-compatible SSE with `X-Accel-Buffering: no`.
+        Authoritative turn. The server assembles the complete prompt (character
+        card, World Info, persona, memory, author's note) from the persisted state
+        and streams it through the existing model proxy. The stream is the
+        provider's OpenAI-compatible SSE with `X-Accel-Buffering: no`.
       requestBody:
         required: true
         content:
@@ -421,9 +420,21 @@ paths:
               type: object
               properties:
                 message: { type: string, description: Optional new user message to append before generating. }
+                type:
+                  type: string
+                  description: Generation type.
+                  enum: [normal, continue, swipe, regenerate, impersonate, quiet]
+                  default: normal
                 stream: { type: boolean, default: true }
                 temperature: { type: number }
                 max_tokens: { type: integer, minimum: 1 }
+                top_p: { type: number, nullable: true }
+                random_seed:
+                  type: integer
+                  description: World Info probability seed (test only; production defaults to true randomness).
+                note_text:
+                  type: string
+                  description: Author's note body; defaults to the persisted chat_metadata.note_prompt.
       responses:
         '200':
           description: Server-sent event stream of assistant deltas.

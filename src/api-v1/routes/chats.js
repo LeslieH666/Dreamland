@@ -20,6 +20,9 @@ import sanitize from 'sanitize-filename';
 import { getChatData, getChatInfo, trySaveChat } from '../../endpoints/chats.js';
 import { getLeslieBridgeChatConfiguration } from '../../leslie-bridge/model-chat.js';
 import { handleChatCompletionGenerate } from '../../endpoints/backends/chat-completions.js';
+import { parse as parseCard } from '../../character-card-parser.js';
+import { assembleAuthoritativeTurn } from '../../prompt-assembly/authoritative-turn.js';
+import { ChatCompletion } from '../../prompt-assembly/chat-completion.js';
 import { tryDeleteFile } from '../../util.js';
 import { ApiError, asyncRoute, badRequest, notFound, notImplemented } from '../errors.js';
 import { decodeCompositeId, decodeId, encodeCompositeId, encodeId } from '../ids.js';
@@ -306,14 +309,18 @@ chatsRouter.post('/:id/generate', asyncRoute(async (request, response) => {
 
     const body = request.body ?? {};
     const handle = request.user.storageHandle || request.user.profile.handle;
-    const messages = readMessages(ref);
 
+    // A new user message is appended to the stored conversation before the turn is
+    // assembled, exactly as the page appends it to its in-memory chat before Generate.
+    // The full chat (metadata header included) is preserved so note/memory metadata
+    // survives the append.
     if (body.message !== undefined) {
         const content = String(body.message);
         if (!content.trim()) {
             throw badRequest('message must not be empty.');
         }
-        messages.push({
+        const fullChat = getChatData(ref.filePath);
+        fullChat.push({
             name: request.user.profile.name || handle,
             is_user: true,
             is_system: false,
@@ -321,23 +328,25 @@ chatsRouter.post('/:id/generate', asyncRoute(async (request, response) => {
             mes: content,
             extra: {},
         });
-        await trySaveChat(messages, ref.filePath, false, handle, ref.cardName ?? '', request.user.directories.backups);
+        await trySaveChat(fullChat, ref.filePath, false, handle, ref.cardName ?? '', request.user.directories.backups);
     }
 
-    // Prompt assembly (character card, World Info, persona, memory) lives in the
-    // browser today; the contract's "full pipeline" wording is not met by the
-    // server. This endpoint therefore runs the existing model proxy in gateway
-    // mode: the caller may send `messages`, otherwise the stored conversation is
-    // forwarded as-is. No prompt-building logic is duplicated here.
-    const forwarded = Array.isArray(body.messages) && body.messages.length > 0
-        ? body.messages
-        : messages
-            .filter(entry => !entry?.is_system && typeof entry?.mes === 'string' && entry.mes !== '')
-            .map(entry => ({ role: entry.is_user ? 'user' : 'assistant', content: entry.mes }));
-
-    if (forwarded.length === 0) {
-        throw badRequest('There is nothing to generate from. Send `message`, `messages`, or use a chat with history.');
-    }
+    // Authoritative turn: the full prompt (character card, World Info, persona, memory,
+    // author's note) is assembled server-side from the persisted state and then streamed
+    // through the existing model proxy. No prompt-building logic is duplicated here.
+    const assembled = await assembleAuthoritativeTurn({
+        user: request.user,
+        chatId: request.params.id,
+        type: body.type ?? 'normal',
+        noteText: body.note_text,
+        randomSeed: body.random_seed,
+        deps: {
+            fs,
+            readCard: async cardPath => await parseCard(cardPath, 'png'),
+            getChatData,
+            ChatCompletion,
+        },
+    });
 
     // Validate the model configuration *before* any byte is written, so a
     // misconfigured account gets the normal JSON error envelope instead of an
@@ -367,7 +376,7 @@ chatsRouter.post('/:id/generate', asyncRoute(async (request, response) => {
             // connection is reused rather than re-read or duplicated here.
             ...configuration.settings,
             chat_completion_source: request.body?.chat_completion_source ?? configuration.source,
-            messages: forwarded,
+            messages: assembled.messages,
             model: request.body?.model ?? configuration.model,
             stream: request.body?.stream !== false,
             temperature: request.body?.temperature,

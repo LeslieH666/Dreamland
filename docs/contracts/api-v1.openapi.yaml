@@ -637,56 +637,26 @@ paths:
                 properties:
                   data: { type: array, items: { type: object } }
 
-  /moments:
-    get:
-      operationId: listMoments
-      tags: [leslie]
-      description: Timeline of Moments posts, newest first, with activity-store reactions folded in. `/moments/feed` is kept as an alias.
-      parameters:
-        - name: includeArchived
-          in: query
-          schema: { type: boolean, default: false }
-        - name: viewerEntityId
-          in: query
-          description: Identity to resolve per-viewer visibility against.
-          schema: { type: string }
-      responses:
-        '200':
-          description: Moments timeline.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data: { type: array, items: { $ref: '#/components/schemas/Moment' } }
-                  next_cursor: { type: string, nullable: true }
-
   /moments/feed:
     get:
       operationId: getMomentsFeed
       tags: [leslie]
-      deprecated: true
-      description: Alias of `GET /moments`, kept because the shipped mobile client calls this path.
       responses:
         '200':
-          description: Moments timeline.
+          description: Timeline feed of Moments posts.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  data: { type: array, items: { $ref: '#/components/schemas/Moment' } }
-                  next_cursor: { type: string, nullable: true }
+                  data: { type: array, items: { type: object } }
 
   /moments/posts:
     post:
       operationId: publishMoment
       tags: [leslie]
-      summary: Publish a Moment as the signed-in Persona.
-      description: |
-        Reuses the web router's draft resolution. `mode: reality` (default) resolves the
-        author Persona and the visibility targets; `mode: story` additionally requires a
-        confirmed story binding, supplied either as `memorySourceId` or `storyContext`.
+      x-status: NOT_IMPLEMENTED
+      description: 501 in Phase 2. Publishing needs the persona/storyline draft resolution that only the browser router performs.
       requestBody:
         required: true
         content:
@@ -696,149 +666,12 @@ paths:
               required: [content]
               properties:
                 content: { type: string, minLength: 1 }
-                mode: { type: string, enum: [reality, story], default: reality }
-                author:
-                  type: object
-                  description: Persona reference (`{ id }` or `{ sourceKey }`).
-                  properties:
-                    id: { type: string }
-                    sourceKey: { type: string }
-                    avatar: { type: string }
-                visibility:
-                  type: object
-                  properties:
-                    type: { type: string, enum: [all, selected], default: all }
-                    targets:
-                      type: array
-                      items: { type: object }
-                contentRole: { type: object, nullable: true }
-                memorySourceId: { type: string, description: Story mode only. }
-                storyContext: { type: object, description: Story mode only. }
       responses:
         '201':
-          description: The published Moment.
+          description: Published post.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Moment' }
-        '400': { description: The draft could not be resolved from the request. }
-        '409': { description: Identity mismatch, invalid state, or the 5000-post cap. }
-
-  /moments/posts/{postId}:
-    patch:
-      operationId: updateMoment
-      tags: [leslie]
-      summary: Edit a Moment published by the current Persona.
-      parameters:
-        - $ref: '#/components/parameters/MomentId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [content]
-              properties:
-                content: { type: string, minLength: 1 }
-                author: { type: object }
-                visibility: { type: object }
-      responses:
-        '200':
-          description: The updated Moment.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Moment' }
-        '404': { description: No such Moment. }
-        '409': { description: Not the author, archived, AI-authored, or an identity mismatch. }
-
-  /moments/posts/{postId}/archive:
-    post:
-      operationId: archiveMoment
-      tags: [leslie]
-      summary: Archive a Moment.
-      parameters:
-        - $ref: '#/components/parameters/MomentId'
-      responses:
-        '200':
-          description: The archived Moment.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Moment' }
-        '404': { description: No such Moment. }
-
-  /moments/posts/{postId}/restore:
-    post:
-      operationId: restoreMoment
-      tags: [leslie]
-      summary: Restore an archived Moment.
-      parameters:
-        - $ref: '#/components/parameters/MomentId'
-      responses:
-        '200':
-          description: The restored Moment.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Moment' }
-        '404': { description: No such Moment. }
-
-  /moments/posts/{postId}/likes:
-    put:
-      operationId: setMomentLike
-      tags: [leslie]
-      summary: Set or clear the current identity's like on a Moment.
-      parameters:
-        - $ref: '#/components/parameters/MomentId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [liked]
-              properties:
-                liked: { type: boolean }
-                author: { type: object, description: Identity performing the like. }
-      responses:
-        '200':
-          description: The resulting like state plus the decorated Moment.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  post: { $ref: '#/components/schemas/Moment' }
-        '404': { description: No such Moment. }
-
-  /moments/posts/{postId}/comments:
-    post:
-      operationId: addMomentComment
-      tags: [leslie]
-      summary: Comment on a Moment.
-      description: A character-authored Moment is replied to as that character; otherwise the body's `author` identity is used.
-      parameters:
-        - $ref: '#/components/parameters/MomentId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [content]
-              properties:
-                content: { type: string, minLength: 1 }
-                parentCommentId: { type: string, nullable: true }
-                author: { type: object }
-      responses:
-        '201':
-          description: The created comment and the decorated Moment.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  comment: { type: object }
-                  post: { $ref: '#/components/schemas/Moment' }
-        '404': { description: No such Moment. }
-        '409': { description: The Moment is archived or under moderation. }
+              schema: { type: object }
 
   /identity/personas:
     get:
@@ -854,75 +687,33 @@ paths:
                 properties:
                   data: { type: array, items: { type: object } }
 
-  /workshop/models:
-    get:
-      operationId: listWorkshopModels
-      tags: [leslie]
-      summary: Online providers/models the workshop may use.
-      description: The workshop reuses the same configured online APIs as the Moments features. An empty list means the account has not configured one yet, and `POST /workshop/generate` will answer 409.
-      responses:
-        '200':
-          description: Configured provider/model pairs.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        provider: { type: string }
-                        model: { type: string }
-                        label: { type: string }
-                  next_cursor: { type: string, nullable: true }
-
   /workshop/generate:
     post:
       operationId: generateCharacterDraft
       tags: [leslie]
-      summary: Generate a character card draft from a short brief.
-      description: |
-        One round trip that turns a brief into the fields a character card needs. Nothing is
-        persisted — the caller reviews the draft and saves it through `POST /characters`.
-        `provider`/`model` are optional; when omitted the first configured online model is
-        used, so a client can generate without calling `/workshop/models` first.
+      summary: Character workshop — generate a CCV3 draft via the configured chat API (cloud only). Draft is preview-only; nothing is persisted until explicitly saved via /characters.
+      x-status: NOT_IMPLEMENTED
+      description: 501 in Phase 2. The workshop is browser-only (client-side prompt builders plus a page-side model call).
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [brief]
               properties:
-                brief: { type: string, minLength: 1, maxLength: 4000, description: What the character should be. }
-                style: { type: string, description: Optional writing-style guidance. }
-                language: { type: string, default: 中文 }
-                provider: { type: string, description: From `GET /workshop/models`. }
-                model: { type: string, description: From `GET /workshop/models`. }
+                brief: { type: string, minLength: 1 }
       responses:
         '200':
-          description: The generated draft, plus the provider and model that produced it.
+          description: Draft character card (not persisted).
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  draft:
-                    type: object
-                    properties:
-                      name: { type: string }
-                      description: { type: string }
-                      personality: { type: string }
-                      scenario: { type: string }
-                      first_mes: { type: string }
-                      mes_example: { type: string }
-                  provider: { type: string }
-                  model: { type: string }
-        '400': { description: The brief is missing or too long. }
-        '409': { description: No online API is configured, or its key is missing. }
-        '502': { description: The upstream model call failed or returned unusable output. }
+              schema: { $ref: '#/components/schemas/CharacterCard' }
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  # ---------------------------------------------------------------- secrets
+  # ADDED IN PHASE 2 (task 2.5). Responses carry only key ids, entry ids, a
+  # masked preview and the source; a plaintext secret is never returned.
   /secrets:
     get:
       operationId: listSecretKeyIds
@@ -985,29 +776,6 @@ paths:
           description: Deleted.
 
 components:
-  parameters:
-    MomentId:
-      name: postId
-      in: path
-      required: true
-      description: Opaque Moment id as returned by `GET /moments`.
-      schema: { type: string }
-  schemas:
-    Moment:
-      type: object
-      description: A Moments post with activity-store reactions folded in.
-      properties:
-        id: { type: string }
-        author_entity_id: { type: string }
-        author_label: { type: string, nullable: true }
-        content: { type: string }
-        visibility: { type: string, enum: [all, selected] }
-        status: { type: string, enum: [active, archived] }
-        mode: { type: string, nullable: true }
-        created_at: { type: string, format: date-time, nullable: true }
-        edited_at: { type: string, format: date-time, nullable: true }
-        likes: { type: integer }
-        comments: { type: integer }
   securitySchemes:
     bearerAuth:
       type: http

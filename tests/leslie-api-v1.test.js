@@ -162,10 +162,6 @@ describe('API v1 accounts and refresh rotation', () => {
         const user = await registerAccount({ handle, password: 'correct-horse-battery' });
         expect(user.handle).toBe(handle);
         expect(user.password).not.toContain('correct-horse-battery');
-        const directories = users.getUserDirectories(handle);
-        const settingsPath = path.join(directories.root, 'settings.json');
-        expect(JSON.parse(fs.readFileSync(settingsPath, 'utf8')).firstRun).toBe(false);
-        expect(fs.readdirSync(directories.openAI_Settings).length).toBeGreaterThan(0);
 
         const authenticated = await verifyCredentials(handle, 'correct-horse-battery');
         expect(authenticated.handle).toBe(handle);
@@ -180,25 +176,6 @@ describe('API v1 accounts and refresh rotation', () => {
         await expect(registerAccount({ handle, password: 'a-good-password' })).rejects.toMatchObject({ status: 409 });
         await expect(registerAccount({ handle: nextHandle(), password: 'short' })).rejects.toMatchObject({ status: 400 });
         await expect(registerAccount({ handle: 'a b', password: 'a-good-password' })).rejects.toMatchObject({ status: 400 });
-    });
-
-    test('rejects simultaneous duplicate registrations and repairs missing defaults without replacing existing settings', async () => {
-        const handle = nextHandle('race');
-        const outcomes = await Promise.allSettled([
-            registerAccount({ handle, password: 'synthetic-password-one' }),
-            registerAccount({ handle, password: 'synthetic-password-two' }),
-        ]);
-        expect(outcomes.filter(result => result.status === 'fulfilled')).toHaveLength(1);
-        expect(outcomes.find(result => result.status === 'rejected').reason.status).toBe(409);
-        const directories = users.getUserDirectories(handle);
-        const settingsPath = path.join(directories.root, 'settings.json');
-        fs.unlinkSync(settingsPath);
-        const auth = await import('../src/api-v1/auth.js');
-        await auth.resolveRequestUser(handle);
-        expect(JSON.parse(fs.readFileSync(settingsPath, 'utf8')).firstRun).toBe(false);
-        fs.writeFileSync(settingsPath, JSON.stringify({ username: 'synthetic-personalization' }));
-        await auth.resolveRequestUser(handle);
-        expect(JSON.parse(fs.readFileSync(settingsPath, 'utf8')).username).toBe('synthetic-personalization');
     });
 
     test('refuses a disabled account', async () => {

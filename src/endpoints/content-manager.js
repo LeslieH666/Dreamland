@@ -197,48 +197,6 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
 }
 
 /**
- * Prepare a new API account without blocking the event loop or overwriting user files.
- * Unlike startup content updates, required scaffolding must also work with skipContentCheck.
- * @param {import('../users.js').UserDirectoryList} directories Account directories.
- * @param {{serverAccount?: boolean}} options Whether to omit desktop onboarding.
- * @returns {Promise<void>} Resolves when defaults are ready.
- */
-export async function initializeUserContent(directories, { serverAccount = false } = {}) {
-    await Promise.all(Object.values(directories).map(directory => fs.promises.mkdir(directory, { recursive: true })));
-    const indexes = await Promise.all([scaffoldDirectory, contentDirectory].map(async folder => {
-        const source = await fs.promises.readFile(path.join(folder, 'index.json'), 'utf8').catch(error => {
-            if (error.code === 'ENOENT') return '[]';
-            throw error;
-        });
-        const items = JSON.parse(source);
-        return items.filter(item => getScopeByType(item.type) === CONTENT_SCOPE.USER).map(item => ({ ...item, folder }));
-    }));
-    const items = indexes.flat();
-    let cursor = 0;
-    await Promise.all(Array.from({ length: 4 }, async () => {
-        while (cursor < items.length) {
-            const item = items[cursor++];
-            const target = getUserTargetByType(item.type, directories);
-            if (!target) continue;
-            if (item.type === CONTENT_TYPES.SETTINGS && serverAccount) {
-                const defaults = JSON.parse(await fs.promises.readFile(path.join(item.folder, item.filename), 'utf8'));
-                await fs.promises.writeFile(path.join(target, path.basename(item.filename)), JSON.stringify({ ...defaults, firstRun: false }), { flag: 'wx' }).catch(error => {
-                    if (error.code !== 'EEXIST') throw error;
-                });
-                continue;
-            }
-            await fs.promises.cp(path.join(item.folder, item.filename), path.join(target, path.basename(item.filename)), { recursive: true, force: false });
-        }
-    }));
-    const logPath = path.join(directories.root, 'content.log');
-    const previous = await fs.promises.readFile(logPath, 'utf8').catch(error => {
-        if (error.code === 'ENOENT') return '';
-        throw error;
-    });
-    await fs.promises.writeFile(logPath, [...new Set([...previous.split('\n'), ...items.map(item => item.filename)])].filter(Boolean).join('\n'));
-}
-
-/**
  * Seeds global content that is not user-specific, such as error pages.
  * @param {ContentItem[]} contentIndex Content index
  * @returns {Promise<boolean>} Whether any content was added

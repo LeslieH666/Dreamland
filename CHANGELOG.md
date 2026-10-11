@@ -1,7 +1,3 @@
-# Server startup compatibility fix
-
-- Prevent ordinary API accounts containing uppercase letters, underscores or dots from crashing encrypted-space discovery during startup. Account data and encrypted-space write validation remain unchanged.
-
 # Changelog
 
 All notable LeslieTavern-specific changes are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project does not yet promise semantic-versioning compatibility.

@@ -37,7 +37,6 @@ const child = spawn(process.execPath, ['server.js', '--configPath', path.join(da
 let browser;
 let page;
 const errors = [];
-const httpErrors = [];
 try {
     let ready = false;
     for (let attempt = 0; attempt < 120; attempt++) {
@@ -55,8 +54,7 @@ try {
     const tokens = await login.json();
     browser = await chromium.launch({ headless: true, channel: process.env.LESLIE_BASELINE_BROWSER_CHANNEL || 'chrome' });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-    page.on('pageerror', error => errors.push(error.stack || error.message));
-    page.on('response', response => { if (response.status() >= 400) httpErrors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
+    page.on('pageerror', error => errors.push(error.message));
     // Authorize the initial document navigation as well as API fetches in this isolated fixture.
     await page.setExtraHTTPHeaders({ Authorization: `Bearer ${tokens.access_token}` });
     await page.addInitScript(tokens => {
@@ -64,28 +62,9 @@ try {
         localStorage.setItem('dreamland.refreshToken', tokens.refresh_token);
         localStorage.setItem('language', 'zh-cn');
     }, tokens);
-    await page.goto(`${base}/app`);
-    await page.locator('body > #preloader').waitFor({ state: 'hidden', timeout: 60000 });
+    await page.goto(base);
+    await page.locator('#preloader').waitFor({ state: 'hidden', timeout: 60000 });
     await page.waitForFunction(() => document.documentElement.dataset.dreamlandMode === 'server' && document.querySelector('#server_model_select')?.options.length === 2);
-    assert.equal(await page.locator('[data-leslie-settings-page="spaces"]').count(), 0);
-    const registered = await page.evaluate(async () => {
-        const response = await fetch('/api/v1/auth/register', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ handle: `synthetic-startup-${Date.now()}`, password: 'synthetic-registration-password' }),
-        });
-        const user = await response.json();
-        const login = await fetch('/api/v1/auth/token', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ grant_type: 'password', handle: user.handle, password: 'synthetic-registration-password' }),
-        });
-        const tokens = await login.json();
-        const settings = await fetch('/api/settings/get', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokens.access_token}` }, body: '{}',
-        });
-        const data = await settings.json();
-        return { registerStatus: response.status, loginStatus: login.status, settingsStatus: settings.status, firstRun: JSON.parse(data.settings).firstRun };
-    });
-    assert.deepEqual(registered, { registerStatus: 201, loginStatus: 200, settingsStatus: 200, firstRun: false });
     await page.evaluate(() => document.dispatchEvent(new CustomEvent('leslie:open-model-settings')));
     const select = page.locator('#leslie-server-model-select');
     await select.waitFor({ state: 'visible' });
@@ -95,7 +74,7 @@ try {
     await select.selectOption('fixture-b');
     await page.evaluate(async () => { const app = await import('/script.js'); await app.saveSettings(); });
     await page.reload();
-    await page.locator('body > #preloader').waitFor({ state: 'hidden', timeout: 60000 });
+    await page.locator('#preloader').waitFor({ state: 'hidden', timeout: 60000 });
     await page.waitForFunction(() => document.querySelector('#server_model_select')?.value === 'fixture-b');
     await page.evaluate(() => document.dispatchEvent(new CustomEvent('leslie:open-model-settings')));
     await page.locator('#leslie-server-model-select').waitFor({ state: 'visible' });
@@ -132,7 +111,7 @@ try {
     assert.deepEqual(errors, []);
     console.log('PASS: model-only settings, account persistence, actual generation through selected server model, empty-catalog UI and backend rejection.');
 } catch (error) {
-    console.error('Browser smoke diagnostics:', errors, httpErrors);
+    console.error('Browser smoke diagnostics:', errors);
     if (page) console.error(await page.evaluate(() => ({ url: location.pathname, mode: document.documentElement.dataset.dreamlandMode, options: document.querySelector('#server_model_select')?.options.length, preloaderPresent: Boolean(document.querySelector('#preloader')) })));
     throw error;
 } finally {

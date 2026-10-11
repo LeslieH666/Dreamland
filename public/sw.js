@@ -8,8 +8,7 @@
  * non-GET request are always passed straight to the network.
  */
 
-const CACHE_NAME = 'dreamland-shell-v5-async-startup';
-const STATIC_FRESH_MS = 5 * 60 * 1000;
+const CACHE_NAME = 'dreamland-shell-v4-app-entry';
 
 /** Asset extensions that belong to the shell and are safe to cache. */
 const STATIC_EXTENSION = /\.(?:html|css|js|mjs|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf|json|map)$/i;
@@ -52,24 +51,20 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Navigations refresh online. Static assets reuse a short fresh window, then
-    // refresh in the background; API responses never enter this cache.
+    // Cache-first with a background refresh: the shell stays available offline and
+    // quietly updates on the next visit.
     event.respondWith(
         caches.open(CACHE_NAME).then(async (cache) => {
             const cached = await cache.match(request);
-            const navigation = request.mode === 'navigate' || ['/', '/app', '/login', '/index.html'].includes(url.pathname);
-            const cachedAt = cached ? Date.parse(cached.headers.get('date') || '') : NaN;
-            if (!navigation && cached && Date.now() - cachedAt < STATIC_FRESH_MS) return cached;
             const network = fetch(request)
-                .then(async (response) => {
+                .then((response) => {
                     if (response && response.ok) {
-                        await cache.put(request, response.clone());
+                        cache.put(request, response.clone());
                     }
                     return response;
                 })
-                .catch(() => cached || Response.error());
-            event.waitUntil(network);
-            return navigation ? network : (cached || network);
+                .catch(() => cached);
+            return cached || network;
         }),
     );
 });

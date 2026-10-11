@@ -40,6 +40,8 @@
         .actions button { padding: 4px 10px; border: 1px solid #c4cfd9; border-radius: 6px; background: #eef1f5; color: #526172; cursor: pointer; font-size: 12px; }
         .actions button:hover { background: #f5f6f9; }
         .actions button.danger { background: #fff0f1; color: #b94651; border-color: #f3c6cb; }
+        .actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .actions button:disabled:hover { background: #fff0f1; }
 
         .form-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
         .form-row input[type=text], .form-row input[type=password] { padding: 9px; border: 1px solid #c4cfd9; border-radius: 6px; font-size: 13px; min-width: 180px; }
@@ -221,6 +223,19 @@
             return v.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
         }
 
+        // Decode the signed-in administrator's handle from the access token so the account
+        // list can disable the delete button on their own row (the server enforces this too).
+        function currentHandle() {
+            try {
+                const segment = String(currentToken).split('.')[1] || '';
+                const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+                const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+                return String(JSON.parse(atob(padded))?.sub || '');
+            } catch {
+                return '';
+            }
+        }
+
         async function loadDashboard() {
             setDashboardError('');
             try {
@@ -305,22 +320,32 @@
 
         function renderUsers(users) {
             const tbody = document.querySelector('#users tbody');
+            const selfHandle = currentHandle();
             tbody.innerHTML = (users || []).map(u => {
                 const handle = String(u.handle).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+                const isSelf = selfHandle !== '' && String(u.handle) === selfHandle;
+                // The signed-in administrator can never delete their own account, so the
+                // button is rendered disabled for that row (the server enforces this too).
+                const deleteButton = isSelf
+                    ? '<button data-act="delete" data-handle="' + handle + '" class="danger" disabled title="不能删除当前登录的账号">删除</button>'
+                    : '<button data-act="delete" data-handle="' + handle + '" class="danger">删除</button>';
                 return '<tr><td class="mono">' + handle + '</td><td>' + (u.admin ? '<span class="ok">是</span>' : '否') + '</td><td>' + (u.enabled ? '是' : '<span class="warn">否</span>') + '</td><td class="mono">' + bytes(u.storage_bytes) + '</td>' +
                     '<td class="actions">' +
                     '<button data-act="data" data-handle="' + handle + '">数据</button>' +
                     '<button data-act="edit" data-handle="' + handle + '">编辑</button>' +
                     '<button data-act="password" data-handle="' + handle + '" class="danger">改密码</button>' +
+                    deleteButton +
                     '</td></tr>';
             }).join('');
             tbody.querySelectorAll('button[data-act]').forEach(button => {
                 button.addEventListener('click', () => {
+                    if (button.disabled) return;
                     const act = button.getAttribute('data-act');
                     const handle = button.getAttribute('data-handle');
                     if (act === 'data') viewUserData(handle);
                     else if (act === 'edit') editUser(handle);
                     else if (act === 'password') changePassword(handle);
+                    else if (act === 'delete') deleteUser(handle);
                 });
             });
         }
@@ -647,6 +672,34 @@
                 if (!password || password.length < 8) { alert('密码至少需要 8 位。'); return; }
                 try {
                     await apiMutation('POST', '/ops/users/' + encodeURIComponent(handle) + '/password', { password });
+                    closeModal();
+                    await loadDashboard();
+                } catch (error) {
+                    if (handleAuthError(error)) return;
+                    alert(error.message || String(error));
+                }
+            });
+        }
+
+        async function deleteUser(handle) {
+            const body = '<div class="form-row">'
+                + '<input id="delete-confirm" type="text" placeholder="输入账号名以确认" autocomplete="off">'
+                + '<button id="delete-confirm-button" type="button" class="danger">永久删除</button>'
+                + '</div><div class="warn">此操作不可撤销：账号、角色卡、聊天记录、设置、朋友圈等全部数据都会被永久删除。</div>';
+            openModal('删除账号 · ' + esc(handle), body);
+            const confirmButton = document.getElementById('delete-confirm-button');
+            confirmButton.disabled = true;
+            confirmButton.style.opacity = '0.5';
+            document.getElementById('delete-confirm').addEventListener('input', (event) => {
+                const matched = event.target.value.trim() === handle;
+                confirmButton.disabled = !matched;
+                confirmButton.style.opacity = matched ? '1' : '0.5';
+            });
+            confirmButton.addEventListener('click', async () => {
+                const typed = document.getElementById('delete-confirm').value.trim();
+                if (typed !== handle) { alert('请输入完全一致的账号名以确认删除。'); return; }
+                try {
+                    await apiMutation('DELETE', '/ops/users/' + encodeURIComponent(handle), {});
                     closeModal();
                     await loadDashboard();
                 } catch (error) {

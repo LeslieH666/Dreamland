@@ -19,8 +19,8 @@ import { SECRET_KEYS } from '../../endpoints/secrets.js';
 import { LeslieMomentsStore } from '../../leslie-moments/store.js';
 import { getRuntimeMode } from '../../runtime-mode.js';
 import { deleteModel, deleteProvider, listAllModels, listProviderPresets, listProvidersMasked, upsertModel, upsertProvider } from '../../model-gateway/store.js';
-import { getPasswordHash, getPasswordSalt, getAllUserHandles, getUserDirectories, toKey } from '../../users.js';
-import { registerAccount } from '../auth.js';
+import { getPasswordHash, getPasswordSalt, getAllUserHandles, getUserDirectories, toAvatarKey, toKey } from '../../users.js';
+import { registerAccount, revokeAllRefreshTokens } from '../auth.js';
 import { listSecretIds } from '../secrets.js';
 import { asyncRoute, badRequest, notFound } from '../errors.js';
 
@@ -500,6 +500,41 @@ export function createOpsRouter({ accountLimiter } = {}) {
         // invalidates every access/refresh token and cookie session issued before the change.
         response.send({ handle, updated: true });
     }, 'Resetting a password failed.'));
+
+    opsRouter.delete('/users/:handle', asyncRoute(async (request, response) => {
+        const handle = String(request.params.handle ?? '').trim();
+        if (!handle) {
+            throw badRequest('A handle is required.');
+        }
+        // An administrator must never delete the account they are signed in as: the token
+        // in flight would be invalidated mid-request and permission over the store could be
+        // lost. This is reported as 400 (not 403) so the dashboard shows the reason instead
+        // of treating it as a session failure and signing the operator out.
+        if (handle === String(request.user?.profile?.handle ?? '')) {
+            throw badRequest('You cannot delete the account you are currently signed in as.');
+        }
+        const user = await storage.getItem(toKey(handle));
+        if (!user) {
+            throw notFound(`No account named "${handle}".`);
+        }
+
+        // 1. Drop the account record and its avatar binding.
+        await storage.removeItem(toKey(handle));
+        await storage.removeItem(toAvatarKey(handle));
+
+        // 2. Revoke every refresh token so a cached credential cannot resurrect the account.
+        revokeAllRefreshTokens({ handle });
+
+        // 3. Release the per-account quota slot (the limiter is injected in production and
+        //    omitted under some unit tests, hence the optional call).
+        try { await accountLimiter?.delete?.(handle); } catch { /* quota state is best effort */ }
+
+        // 4. Remove the on-disk data tree (characters, chats, settings, moments, ...).
+        const directories = getUserDirectories(handle);
+        fs.rmSync(directories.root, { recursive: true, force: true });
+
+        response.send({ handle, deleted: true });
+    }, 'Deleting an account failed.'));
 
     // ---- Server-managed model gateway ------------------------------------------
     opsRouter.get('/model-gateway/presets', asyncRoute(async (_request, response) => {

@@ -1,9 +1,11 @@
 import { initializeUserSpacePreferences } from './leslie-user-preferences.js';
-import { getAccessToken, installTokenInjection } from './token-auth.js';
+import { checkAppEntry } from './dreamland-app-entry.js';
+import { clearTokenPair, getAccessToken, installTokenInjection } from './token-auth.js';
 
 // Install the bearer-token header injection before any chat module issues a request, so
 // a public-web session authenticated through /api/v1 carries its token on the legacy
 // endpoints too. It is a no-op when no token is stored (desktop cookie session).
+const bootstrapFetch = window.fetch.bind(window);
 installTokenInjection();
 
 // Register the offline-shell service worker. Service workers require a secure context
@@ -19,14 +21,15 @@ if ('serviceWorker' in navigator
 // A navigation cannot carry localStorage bearer tokens. Serve the public shell, then
 // send unsigned server visitors to the login entry before loading account modules.
 async function startApplication() {
-    if (location.pathname === '/app' && !getAccessToken()) {
-        const response = await fetch('/version');
-        const version = await response.json();
-        if (version.mode === 'server') {
-            location.replace('/login');
-            return;
-        }
-    }
+    const canEnter = await checkAppEntry({
+        pathname: location.pathname,
+        fetchVersion: () => bootstrapFetch('/version').then(response => response.json()),
+        hasToken: () => Boolean(getAccessToken()),
+        fetchAccount: () => fetch('/api/v1/auth/me'),
+        clearTokens: clearTokenPair,
+        redirectToLogin: () => location.replace('/login'),
+    });
+    if (!canEnter) return;
     await initializeUserSpacePreferences();
     await import('./i18n.js');
     await import('../script.js');

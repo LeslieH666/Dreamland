@@ -8,7 +8,7 @@
  * non-GET request are always passed straight to the network.
  */
 
-const CACHE_NAME = 'dreamland-shell-v3-introduction';
+const CACHE_NAME = 'dreamland-shell-v4-app-entry';
 
 /** Asset extensions that belong to the shell and are safe to cache. */
 const STATIC_EXTENSION = /\.(?:html|css|js|mjs|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf|json|map)$/i;

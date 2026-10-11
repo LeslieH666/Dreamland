@@ -2134,6 +2134,8 @@ function initLeslieSettings() {
         if (activeDetail === 'model') showDetail('model');
         updateConnectionStatus();
         if (serverModels.mode === 'server') {
+            const saveLabel = settingsOverlay?.querySelector('.leslie-settings-content-save span');
+            if (saveLabel) saveLabel.textContent = '设置随账号保存';
             settingsOverlay?.querySelectorAll('[data-leslie-settings-page="model"] strong, [data-leslie-detail="model"] .leslie-settings-row-title').forEach(element => { element.textContent = '模型选择'; });
             settingsOverlay?.querySelectorAll('[data-leslie-settings-page="model"] small, [data-leslie-detail="model"] .leslie-settings-row-description').forEach(element => { element.textContent = '选择管理员提供的可用模型'; });
         }

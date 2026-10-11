@@ -144,3 +144,7 @@ body.leslie-modern[data-leslie-design-language="dreamland"] :is(
 html:not([data-dreamland-mode="desktop"]) body.leslie-modern[data-leslie-design-language="dreamland"] :is(#openai_api, #kobold_api, #novel_api, #textgenerationwebui_api, #main_api) {
     display: none !important;
 }
+
+html[data-dreamland-mode="desktop"] #server_model_panel {
+    display: none !important;
+}

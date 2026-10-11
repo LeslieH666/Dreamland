@@ -210,12 +210,6 @@ export function getDefaultModelId() {
 }
 
 /**
- * Resolve a catalog model id to a concrete provider + api key + real model name.
- * @param {string} modelId Model id.
- * @returns {{source: string, model: string, endpoint: string, apiKey: string, params: object, providerId: string}}
- * @throws {Error} When the model or provider is missing/disabled.
- */
-/**
  * Resolve a Web request against the catalog; only desktop mode may use personal APIs.
  * @param {string | undefined} modelId Requested catalog id.
  * @returns {ReturnType<typeof resolveModelConfig> | null} Gateway configuration.
@@ -227,6 +221,12 @@ export function resolveWebModelConfig(modelId) {
     return null;
 }
 
+/**
+ * Resolve a catalog model id to a concrete provider + api key + real model name.
+ * @param {string} modelId Model id.
+ * @returns {{source: string, model: string, endpoint: string, apiKey: string, params: object, providerId: string}}
+ * @throws {Error} When the model or provider is missing/disabled.
+ */
 export function resolveModelConfig(modelId) {
     const model = getModelById(modelId);
     if (!model) {

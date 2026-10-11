@@ -854,33 +854,75 @@ paths:
                 properties:
                   data: { type: array, items: { type: object } }
 
+  /workshop/models:
+    get:
+      operationId: listWorkshopModels
+      tags: [leslie]
+      summary: Online providers/models the workshop may use.
+      description: The workshop reuses the same configured online APIs as the Moments features. An empty list means the account has not configured one yet, and `POST /workshop/generate` will answer 409.
+      responses:
+        '200':
+          description: Configured provider/model pairs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        provider: { type: string }
+                        model: { type: string }
+                        label: { type: string }
+                  next_cursor: { type: string, nullable: true }
+
   /workshop/generate:
     post:
       operationId: generateCharacterDraft
       tags: [leslie]
-      summary: Character workshop — generate a CCV3 draft via the configured chat API (cloud only). Draft is preview-only; nothing is persisted until explicitly saved via /characters.
-      x-status: NOT_IMPLEMENTED
-      description: 501 in Phase 2. The workshop is browser-only (client-side prompt builders plus a page-side model call).
+      summary: Generate a character card draft from a short brief.
+      description: |
+        One round trip that turns a brief into the fields a character card needs. Nothing is
+        persisted — the caller reviews the draft and saves it through `POST /characters`.
+        `provider`/`model` are optional; when omitted the first configured online model is
+        used, so a client can generate without calling `/workshop/models` first.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [brief]
               properties:
-                brief: { type: string, minLength: 1 }
+                brief: { type: string, minLength: 1, maxLength: 4000, description: What the character should be. }
+                style: { type: string, description: Optional writing-style guidance. }
+                language: { type: string, default: 中文 }
+                provider: { type: string, description: From `GET /workshop/models`. }
+                model: { type: string, description: From `GET /workshop/models`. }
       responses:
         '200':
-          description: Draft character card (not persisted).
+          description: The generated draft, plus the provider and model that produced it.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/CharacterCard' }
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
-
-  # ---------------------------------------------------------------- secrets
-  # ADDED IN PHASE 2 (task 2.5). Responses carry only key ids, entry ids, a
-  # masked preview and the source; a plaintext secret is never returned.
+              schema:
+                type: object
+                properties:
+                  draft:
+                    type: object
+                    properties:
+                      name: { type: string }
+                      description: { type: string }
+                      personality: { type: string }
+                      scenario: { type: string }
+                      first_mes: { type: string }
+                      mes_example: { type: string }
+                  provider: { type: string }
+                  model: { type: string }
+        '400': { description: The brief is missing or too long. }
+        '409': { description: No online API is configured, or its key is missing. }
+        '502': { description: The upstream model call failed or returned unusable output. }
   /secrets:
     get:
       operationId: listSecretKeyIds

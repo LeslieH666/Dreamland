@@ -3,9 +3,9 @@
  *
  * These reuse the exported store classes directly — they are the same objects
  * the web UI's routers construct — so no Leslie business logic is duplicated.
- * Operations whose logic exists only in the browser (moments publishing,
- * workshop generation) are reported as not implemented rather than
- * re-implemented on the server.
+ * Moments publishing reuses the web router's draft resolvers. Workshop generation reuses the
+ * Leslie online-model caller, because the web workshop builds its prompts in the browser and
+ * had nothing server-side to reuse.
  */
 
 import path from 'node:path';
@@ -13,13 +13,19 @@ import express from 'express';
 
 import { LeslieMemoryStore } from '../../leslie-memory/store.js';
 import { LeslieIdentityStore } from '../../leslie-identity/store.js';
-import { asyncRoute, badRequest, conflict, notFound, notImplemented } from '../errors.js';
+import { ApiError, asyncRoute, badRequest, conflict, notFound } from '../errors.js';
+import {
+    generateMomentsOnline,
+    getConfiguredMomentsOnlineModels,
+    MomentsOnlineModelError,
+} from '../../leslie-moments/online-model.js';
 import {
     getStores as getMomentsStores,
     resolveAuthor,
     resolveNormalDraft,
     resolveStoryDraft,
 } from '../../leslie-moments/router.js';
+import { buildWorkshopDraftPrompt, parseWorkshopDraft } from '../workshop-draft.js';
 import { decodeId } from '../ids.js';
 import { toApiList } from '../presenters.js';
 
@@ -243,10 +249,80 @@ leslieRouter.get('/identity/personas', asyncRoute(async (request, response) => {
 
 // ---------------------------------------------------------------- workshop
 
-leslieRouter.post('/workshop/generate', asyncRoute(async (_request, _response) => {
-    throw notImplemented(
-        'Character workshop generation is not available through /api/v1 yet. The workshop runs in the browser: it builds its prompts client-side and calls the chat API from the page, so there is no server-side implementation to reuse.',
-    );
+/**
+ * Map a moments online-model failure onto the shared envelope. The workshop reuses that
+ * module's provider list, so its error codes are what a caller will see.
+ * @param {unknown} error Thrown value.
+ * @returns {unknown} An ApiError, or the original value when unmapped.
+ */
+function workshopFailure(error) {
+    const code = error && typeof error === 'object' ? error.code : null;
+    const message = error instanceof Error ? error.message : String(error);
+    switch (code) {
+        case 'INVALID_INPUT':
+            return badRequest(message);
+        case 'MODEL_NOT_CONFIGURED':
+            return conflict(message);
+        case 'MODEL_UNAVAILABLE':
+        case 'INVALID_OUTPUT':
+            return new ApiError(502, code, message, { type: 'upstream_error' });
+        default:
+            return error;
+    }
+}
+
+/**
+ * The providers/models the account has configured for online generation.
+ *
+ * The workshop reuses the same configuration the moments online features use, so a client
+ * discovers what it may pass to `/workshop/generate` here instead of hard-coding provider ids.
+ */
+leslieRouter.get('/workshop/models', asyncRoute(async (request, response) => {
+    const models = await getConfiguredMomentsOnlineModels({ directories: request.user.directories });
+    response.send(toApiList(models.map(entry => ({
+        provider: String(entry.provider ?? ''),
+        model: String(entry.model ?? ''),
+        label: String(entry.label ?? ''),
+    }))));
+}, 'Listing workshop models failed.'));
+
+leslieRouter.post('/workshop/generate', asyncRoute(async (request, response) => {
+    try {
+        const body = request.body ?? {};
+        // Prompt building validates the brief and throws a coded INVALID_INPUT.
+        const input = buildWorkshopDraftPrompt({
+            brief: body.brief,
+            style: body.style,
+            language: body.language,
+        });
+
+        let provider = typeof body.provider === 'string' ? body.provider.trim() : '';
+        let model = typeof body.model === 'string' ? body.model.trim() : '';
+        if (!provider || !model) {
+            // No explicit choice: fall back to the first configured provider so a client can
+            // generate without first calling /workshop/models.
+            const [first] = await getConfiguredMomentsOnlineModels({ directories: request.user.directories });
+            if (!first) {
+                throw new MomentsOnlineModelError(
+                    'MODEL_NOT_CONFIGURED',
+                    '请先在朋友圈联网设置中选择联网 API 和模型，工坊复用该配置。',
+                );
+            }
+            provider = first.provider;
+            model = first.model;
+        }
+
+        const text = await generateMomentsOnline({
+            directories: request.user.directories,
+            onlineModel: { provider, model },
+            input,
+        });
+        // A draft the caller can inspect before saving; nothing is written here. Persisting is
+        // POST /characters, which owns card creation.
+        response.send({ draft: parseWorkshopDraft(text), provider, model });
+    } catch (error) {
+        throw workshopFailure(error);
+    }
 }, 'Generating a workshop draft failed.'));
 
 export { decodeId };

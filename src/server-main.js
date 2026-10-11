@@ -22,6 +22,7 @@ import bodyParser from 'body-parser';
 // local library imports
 import './fetch-patch.js';
 import { serverDirectory } from './server-directory.js';
+import { mountWebPages } from './web-pages.js';
 import { mountPromptAssembly } from './prompt-assembly/mount-static.js';
 
 import { serverEvents, EVENT_NAMES } from './server-events.js';
@@ -258,16 +259,12 @@ if (!cliArgs.disableCsrf) {
     });
 }
 
-// Static files
-// Host index page
-app.get('/', cacheBuster.middleware, (request, response) => {
-    if (shouldRedirectToLogin(request)) {
-        const query = request.url.split('?')[1];
-        const redirectUrl = query ? `/login?${query}` : '/login';
-        return response.redirect(redirectUrl);
-    }
-
-    return response.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
+// Public introduction and application shell (desktop retains its original root).
+mountWebPages(app, {
+    publicRoot: path.join(serverDirectory, 'public'),
+    getMode: getRuntimeMode,
+    shouldRedirectToLogin,
+    cacheMiddleware: cacheBuster.middleware,
 });
 
 // Operations dashboard. The page itself is unauthenticated HTML; every data request it
@@ -283,7 +280,7 @@ app.get('/callback/:source?', (request, response) => {
     const searchParams = new URLSearchParams();
     source && searchParams.set('source', source);
     query && searchParams.set('query', query);
-    const path = `/?${searchParams.toString()}`;
+    const path = `${isServerMode() ? '/app' : '/'}?${searchParams.toString()}`;
     return response.redirect(307, path);
 });
 

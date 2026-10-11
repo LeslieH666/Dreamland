@@ -8,7 +8,7 @@
  * non-GET request are always passed straight to the network.
  */
 
-const CACHE_NAME = 'dreamland-shell-v2-server-models';
+const CACHE_NAME = 'dreamland-shell-v3-introduction';
 
 /** Asset extensions that belong to the shell and are safe to cache. */
 const STATIC_EXTENSION = /\.(?:html|css|js|mjs|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf|json|map)$/i;
@@ -16,7 +16,7 @@ const STATIC_EXTENSION = /\.(?:html|css|js|mjs|png|jpe?g|gif|svg|webp|ico|woff2?
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(['/', '/index.html', '/manifest.json']))
+            .then(cache => cache.addAll(['/', '/app', '/login', '/index.html', '/manifest.json']))
             .then(() => self.skipWaiting()),
     );
 });
@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
     // Only cache the shell's static assets (or the bare app root).
-    if (url.pathname !== '/' && !STATIC_EXTENSION.test(url.pathname)) {
+    if (!['/', '/app', '/login'].includes(url.pathname) && !STATIC_EXTENSION.test(url.pathname)) {
         return;
     }
 

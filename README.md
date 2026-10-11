@@ -1,5 +1,7 @@
 # DreamLand
 
+iOS 客户端已独立迁到同级目录 [`../iOS/`](../iOS/)，包括 React Native 源码、Xcode 工程、IPA 和打包说明。此仓库维护后端、Web 与桌面端；旧 Android 工程仍在 `mobile/`。iOS 开发请查看 [`../iOS/README.md`](../iOS/README.md)。
+
 让故事与陪伴，有一个归处。原 LeslieTavern，现统一使用 DreamLand 品牌。
 
 ![DreamLand 原创产品介绍概念图](public/img/dreamland/introduction.png)

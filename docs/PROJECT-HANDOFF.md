@@ -4,6 +4,8 @@
 > 分支：`refactor/execution`（未推送 origin，仅在本地）。
 > 更新时间：2026-10-10。
 
+> 2026-10-11 接续：当前 React Native 客户端已从 `apps/mobile/` 分离到与 Main 并列的 `../iOS/` 独立 Git 仓库，源码、Xcode 工程、依赖缓存、IPA、构建脚本和 iOS 打包指南均在该目录。下文 `apps/mobile` 为历史路径；后续客户端开发以 `../iOS/README.md` 和 `../iOS/docs/ios-packaging-guide.md` 为入口。
+
 ---
 
 ## 1. 项目定位

@@ -1,5 +1,11 @@
 # Roadmap
 
+## Independent iOS client workspace (2026-10-11)
+
+- Moved the React Native client from `apps/mobile/` to the sibling `../iOS/` repository. Its six existing client commits were imported with their authors and messages preserved. The Xcode project, dependencies, IPA files, packaging guide, and build tools now live with that client; the backend and legacy Android project remain here.
+- A Personal Team development-signed Release IPA was exported and installed on the registered iPhone. On-device launch exposed the iOS 27 UIScene requirement; enabling Expo's SDK 57 `enableSceneSupport` option fixed the startup crash. The rebuilt application was installed and launched, and repeated process checks confirmed it remained running. Full login/chat/voice acceptance remains pending. Client build and device verification are tracked in `../iOS/docs/ios-packaging-guide.md`.
+- Earlier references to `apps/mobile/` below describe its historical location. New client changes belong in `../iOS/` and continue to use this backend's `/api/v1` contract.
+
 ## Ubuntu LAN server deployment and the operations dashboard (2026-10-10)
 
 - Deployed the backend to the LAN Ubuntu box (`192.168.5.222`, hostname `dreamland-server`, Ubuntu 26.04) with Docker: the host has Docker but no Node, and Docker Hub is unreachable from this network, so the image is built with a `docker.m.daocloud.io` base-image mirror and run with `--network host` on port `8000` plus `--restart unless-stopped`. Host networking is required because the Docker bridge otherwise hides the real client IP from the IP whitelist and rejects every LAN request with 403. Data and config persist in `~/dreamland-data` and `~/dreamland-config` (container name `dreamland`).

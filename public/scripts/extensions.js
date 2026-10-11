@@ -572,6 +572,23 @@ async function activateExtensions() {
     const extensionNames = extensions.map(x => x[0]);
     const promises = [];
 
+    // Download eligible resources together, while preserving activation order and hooks.
+    for (const [name, manifest] of extensions) {
+        if (activeExtensions.has(name) || extension_settings.disabledExtensions.includes(name)
+            || (Array.isArray(manifest.requires) && !isSubsetOf(modules, manifest.requires))
+            || (Array.isArray(manifest.dependencies) && manifest.dependencies.some(dependency =>
+                !extensionNames.includes(dependency) || extension_settings.disabledExtensions.includes(dependency)))
+            || (manifest.minimum_client_version != null && !versionCompare(clientVersion, manifest.minimum_client_version))) continue;
+        for (const [file, rel, as] of [[manifest.js, 'modulepreload', 'script'], [manifest.css, 'preload', 'style']]) {
+            if (!file) continue;
+            const id = sanitizeSelector(`${name}-${as}-preload`);
+            if (document.getElementById(id)) continue;
+            const link = document.createElement('link');
+            Object.assign(link, { id, rel, as, href: `/scripts/extensions/${name}/${file}` });
+            document.head.appendChild(link);
+        }
+    }
+
     for (let entry of extensions) {
         const name = entry[0];
         const manifest = entry[1];
@@ -686,8 +703,9 @@ function autoConnectInputHandler() {
 }
 
 async function addExtensionsButtonAndMenu() {
-    const buttonHTML = await renderTemplateAsync('wandButton');
-    const extensionsMenuHTML = await renderTemplateAsync('wandMenu');
+    const [buttonHTML, extensionsMenuHTML] = await Promise.all([
+        renderTemplateAsync('wandButton'), renderTemplateAsync('wandMenu'),
+    ]);
 
     $(document.body).append(extensionsMenuHTML);
     $('#leftSendForm').append(buttonHTML);

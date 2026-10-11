@@ -9,6 +9,7 @@ let csrfToken = '';
 let discreetLogin = false;
 let encryptedSpaces = false;
 let loginPending = false;
+let registerPending = false;
 let tokenLogin = false;
 
 /**
@@ -422,6 +423,8 @@ function hideRegisterBlock() {
  * @returns {Promise<void>}
  */
 async function performRegister(handle, password) {
+    if (registerPending) return;
+    handle = handle.trim();
     if (!handle || !password) {
         displayError('请输入账号和密码。');
         return;
@@ -430,6 +433,7 @@ async function performRegister(handle, password) {
         displayError('密码至少需要 8 位。');
         return;
     }
+    registerPending = true;
     $('#registerButton').prop('disabled', true).text('正在注册…');
     try {
         const response = await fetch('/api/v1/auth/register', {
@@ -453,6 +457,7 @@ async function performRegister(handle, password) {
         console.error('Error registering:', error);
         displayError(String(error));
     } finally {
+        registerPending = false;
         $('#registerButton').prop('disabled', false).text('注册');
     }
 }

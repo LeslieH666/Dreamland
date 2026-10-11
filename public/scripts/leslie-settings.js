@@ -73,6 +73,7 @@ async function userSpaceRequest(url, body = undefined) {
 }
 
 async function refreshUserSpacesState() {
+    if (serverModels.mode !== 'desktop') return;
     try {
         userSpacesState = await userSpaceRequest('/api/leslie/user-spaces/status');
     } catch (error) {
@@ -83,6 +84,7 @@ async function refreshUserSpacesState() {
 }
 
 async function changeUserSpace(action) {
+    if (serverModels.mode !== 'desktop') return;
     if (userSpacesBusy) return;
     const copy = COPY[getCopyLocale()];
     const root = settingsOverlay?.querySelector('#leslie-settings-detail');
@@ -1768,6 +1770,7 @@ function bindDetailPage(detailId) {
  * @param {string} detailId Detail page id.
  */
 function showDetail(detailId) {
+    if (detailId === 'spaces' && serverModels.mode !== 'desktop') return;
     const renderer = DETAIL_RENDERERS[detailId];
     const home = document.getElementById('leslie-settings-home');
     const detail = document.getElementById('leslie-settings-detail');
@@ -2131,6 +2134,9 @@ function initLeslieSettings() {
     topSettings.insertBefore(settingsLauncher, characterDrawer);
 
     document.addEventListener('dreamland:server-models', () => {
+        const spaces = settingsOverlay?.querySelector('[data-leslie-settings-page="spaces"]');
+        if (spaces) spaces.style.display = serverModels.mode === 'desktop' ? '' : 'none';
+        if (serverModels.mode === 'server') spaces?.remove();
         if (activeDetail === 'model') showDetail('model');
         updateConnectionStatus();
         if (serverModels.mode === 'server') {
@@ -2141,6 +2147,9 @@ function initLeslieSettings() {
         }
     });
     settingsOverlay = createSettingsOverlay();
+    const spaces = settingsOverlay.querySelector('[data-leslie-settings-page="spaces"]');
+    if (spaces) spaces.style.display = serverModels.mode === 'desktop' ? '' : 'none';
+    if (serverModels.mode === 'server') spaces?.remove();
     document.body.append(settingsOverlay);
     registerDreamlandPage('settings', openSettings);
     document.dispatchEvent(new CustomEvent('dreamland:appearance-ready'));

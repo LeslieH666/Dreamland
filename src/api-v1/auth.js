@@ -20,12 +20,30 @@
  */
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { promisify } from 'node:util';
 import storage from 'node-persist';
 
 import { getConfigValue } from '../util.js';
 import { ensureUserDirectoriesExist, getAccountVersion, getCookieSecret, getUserDirectories, toKey } from '../users.js';
+import { initializeUserContent } from '../endpoints/content-manager.js';
+import { SETTINGS_FILE } from '../constants.js';
+import { isServerMode } from '../runtime-mode.js';
 import { ApiError, badRequest, conflict, unauthorized } from './errors.js';
+
+const registrations = new Set();
+const accountBootstraps = new Map();
+
+/** @param {object} directories Account directories. @returns {Promise<void>} Defaults ready. */
+function prepareAccount(directories) {
+    if (!accountBootstraps.has(directories.root)) {
+        const pending = initializeUserContent(directories, { serverAccount: isServerMode() })
+            .finally(() => accountBootstraps.delete(directories.root));
+        accountBootstraps.set(directories.root, pending);
+    }
+    return accountBootstraps.get(directories.root);
+}
 
 const passwordHash = promisify(crypto.scrypt);
 
@@ -263,6 +281,18 @@ export async function verifyCredentials(handle, password) {
  * @throws {ApiError} 400/409 on invalid input or an existing handle.
  */
 export async function registerAccount({ handle, password, name, admin = false }) {
+    const key = String(handle ?? '').trim();
+    if (registrations.has(key)) throw conflict('That handle is already being registered.');
+    registrations.add(key);
+    try {
+        return await registerNewAccount({ handle, password, name, admin });
+    } finally {
+        registrations.delete(key);
+    }
+}
+
+/** @param {object} input Validated registration input. @returns {Promise<AuthUser>} Created account. */
+async function registerNewAccount({ handle, password, name, admin }) {
     const normalizedHandle = String(handle ?? '').trim();
     if (!/^[A-Za-z0-9._-]{3,64}$/.test(normalizedHandle)) {
         throw badRequest('The handle must be 3-64 characters of letters, digits, dot, underscore or dash.');
@@ -285,10 +315,10 @@ export async function registerAccount({ handle, password, name, admin = false })
         password: (await passwordHash(password.normalize(), salt, 64)).toString('base64'),
         salt,
     };
-    await storage.setItem(toKey(normalizedHandle), user);
     // A freshly registered account needs the same per-user directory tree the
     // web UI relies on, otherwise the first storage read fails.
-    ensureUserDirectoriesExist(getUserDirectories(user.handle));
+    await prepareAccount(getUserDirectories(user.handle));
+    await storage.setItem(toKey(normalizedHandle), user);
     return user;
 }
 
@@ -444,6 +474,12 @@ export async function resolveRequestUser(handle) {
     // Accounts created through the admin UI or an older install may lack the
     // full tree; ensuring it here is idempotent and keeps every v1 route safe.
     ensureUserDirectoriesExist(directories);
+    try {
+        await fs.promises.access(path.join(directories.root, SETTINGS_FILE));
+    } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+        await prepareAccount(directories);
+    }
     return {
         profile,
         directories,

@@ -631,3 +631,10 @@ There is no stable release schedule, public synchronization service, compatibili
 - 服务器模式 `/` 展示公开介绍页，沿用 DreamLand 玫瑰红、MomoTalk 素材与城市背景；所有开始按钮进入 `/login`。
 - `/login` 固定展示登录表单，Web 登录后进入 `/app`；应用 HTML 是公开外壳，数据接口继续保持鉴权。未登录访问 `/app` 返回登录入口。
 - 桌面模式继续从 `/` 启动；PWA 启动入口改为 `/app`，更新外壳缓存版本，OAuth 回调继续进入应用。
+
+## Web 初始化与注册修复（2026-10-11）
+
+- 服务器 Web 移除桌面用户空间入口；桌面加密空间保留。
+- 初始化模板并行加载，扩展资源预加载但按原顺序激活；PWA 静态缓存短期复用，导航在线更新。
+- 新注册账号异步准备默认设置与预设，修复旧账号缺失设置，保留已有偏好；注册防重复提交与并发覆盖。
+- 详见 `docs/web-startup-optimization.md`。

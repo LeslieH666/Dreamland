@@ -62,9 +62,28 @@ try {
         localStorage.setItem('dreamland.refreshToken', tokens.refresh_token);
         localStorage.setItem('language', 'zh-cn');
     }, tokens);
-    await page.goto(base);
+    await page.goto(`${base}/app`);
     await page.locator('#preloader').waitFor({ state: 'hidden', timeout: 60000 });
     await page.waitForFunction(() => document.documentElement.dataset.dreamlandMode === 'server' && document.querySelector('#server_model_select')?.options.length === 2);
+    assert.equal(await page.locator('[data-leslie-settings-page="spaces"]').count(), 0);
+    const registered = await page.evaluate(async () => {
+        const response = await fetch('/api/v1/auth/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ handle: `synthetic-startup-${Date.now()}`, password: 'synthetic-registration-password' }),
+        });
+        const user = await response.json();
+        const login = await fetch('/api/v1/auth/token', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ grant_type: 'password', handle: user.handle, password: 'synthetic-registration-password' }),
+        });
+        const tokens = await login.json();
+        const settings = await fetch('/api/settings/get', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokens.access_token}` }, body: '{}',
+        });
+        const data = await settings.json();
+        return { registerStatus: response.status, loginStatus: login.status, settingsStatus: settings.status, firstRun: JSON.parse(data.settings).firstRun };
+    });
+    assert.deepEqual(registered, { registerStatus: 201, loginStatus: 200, settingsStatus: 200, firstRun: false });
     await page.evaluate(() => document.dispatchEvent(new CustomEvent('leslie:open-model-settings')));
     const select = page.locator('#leslie-server-model-select');
     await select.waitFor({ state: 'visible' });

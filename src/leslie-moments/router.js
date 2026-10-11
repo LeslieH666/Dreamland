@@ -20,7 +20,7 @@ export function resolveMomentsUserRoot(request) {
     return path.resolve(userRoot);
 }
 
-function getStores(request) {
+export function getStores(request) {
     const userRoot = resolveMomentsUserRoot(request);
     return {
         userRoot,
@@ -65,7 +65,7 @@ function normalizeRawIdentity(value, type = value?.type) {
     };
 }
 
-function resolveNormalDraft(identityStore, body) {
+export function resolveNormalDraft(identityStore, body) {
     const rawTargets = body.visibility?.type === 'selected' && Array.isArray(body.visibility.targets) ? body.visibility.targets : [];
     const rawContentRole = body.contentRole && typeof body.contentRole === 'object' ? body.contentRole : null;
     const resolution = identityStore.resolveEntities([
@@ -87,7 +87,7 @@ function resolveNormalDraft(identityStore, body) {
     };
 }
 
-function resolveStoryDraft(stores, body) {
+export function resolveStoryDraft(stores, body) {
     const normalDraft = resolveNormalDraft(stores.identity, body);
     if (body.memorySourceId) {
         const memory = stores.chatMemory.getMemory(body.memorySourceId);
@@ -130,12 +130,12 @@ function resolveStoryDraft(stores, body) {
     };
 }
 
-function resolveAuthor(identityStore, author) {
+export function resolveAuthor(identityStore, author) {
     const result = identityStore.resolveEntities([normalizeRawIdentity(author, 'persona')]);
     return toIdentitySnapshot(result.entities[0], author?.avatar);
 }
 
-function resolveCharacter(identityStore, actor) {
+export function resolveCharacter(identityStore, actor) {
     const result = identityStore.resolveEntities([normalizeRawIdentity(actor, 'character')]);
     return toIdentitySnapshot(result.entities[0], actor?.avatar);
 }

@@ -37,8 +37,12 @@ async function mapFiles(items, action) {
     if (failure) throw failure;
 }
 
+function isVaultHandle(handle) {
+    return typeof handle === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(handle);
+}
+
 function assertHandle(handle) {
-    if (typeof handle !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(handle)) {
+    if (!isVaultHandle(handle)) {
         throw new Error('Invalid user space handle.');
     }
 }
@@ -261,6 +265,9 @@ async function preserveFragments(paths, header, key) {
 
 /** Return true only when the account has a committed encrypted vault. */
 export function hasUserVault(dataRoot, handle) {
+    // Ordinary server accounts allow names that cannot belong to encrypted spaces.
+    // Do not resolve a vault path for these accounts during shared startup.
+    if (!isVaultHandle(handle)) return false;
     return fs.existsSync(path.join(vaultPaths(dataRoot, handle).vault, 'vault.json'));
 }
 

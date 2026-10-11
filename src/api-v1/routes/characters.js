@@ -9,11 +9,13 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import express from 'express';
 
 import { router as legacyCharactersRouter } from '../../endpoints/characters.js';
-import { asyncRoute, badRequest, notFound, notImplemented } from '../errors.js';
+import { asyncRoute, badRequest, notFound } from '../errors.js';
+import { readCharacterData, writeCharacterData } from '../../endpoints/characters.js';
 import { decodeId } from '../ids.js';
 import { readPageWindow, paginate } from '../pagination.js';
 import { invokeWithRequest, readJsonOrThrow } from '../adapters/express.js';
@@ -141,13 +143,45 @@ charactersRouter.put('/:id/avatar', asyncRoute(async (request, response) => {
     if (!fs.existsSync(filePath)) {
         throw notFound('That character does not exist.');
     }
-    // Rewriting the PNG bytes in place would drop the embedded card (the card
-    // JSON lives in a PNG tEXt chunk that only the private `writeCharacterData`
-    // helper can re-embed). That helper is not exported and
-    // src/endpoints/characters.js is under a compatibility freeze, so this
-    // operation is reported as not implemented rather than risking card loss.
-    throw notImplemented(
-        'Updating a character avatar is not available through /api/v1 yet. '
-        + 'It needs the card-embedding writer in src/endpoints/characters.js, which is frozen for this phase.',
-    );
+
+    // The card JSON lives in a PNG tEXt chunk, so the image cannot simply be overwritten:
+    // the card has to be re-embedded through the same writer the legacy router uses. The API
+    // takes the bytes base64-encoded (`{"image_base64": "..."}`) or raw
+    // (`application/octet-stream`), stages them in a temp file and hands that to the writer,
+    // which is what the multipart handler does after an upload.
+    const base64 = typeof request.body?.image_base64 === 'string' ? request.body.image_base64 : null;
+    const raw = Buffer.isBuffer(request.body) && request.body.length ? request.body : null;
+    if (!base64 && !raw) {
+        throw badRequest('Provide the PNG either as {"image_base64": "..."} or as a raw application/octet-stream body.');
+    }
+
+    let bytes;
+    try {
+        bytes = raw ?? Buffer.from(base64, 'base64');
+    } catch {
+        throw badRequest('image_base64 is not valid base64.');
+    }
+    if (!bytes.length) {
+        throw badRequest('The uploaded image is empty.');
+    }
+    // A character avatar is a PNG; reject anything else before it reaches the writer.
+    if (bytes.length < 8 || bytes.readUInt32BE(0) !== 0x89504e47) {
+        throw badRequest('The avatar must be a PNG image.');
+    }
+
+    const stagingDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'dreamland-avatar-'));
+    const stagingPath = path.join(stagingDirectory, 'upload.png');
+    try {
+        fs.writeFileSync(stagingPath, bytes);
+        const data = await readCharacterData(filePath);
+        if (!data) {
+            throw badRequest('The existing character card could not be read.');
+        }
+        const crop = typeof request.query?.crop === 'string' ? JSON.parse(request.query.crop) : null;
+        await writeCharacterData(stagingPath, data, avatarName.replace(/\.png$/i, ''), request, crop);
+    } finally {
+        fs.rmSync(stagingDirectory, { recursive: true, force: true });
+    }
+
+    response.sendStatus(204);
 }, 'Updating a character avatar failed.'));

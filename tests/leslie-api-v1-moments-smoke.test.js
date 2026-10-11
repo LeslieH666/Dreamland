@@ -43,6 +43,8 @@ let dataRoot;
 let server;
 /** @type {string} */
 let baseUrl;
+/** Cwd to restore: `process.chdir` is process-wide and leaks across suites. */
+let originalCwd;
 
 /**
  * Send JSON and parse the body regardless of status.
@@ -73,6 +75,7 @@ async function call(method, route, body, token) {
 }
 
 beforeAll(async () => {
+    originalCwd = process.cwd();
     // The legacy handlers resolve repository-relative paths, so the process must sit at the
     // repository root the way the real server does. Jest runs suites from tests/.
     process.chdir(path.resolve(process.cwd(), '..'));
@@ -103,6 +106,7 @@ beforeAll(async () => {
 }, 30_000);
 
 afterAll(async () => {
+    if (originalCwd) process.chdir(originalCwd);
     server?.closeAllConnections?.();
     await new Promise(resolve => server?.close(resolve));
     for (const dir of [dataRoot, configRoot]) {

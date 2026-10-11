@@ -55,6 +55,7 @@ try {
     browser = await chromium.launch({ headless: true, channel: process.env.LESLIE_BASELINE_BROWSER_CHANNEL || 'chrome' });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('pageerror', error => errors.push(error.message));
+    page.on('response', response => { if (response.status() >= 400) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
     // Authorize the initial document navigation as well as API fetches in this isolated fixture.
     await page.setExtraHTTPHeaders({ Authorization: `Bearer ${tokens.access_token}` });
     await page.addInitScript(tokens => {
@@ -63,7 +64,7 @@ try {
         localStorage.setItem('language', 'zh-cn');
     }, tokens);
     await page.goto(`${base}/app`);
-    await page.locator('#preloader').waitFor({ state: 'hidden', timeout: 60000 });
+    await page.locator('body > #preloader').waitFor({ state: 'hidden', timeout: 60000 });
     await page.waitForFunction(() => document.documentElement.dataset.dreamlandMode === 'server' && document.querySelector('#server_model_select')?.options.length === 2);
     assert.equal(await page.locator('[data-leslie-settings-page="spaces"]').count(), 0);
     const registered = await page.evaluate(async () => {
@@ -93,7 +94,7 @@ try {
     await select.selectOption('fixture-b');
     await page.evaluate(async () => { const app = await import('/script.js'); await app.saveSettings(); });
     await page.reload();
-    await page.locator('#preloader').waitFor({ state: 'hidden', timeout: 60000 });
+    await page.locator('body > #preloader').waitFor({ state: 'hidden', timeout: 60000 });
     await page.waitForFunction(() => document.querySelector('#server_model_select')?.value === 'fixture-b');
     await page.evaluate(() => document.dispatchEvent(new CustomEvent('leslie:open-model-settings')));
     await page.locator('#leslie-server-model-select').waitFor({ state: 'visible' });

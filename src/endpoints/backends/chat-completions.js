@@ -65,7 +65,7 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 import { getVertexAIAuth, getProjectIdFromServiceAccount } from '../google.js';
-import { getDefaultModelId, resolveModelConfig } from '../../model-gateway/store.js';
+import { resolveWebModelConfig } from '../../model-gateway/store.js';
 
 /**
  * Read an adapter API key. When the request was assembled server-side from the model
@@ -2190,14 +2190,20 @@ export async function handleChatCompletionGenerate(request, response) {
         // Server-managed model gateway: a catalog model_id resolves to the provider,
         // api key and real model name. The resolved values are injected here and win
         // over any client-provided provider fields (source/key/endpoint). A request
-        // without an explicit model_id falls back to the server's default model; when
-        // the catalog is empty the legacy per-account path is preserved.
-        const effectiveModelId = request.body.model_id || getDefaultModelId();
-        if (effectiveModelId) {
-            const resolved = resolveModelConfig(effectiveModelId);
+        // without an explicit model_id uses the server default. Personal API fallback
+        // is only available in desktop mode.
+        const resolved = resolveWebModelConfig(request.body.model_id);
+        if (resolved) {
             request.body.chat_completion_source = resolved.source;
             request.body.model = resolved.model;
             request.body.__server_api_key = resolved.apiKey;
+            // Client preferences must not override the administrator's endpoint/model.
+            request.body.reverse_proxy = '';
+            request.body.proxy_password = '';
+            request.body.custom_url = '';
+            request.body.custom_include_body = '';
+            request.body.custom_exclude_body = '';
+            request.body.custom_include_headers = '';
             if (resolved.endpoint) {
                 request.body.reverse_proxy = resolved.endpoint;
                 request.body.proxy_password = resolved.apiKey;

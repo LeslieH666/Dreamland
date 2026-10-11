@@ -4,10 +4,13 @@
 * https://github.com/CncAnon1/TavernAITurbo
 */
 import { Fuse, DOMPurify } from '../lib.js';
+import { serverModels, refreshServerModels, selectServerModel } from './server-models.js';
+import { extension_settings } from './extensions.js';
 
 import {
     abortStatusCheck,
     cancelStatusCheck,
+    changeMainAPI,
     characters,
     event_types,
     eventSource,
@@ -2743,6 +2746,10 @@ function setToolReasoningControls() {
 }
 
 async function getStatusOpen() {
+    if (serverModels.mode === 'server') {
+        await loadServerModels();
+        return resultCheckStatus();
+    }
     let modelStatusFailureMessage = t`Could not load models. Check your API key and connection settings, then try again.`;
     const noValidateSources = [
         chat_completion_sources.CLAUDE,
@@ -4318,6 +4325,10 @@ function onReverseProxyInput() {
 
 async function onConnectButtonClick(e) {
     e.stopPropagation();
+    if (serverModels.mode === 'server') {
+        await loadServerModels();
+        return;
+    }
 
     /** @type {Object.<string, {key: string, selector: string, proxy?: boolean, keyless?: boolean}>} */
     const apiSourceConfig = {
@@ -5702,25 +5713,32 @@ function openAiAssemblyEnv() {
  * only model-related value this client sends; provider/key/endpoint stay on the server.
  */
 async function loadServerModels() {
-    try {
-        const response = await fetch('/api/v1/models', { headers: getRequestHeaders() });
-        if (!response.ok) return;
-        const data = await response.json();
-        const select = document.getElementById('server_model_select');
-        if (!select) return;
-        const current = select.value;
-        const models = Array.isArray(data?.models) ? data.models : [];
-        select.innerHTML = models.length
-            ? models.map(model =>
-                `<option value="${DOMPurify.sanitize(model.id)}">${DOMPurify.sanitize(model.name ?? model.id)}</option>`).join('')
-            : '<option value="">（无可用模型）</option>';
-        if (current && models.some(model => model.id === current)) {
-            select.value = current;
-        }
-    } catch {
-        // Fail open: an empty dropdown sends no model_id and the adapter falls back to the
-        // server default model gateway.
-    }
+    await refreshServerModels({ headers: getRequestHeaders(), preferredId: extension_settings.dreamland_server_model });
 }
+
+document.addEventListener('dreamland:server-models', () => {
+    const select = document.getElementById('server_model_select');
+    if (select && serverModels.mode !== 'desktop') {
+        const options = serverModels.models.map(model => new Option(model.name, model.id));
+        select.replaceChildren(...(options.length ? options : [new Option(serverModels.loading ? '加载中…' : '暂无可用模型', '')]));
+        select.value = serverModels.selectedId;
+        select.disabled = serverModels.loading || Boolean(serverModels.error) || !options.length;
+    }
+    if (serverModels.mode !== 'server') return;
+    if (main_api !== 'openai') {
+        $('#main_api').val('openai');
+        changeMainAPI('openai');
+    }
+    if (!serverModels.loading) {
+        setOnlineStatus(serverModels.selectedId ? '服务器模型可用' : 'no_connection');
+        resultCheckStatus();
+    }
+});
+
+$(document).on('change', '#server_model_select', function () {
+    if (!selectServerModel(String($(this).val() ?? ''))) return;
+    extension_settings.dreamland_server_model = serverModels.selectedId;
+    saveSettingsDebounced();
+});
 
 eventSource.on(event_types.APP_READY, loadServerModels);

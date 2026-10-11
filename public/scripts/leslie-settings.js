@@ -31,6 +31,7 @@ import {
 import './leslie-voice-settings.js';
 import { navigateDreamlandPage, presentDreamlandPage, registerDreamlandPage, returnToDreamlandChat, usesDreamlandPages } from './dreamland-pages.js';
 import { COPY } from './leslie-settings-copy.js';
+import { serverModels, refreshServerModels } from './server-models.js';
 
 let settingsPageVisited = false;
 
@@ -153,6 +154,10 @@ function getCopyLocale() {
  * @returns {string} Visible status label.
  */
 function getConnectionStatusText(connectionState, copy) {
+    if (serverModels.mode !== 'desktop') {
+        return serverModels.loading ? '正在加载服务器模型' : serverModels.error
+            || (serverModels.selectedId ? '已选择服务器模型' : '管理员尚未配置可用模型');
+    }
     if (connectionState.checking) {
         return copy.checking;
     }
@@ -439,6 +444,16 @@ function renderLocalModelSetup(copy) {
  * @returns {string} Page markup.
  */
 function renderModelDetail() {
+    if (serverModels.mode !== 'desktop') {
+        const content = `<section class="leslie-detail-card">
+            <div class="leslie-detail-card-heading"><h3>选择模型</h3><p>API 地址和密钥由管理员统一配置，你只需选择可用模型。</p></div>
+            <p role="status" data-server-model-status></p>
+            <label class="leslie-quick-control" for="leslie-server-model-select"><span><strong>聊天模型</strong></span>
+                <select id="leslie-server-model-select" class="text_pole"></select></label>
+            <button type="button" class="leslie-settings-secondary-button" data-server-model-refresh>刷新模型清单</button>
+        </section>`;
+        return renderDetailShell({ icon: 'fa-solid fa-plug', title: '模型选择', body: '使用服务器提供的 AI 模型', content });
+    }
     const copy = COPY[getCopyLocale()];
     const activeService = getActiveModelService();
     activeModelKind ??= MODEL_SERVICES[activeService]?.kind || 'online';
@@ -1706,6 +1721,14 @@ function bindDetailPage(detailId) {
         if (!userSpacesState) {
             void refreshUserSpacesState();
         }
+    } else if (detailId === 'model' && serverModels.mode !== 'desktop') {
+        bindDetailSelect('server_model_select', 'leslie-server-model-select');
+        const status = document.querySelector('[data-server-model-status]');
+        if (status) status.textContent = serverModels.loading ? '正在加载服务器模型…'
+            : serverModels.error || (serverModels.models.length ? '选择将随你的账号保存。' : '管理员尚未配置可用模型，请联系管理员。');
+        document.querySelector('[data-server-model-refresh]')?.addEventListener('click', () => {
+            void refreshServerModels({ headers: getRequestHeaders() });
+        }, { signal: detailBindingController.signal });
     } else if (detailId === 'model') {
         const service = MODEL_SERVICES[getActiveModelService()];
         if (service?.kind === activeModelKind) {
@@ -2107,6 +2130,14 @@ function initLeslieSettings() {
     settingsLauncher.querySelector('span').textContent = copy.launcher;
     topSettings.insertBefore(settingsLauncher, characterDrawer);
 
+    document.addEventListener('dreamland:server-models', () => {
+        if (activeDetail === 'model') showDetail('model');
+        updateConnectionStatus();
+        if (serverModels.mode === 'server') {
+            settingsOverlay?.querySelectorAll('[data-leslie-settings-page="model"] strong, [data-leslie-detail="model"] .leslie-settings-row-title').forEach(element => { element.textContent = '模型选择'; });
+            settingsOverlay?.querySelectorAll('[data-leslie-settings-page="model"] small, [data-leslie-detail="model"] .leslie-settings-row-description').forEach(element => { element.textContent = '选择管理员提供的可用模型'; });
+        }
+    });
     settingsOverlay = createSettingsOverlay();
     document.body.append(settingsOverlay);
     registerDreamlandPage('settings', openSettings);

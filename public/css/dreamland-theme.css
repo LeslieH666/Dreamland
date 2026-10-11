@@ -141,6 +141,6 @@ body.leslie-modern[data-leslie-design-language="dreamland"] :is(
 
 /* Server-managed model gateway: the per-account model connection panel (provider, key,
  * endpoint, model self-fill) is hidden; the model is chosen from the server catalog. */
-body.leslie-modern[data-leslie-design-language="dreamland"] #openai_api {
+html:not([data-dreamland-mode="desktop"]) body.leslie-modern[data-leslie-design-language="dreamland"] :is(#openai_api, #kobold_api, #novel_api, #textgenerationwebui_api, #main_api) {
     display: none !important;
 }

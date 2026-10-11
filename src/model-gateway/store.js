@@ -15,6 +15,7 @@ import path from 'node:path';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { SecretManager } from '../endpoints/secrets.js';
+import { isServerMode } from '../runtime-mode.js';
 
 export const MODEL_GATEWAY_FILE = 'model-gateway.json';
 export const MODEL_GATEWAY_SCHEMA_VERSION = 1;
@@ -183,8 +184,9 @@ export function listAllModels() {
  * @returns {{id: string, name: string, enabled: boolean}[]} Enabled models.
  */
 export function listAvailableModels() {
-    return readModelGateway().models
-        .filter(model => model.enabled !== false)
+    const gateway = readModelGateway();
+    return gateway.models
+        .filter(model => model.enabled !== false && gateway.providers.some(provider => provider.id === model.provider && provider.enabled !== false))
         .map(model => ({ id: String(model.id), name: String(model.name ?? model.id), enabled: true }));
 }
 
@@ -203,7 +205,7 @@ export function getModelById(id) {
  * @returns {string | null} Default model id, or null when the catalog has no enabled model.
  */
 export function getDefaultModelId() {
-    const entry = readModelGateway().models.find(model => model.enabled !== false);
+    const entry = listAvailableModels()[0];
     return entry ? String(entry.id) : null;
 }
 
@@ -213,6 +215,18 @@ export function getDefaultModelId() {
  * @returns {{source: string, model: string, endpoint: string, apiKey: string, params: object, providerId: string}}
  * @throws {Error} When the model or provider is missing/disabled.
  */
+/**
+ * Resolve a Web request against the catalog; only desktop mode may use personal APIs.
+ * @param {string | undefined} modelId Requested catalog id.
+ * @returns {ReturnType<typeof resolveModelConfig> | null} Gateway configuration.
+ */
+export function resolveWebModelConfig(modelId) {
+    const effectiveId = modelId || getDefaultModelId();
+    if (effectiveId) return resolveModelConfig(effectiveId);
+    if (isServerMode()) throw new Error('管理员尚未配置可用模型，请联系管理员。');
+    return null;
+}
+
 export function resolveModelConfig(modelId) {
     const model = getModelById(modelId);
     if (!model) {

@@ -618,3 +618,10 @@ Phase 4（Web PWA）与 Phase 5（RN App）依赖 §3「服务端 `/generate` �
 ## Not promised yet
 
 There is no stable release schedule, public synchronization service, compatibility guarantee for unreleased schemas, or automatic publishing pipeline.
+
+## Web 服务器模型选择修复（2026-10-11）
+
+- DreamLand 设置页接入管理员模型清单，服务器模式只显示模型选择，选择按账号保存；桌面模式保留个人连接配置。
+- 模型清单加载失败或为空时显示明确提示，不回退个人 API。关闭的供应商不进入可选清单。
+- Web 聊天适配器在服务器模式强制使用模型网关；客户端不能覆盖管理员的模型、地址或请求头。
+- PWA 缓存版本升级，让现有安装更新设置页面。提示词字节回归继续覆盖桌面兼容路径；服务器路径另用合成模型清单验证。

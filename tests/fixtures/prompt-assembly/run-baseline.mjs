@@ -93,7 +93,8 @@ function startServer(dataRoot) {
             ...process.env,
             DREAMLAND_DATA_ROOT: dataRoot,
             DREAMLAND_PORT: String(PORT),
-            DREAMLAND_MODE: 'server',
+            DREAMLAND_MODE: 'desktop',
+            DREAMLAND_BROWSER_LAUNCH_ENABLED: 'false',
             // The chat-completion status check refuses to run without a key for
             // the selected source, and Generate then aborts at the connection
             // gate. Supplied through the external secret source so no secret is

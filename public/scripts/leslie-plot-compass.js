@@ -345,7 +345,7 @@ function positionPinForViewport() {
         pin.classList.add('is-mobile-dock');
     } else {
         if (pin.parentElement !== header || pin.nextElementSibling !== actions) {
-            header.insertBefore(pin, actions);
+            header.insertBefore(pin, actions?.parentElement === header ? actions : null);
         }
         pin.classList.remove('is-mobile-dock');
     }

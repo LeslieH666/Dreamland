@@ -55,7 +55,7 @@ try {
     const tokens = await login.json();
     browser = await chromium.launch({ headless: true, channel: process.env.LESLIE_BASELINE_BROWSER_CHANNEL || 'chrome' });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-    page.on('pageerror', error => errors.push(error.message));
+    page.on('pageerror', error => errors.push(error.stack || error.message));
     page.on('response', response => { if (response.status() >= 400) httpErrors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
     // Authorize the initial document navigation as well as API fetches in this isolated fixture.
     await page.setExtraHTTPHeaders({ Authorization: `Bearer ${tokens.access_token}` });

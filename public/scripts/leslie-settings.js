@@ -2131,7 +2131,7 @@ function initLeslieSettings() {
     settingsLauncher.setAttribute('aria-label', copy.launcher);
     settingsLauncher.innerHTML = '<i class="fa-solid fa-gear" aria-hidden="true"></i><span></span>';
     settingsLauncher.querySelector('span').textContent = copy.launcher;
-    topSettings.insertBefore(settingsLauncher, characterDrawer);
+    topSettings.insertBefore(settingsLauncher, characterDrawer.parentElement === topSettings ? characterDrawer : null);
 
     document.addEventListener('dreamland:server-models', () => {
         const spaces = settingsOverlay?.querySelector('[data-leslie-settings-page="spaces"]');

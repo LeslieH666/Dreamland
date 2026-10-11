@@ -221,7 +221,7 @@ function createSidebar() {
 
     conversationList = sidebar.querySelector('#leslie-conversation-list');
     searchInput = sidebar.querySelector('#leslie-conversation-search');
-    document.body.insertBefore(sidebar, sheld);
+    document.body.insertBefore(sidebar, sheld.parentElement === document.body ? sheld : null);
 }
 
 function ensureChatHeader() {
@@ -1007,7 +1007,7 @@ function relocateMemoryLauncher() {
     launcher.title = launcher.title || '角色记忆';
     const newChatButton = actions.querySelector('[data-action="new-chat"]');
     if (launcher.parentElement !== actions || launcher.nextElementSibling !== newChatButton) {
-        actions.insertBefore(launcher, newChatButton);
+        actions.insertBefore(launcher, newChatButton?.parentElement === actions ? newChatButton : null);
     }
 }
 

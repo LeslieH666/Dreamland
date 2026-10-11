@@ -37,6 +37,7 @@ const child = spawn(process.execPath, ['server.js', '--configPath', path.join(da
 let browser;
 let page;
 const errors = [];
+const httpErrors = [];
 try {
     let ready = false;
     for (let attempt = 0; attempt < 120; attempt++) {
@@ -55,7 +56,7 @@ try {
     browser = await chromium.launch({ headless: true, channel: process.env.LESLIE_BASELINE_BROWSER_CHANNEL || 'chrome' });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('pageerror', error => errors.push(error.message));
-    page.on('response', response => { if (response.status() >= 400) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
+    page.on('response', response => { if (response.status() >= 400) httpErrors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
     // Authorize the initial document navigation as well as API fetches in this isolated fixture.
     await page.setExtraHTTPHeaders({ Authorization: `Bearer ${tokens.access_token}` });
     await page.addInitScript(tokens => {
@@ -131,7 +132,7 @@ try {
     assert.deepEqual(errors, []);
     console.log('PASS: model-only settings, account persistence, actual generation through selected server model, empty-catalog UI and backend rejection.');
 } catch (error) {
-    console.error('Browser smoke diagnostics:', errors);
+    console.error('Browser smoke diagnostics:', errors, httpErrors);
     if (page) console.error(await page.evaluate(() => ({ url: location.pathname, mode: document.documentElement.dataset.dreamlandMode, options: document.querySelector('#server_model_select')?.options.length, preloaderPresent: Boolean(document.querySelector('#preloader')) })));
     throw error;
 } finally {

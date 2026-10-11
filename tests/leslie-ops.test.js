@@ -243,6 +243,44 @@ describe('ops account management', () => {
     }, 40_000);
 });
 
+describe('ops account deletion', () => {
+    test('deletes another account, refuses self-deletion and 404s for unknown handles', async () => {
+        const adminToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: ADMIN_HANDLE, password: PASSWORD })).body?.access_token;
+        expect(typeof adminToken).toBe('string');
+
+        // Seed a throwaway account with a real session.
+        const created = await postJson(`${baseUrl}${API_V1_ROOT}/ops/users`, { handle: 'ops-doomed', password: 'doomed-password-123' }, adminToken);
+        expect(created.status).toBe(201);
+        const doomedToken = (await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: 'ops-doomed', password: 'doomed-password-123' })).body?.access_token;
+        expect(typeof doomedToken).toBe('string');
+        expect(doomedToken).not.toBe(adminToken);
+
+        // The signed-in administrator cannot delete their own account (400, not 403, so the
+        // dashboard keeps the session instead of treating it as an auth failure).
+        const selfDelete = await deleteJson(`/ops/users/${ADMIN_HANDLE}`, adminToken);
+        expect(selfDelete.status).toBe(400);
+        const afterSelf = await getJson('/ops/users', adminToken);
+        expect(afterSelf.status).toBe(200);
+        expect(afterSelf.body.users.map(user => user.handle)).toContain(ADMIN_HANDLE);
+
+        // An unknown handle is a 404, not a silent success.
+        const missing = await deleteJson('/ops/users/ops-no-such-account', adminToken);
+        expect(missing.status).toBe(404);
+
+        // Deleting the seeded account succeeds and removes it from the list.
+        const deleted = await deleteJson('/ops/users/ops-doomed', adminToken);
+        expect(deleted.status).toBe(200);
+        const afterDelete = await getJson('/ops/users', adminToken);
+        expect(afterDelete.body.users.map(user => user.handle)).not.toContain('ops-doomed');
+
+        // The removed account can no longer authenticate, and its live token is rejected.
+        const relogin = await postJson(`${baseUrl}${API_V1_ROOT}/auth/token`, { grant_type: 'password', handle: 'ops-doomed', password: 'doomed-password-123' });
+        expect(relogin.status).toBe(401);
+        const stale = await getJson('/ops/users', doomedToken);
+        expect(stale.status).toBe(401);
+    }, 40_000);
+});
+
 describe('GET /api/v1/models', () => {
     test('returns the catalog without secrets and rejects anonymous access', async () => {
         const { upsertProvider, upsertModel } = await import('../src/model-gateway/store.js');

@@ -34,11 +34,13 @@ describe('DreamLand application session entry', () => {
         expect(options.fetchAccount).not.toHaveBeenCalled();
     });
 
-    test.each([401, 403])('clears a rejected token (HTTP %i) before returning to login', async status => {
-        const options = harness({ fetchAccount: async () => ({ status, ok: false }) });
-        expect(await checkAppEntry(options)).toBe(false);
-        expect(options.clearTokens).toHaveBeenCalledTimes(1);
-        expect(options.redirectToLogin).toHaveBeenCalledTimes(1);
+    test('clears rejected tokens before returning to login', async () => {
+        for (const status of [401, 403]) {
+            const options = harness({ fetchAccount: async () => ({ status, ok: false }) });
+            expect(await checkAppEntry(options)).toBe(false);
+            expect(options.clearTokens).toHaveBeenCalledTimes(1);
+            expect(options.redirectToLogin).toHaveBeenCalledTimes(1);
+        }
     });
 
     test('allows a validated token to start the application', async () => {

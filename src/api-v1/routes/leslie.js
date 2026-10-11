@@ -106,11 +106,11 @@ function toApiMoment(post) {
  */
 function decorateMoments(stores, posts) {
     try {
+        // `LeslieMomentsActivityStore.decoratePosts` returns a bare array. An earlier revision
+        // read `decorated.posts`, which is always undefined, so every response silently fell
+        // back to the undecorated posts and reactions never reached a client.
         const decorated = stores.activity.decoratePosts(posts);
-        return {
-            posts: Array.isArray(decorated?.posts) ? decorated.posts : posts,
-            status: decorated?.status ?? null,
-        };
+        return { posts: Array.isArray(decorated) ? decorated : posts, status: null };
     } catch {
         return { posts, status: null };
     }

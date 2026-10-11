@@ -13,21 +13,27 @@ import { API_V1_ROOT } from '../src/api-v1/protocol.js';
  *
  * The suite boots the actual router on a listener, the way
  * `leslie-api-v1-generate-smoke.test.js` does, and drives the endpoints over the wire.
- * It exists because the Moments write API was wired to the existing Leslie stores without
- * ever being executed: `POST /moments/posts` used to answer 501, and nothing proved the
- * new handlers could reach `request.user.directories.root` on the v1 track.
  *
- * What this pins:
- *  - the feed answers the documented `{ data, next_cursor }` envelope, on both `/moments`
- *    and the older `/moments/feed` alias the shipped client calls;
- *  - publishing no longer answers 501, and a request that cannot be resolved to an
- *    identity comes back as a mapped 4xx with the shared error envelope rather than a 500;
- *  - when the account has a resolvable Persona, the full write chain runs:
- *    publish -> like -> comment -> edit -> archive -> restore.
+ * It exists because the Moments API was wired to the existing Leslie stores and then pushed
+ * without the write path ever being executed: only lint and the pre-existing suites ran, and
+ * `POST /moments/posts` had previously been a hard 501.
+ *
+ * The whole chain runs: publish -> like -> unlike -> comment -> edit -> archive -> restore,
+ * asserting the feed after each reaction so a client-visible regression is caught. Two
+ * behaviours worth knowing when reading the expectations:
+ *
+ *  - Publishing resolves the author through `LeslieIdentityStore.resolveEntities`, which
+ *    **creates** the entity when it is keyed by `sourceKey`, so a body `author` is what makes
+ *    the request resolvable. Without one the route answers a mapped 4xx rather than 501.
+ *  - Reactions are **revision-scoped**: `decoratePosts` only folds in activity whose
+ *    `postRevision` matches the post's current revision. Editing a post bumps that revision,
+ *    so likes and comments raised before an edit are deliberately not reported afterwards.
  */
 
 const HANDLE = 'moments-smoke-user';
 const PASSWORD = 'correct-horse-battery';
+/** Identity the Persona is keyed by; `resolveEntities` creates it on first use. */
+const PERSONA = { sourceKey: 'smoke-persona', label: 'Smoke Persona' };
 
 /** @type {string} */
 let configRoot;
@@ -41,13 +47,13 @@ let baseUrl;
 /**
  * Send JSON and parse the body regardless of status.
  * @param {string} method HTTP method.
- * @param {string} url Absolute URL.
+ * @param {string} route Path below the API root.
  * @param {object} [body] Request body.
  * @param {string} [token] Bearer token.
  * @returns {Promise<{status: number, body: any}>} Result.
  */
-async function sendJson(method, url, body, token) {
-    const response = await fetch(url, {
+async function call(method, route, body, token) {
+    const response = await fetch(`${baseUrl}${API_V1_ROOT}${route}`, {
         method,
         headers: {
             'content-type': 'application/json',
@@ -74,8 +80,7 @@ beforeAll(async () => {
     configRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dl-moments-config-'));
     const configPath = path.join(configRoot, 'config.yaml');
     fs.writeFileSync(configPath, 'allowKeysExposure: false\n');
-    const util = await import('../src/util.js');
-    util.setConfigFilePath(configPath);
+    (await import('../src/util.js')).setConfigFilePath(configPath);
 
     dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dl-moments-data-'));
     globalThis.DATA_ROOT = dataRoot;
@@ -108,100 +113,109 @@ afterAll(async () => {
 describe('the /api/v1 moments surface over a real listener', () => {
     /** @type {string} */
     let token;
+    /** @type {string} */
+    let postId;
+
+    /**
+     * Read the feed and return one row.
+     * @param {string} id Moment id.
+     * @returns {Promise<any>} The row, or undefined.
+     */
+    async function feedRow(id) {
+        const feed = await call('GET', '/moments', undefined, token);
+        expect(feed.status).toBe(200);
+        return (feed.body?.data ?? []).find(item => item.id === id);
+    }
 
     test('register and sign in', async () => {
-        const registered = await sendJson('POST', `${baseUrl}${API_V1_ROOT}/auth/register`, {
-            handle: HANDLE,
-            password: PASSWORD,
-        });
+        const registered = await call('POST', '/auth/register', { handle: HANDLE, password: PASSWORD });
         expect([200, 201]).toContain(registered.status);
 
-        const tokenised = await sendJson('POST', `${baseUrl}${API_V1_ROOT}/auth/token`, {
-            grant_type: 'password',
-            handle: HANDLE,
-            password: PASSWORD,
-        });
+        const tokenised = await call('POST', '/auth/token', { grant_type: 'password', handle: HANDLE, password: PASSWORD });
         expect(tokenised.status).toBe(200);
         token = tokenised.body?.access_token;
         expect(typeof token).toBe('string');
 
-        // The Leslie stores resolve under the per-user root, which the real server creates
-        // at login.
+        // The Leslie stores resolve under the per-user root, which the real server creates at login.
         const usersModule = await import('../src/users.js');
         usersModule.ensureUserDirectoriesExist(usersModule.getUserDirectories(HANDLE));
     });
 
     test('the feed answers the documented envelope on both paths', async () => {
         for (const route of ['/moments', '/moments/feed']) {
-            const feed = await sendJson('GET', `${baseUrl}${API_V1_ROOT}${route}`, undefined, token);
+            const feed = await call('GET', route, undefined, token);
             expect(feed.status).toBe(200);
             expect(Array.isArray(feed.body?.data)).toBe(true);
             expect(feed.body?.next_cursor ?? null).toBeNull();
         }
     });
 
-    test('publishing is no longer 501 and reports failures through the envelope', async () => {
-        const published = await sendJson('POST', `${baseUrl}${API_V1_ROOT}/moments/posts`, { content: 'smoke' }, token);
-
-        // The regression this suite exists for: the route used to be a hard 501.
-        expect(published.status).not.toBe(501);
-        // A handler that cannot reach its stores would surface as an unmapped 500.
-        expect(published.status).not.toBe(500);
-
-        if (published.status === 201) {
-            // A Persona was resolvable, so the whole write chain is exercised below.
-            expect(typeof published.body?.id).toBe('string');
-            expect(published.body?.content).toBe('smoke');
-            expect(published.body?.status).toBe('active');
-        } else {
-            // No Persona on the account yet: the request must still fail as a mapped error.
-            expect([400, 404, 409]).toContain(published.status);
-            expect(published.body?.error?.code).toBeTruthy();
-        }
+    test('the endpoints require a bearer token', async () => {
+        const anonymous = await call('GET', '/moments');
+        expect(anonymous.status).toBe(401);
     });
 
-    test('like, comment, edit, archive and restore round-trip when a Persona exists', async () => {
-        const published = await sendJson('POST', `${baseUrl}${API_V1_ROOT}/moments/posts`, { content: 'round-trip' }, token);
-        if (published.status !== 201) {
-            // Covered by the previous test; the write chain needs a Persona to run.
-            expect([400, 404, 409]).toContain(published.status);
-            return;
-        }
-        const postId = published.body.id;
-        const base = `${baseUrl}${API_V1_ROOT}/moments/posts/${encodeURIComponent(postId)}`;
+    test('publishing resolves the Persona and returns the created Moment', async () => {
+        const published = await call('POST', '/moments/posts', { content: 'smoke', author: PERSONA }, token);
+        expect(published.status).toBe(201);
+        expect(typeof published.body?.id).toBe('string');
+        expect(published.body?.content).toBe('smoke');
+        expect(published.body?.status).toBe('active');
+        expect(published.body?.author_label).toBe(PERSONA.label);
+        postId = published.body.id;
+    });
 
-        const liked = await sendJson('PUT', `${base}/likes`, { liked: true }, token);
+    test('likes round-trip and reach the feed', async () => {
+        const base = `/moments/posts/${encodeURIComponent(postId)}`;
+
+        const liked = await call('PUT', `${base}/likes`, { liked: true, author: PERSONA }, token);
         expect(liked.status).toBe(200);
-        expect(liked.body?.post?.likes).toBeGreaterThanOrEqual(1);
+        expect((await feedRow(postId))?.likes).toBe(1);
 
-        const unliked = await sendJson('PUT', `${base}/likes`, { liked: false }, token);
+        // The unlike call needs the same author: `resolveEntities` cannot resolve an identity
+        // from an empty body and would answer 400.
+        const unliked = await call('PUT', `${base}/likes`, { liked: false, author: PERSONA }, token);
         expect(unliked.status).toBe(200);
+        expect((await feedRow(postId))?.likes).toBe(0);
+    });
 
-        const commented = await sendJson('POST', `${base}/comments`, { content: 'nice' }, token);
+    test('comments round-trip and reach the feed', async () => {
+        const base = `/moments/posts/${encodeURIComponent(postId)}`;
+        const commented = await call('POST', `${base}/comments`, { content: 'nice', author: PERSONA }, token);
         expect(commented.status).toBe(201);
-        expect(commented.body?.post?.comments).toBeGreaterThanOrEqual(1);
+        expect(commented.body?.comment).toBeTruthy();
+        expect((await feedRow(postId))?.comments).toBe(1);
+    });
 
-        const edited = await sendJson('PATCH', base, { content: 'edited' }, token);
+    test('editing bumps the revision and retires the older reactions', async () => {
+        const base = `/moments/posts/${encodeURIComponent(postId)}`;
+        const edited = await call('PATCH', base, { content: 'edited', author: PERSONA }, token);
         expect(edited.status).toBe(200);
         expect(edited.body?.content).toBe('edited');
         expect(edited.body?.edited_at).toBeTruthy();
 
-        const archived = await sendJson('POST', `${base}/archive`, {}, token);
+        // Reactions are scoped to the revision they were raised against, so the comment above
+        // no longer counts against the edited post.
+        const row = await feedRow(postId);
+        expect(row?.content).toBe('edited');
+        expect(row?.likes).toBe(0);
+        expect(row?.comments).toBe(0);
+    });
+
+    test('archive and restore flip the status', async () => {
+        const base = `/moments/posts/${encodeURIComponent(postId)}`;
+        const archived = await call('POST', `${base}/archive`, {}, token);
         expect(archived.status).toBe(200);
         expect(archived.body?.status).toBe('archived');
 
-        const restored = await sendJson('POST', `${base}/restore`, {}, token);
+        const restored = await call('POST', `${base}/restore`, {}, token);
         expect(restored.status).toBe(200);
         expect(restored.body?.status).toBe('active');
-
-        // An unknown id must map to 404 rather than reaching the store's 500 path.
-        const missing = await sendJson('PATCH', `${baseUrl}${API_V1_ROOT}/moments/posts/does-not-exist`, { content: 'x' }, token);
-        expect(missing.status).toBe(404);
-        expect(missing.body?.error?.code).toBe('not_found');
     });
 
-    test('the endpoints require a bearer token', async () => {
-        const anonymous = await sendJson('GET', `${baseUrl}${API_V1_ROOT}/moments`);
-        expect(anonymous.status).toBe(401);
+    test('an unknown id maps to 404 rather than an unmapped 500', async () => {
+        const missing = await call('PATCH', '/moments/posts/does-not-exist', { content: 'x', author: PERSONA }, token);
+        expect(missing.status).toBe(404);
+        expect(missing.body?.error?.code).toBe('not_found');
     });
 });

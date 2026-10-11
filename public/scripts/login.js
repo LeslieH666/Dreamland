@@ -9,6 +9,7 @@ let csrfToken = '';
 let discreetLogin = false;
 let encryptedSpaces = false;
 let loginPending = false;
+let tokenLogin = false;
 
 /**
  * Gets a CSRF token from the server.
@@ -285,6 +286,7 @@ async function performTokenLogin(handle, password) {
  * @returns {void}
  */
 function configureTokenLogin() {
+    tokenLogin = true;
     $('#handleEntryBlock').show();
     $('#normalLoginPrompt').hide();
     $('#discreetLoginPrompt').show();
@@ -308,7 +310,7 @@ function redirectToHome() {
     currentUrl.searchParams.delete('noauto');
 
     // Set the pathname to root and keep the updated query string
-    currentUrl.pathname = '/';
+    currentUrl.pathname = tokenLogin ? '/app' : '/';
 
     // Redirect to the new URL
     window.location.href = currentUrl.toString();

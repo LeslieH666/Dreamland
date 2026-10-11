@@ -18,6 +18,7 @@ import ipMatching from 'ip-matching';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
 import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent, setPermissionsSync } from './util.js';
+import { isServerMode } from './runtime-mode.js';
 import { findDreamlandEnvOverride } from './config-env.js';
 import { allowKeysExposure, readSecret, writeSecret, SECRETS_FILE } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
@@ -1145,6 +1146,11 @@ export function requireLoginMiddleware(request, response, next) {
  * @param {import('express').Response} response Response object
  */
 export async function loginPageMiddleware(request, response) {
+    // Public server login uses bearer tokens; cookie auto-login must not bypass it.
+    if (isServerMode()) {
+        return response.sendFile('login.html', { root: path.join(serverDirectory, 'public') });
+    }
+
     if (!ENABLE_ACCOUNTS) {
         console.log('User accounts are disabled. Redirecting to index page.');
         return response.redirect('/');

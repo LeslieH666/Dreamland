@@ -188,3 +188,18 @@ test('tampered ciphertext does not open a user directory', async () => {
         fs.rmSync(root, { recursive: true, force: true });
     }
 });
+
+test('ordinary server account names do not break vault discovery or weaken sealing validation', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'leslie-vault-server-account-'));
+    const userRoot = path.join(root, 'Synthetic_User');
+    try {
+        fs.mkdirSync(userRoot);
+        fs.writeFileSync(path.join(userRoot, 'settings.json'), '{"synthetic":true}');
+        for (const handle of ['Synthetic_User', 'synthetic.user', '../outside', '', null]) {
+            expect(hasUserVault(root, handle)).toBe(false);
+        }
+        await expect(sealUserSpace(root, 'Synthetic_User', 'synthetic-password')).rejects.toThrow('Invalid user space handle');
+        expect(fs.readFileSync(path.join(userRoot, 'settings.json'), 'utf8')).toBe('{"synthetic":true}');
+        expect(fs.existsSync(path.join(root, '_leslie-vaults'))).toBe(false);
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
